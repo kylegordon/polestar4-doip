@@ -1,0 +1,77 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Live DIDs</title>
+<style>
+:root{--bg:#fff;--fg:#1d2329;--mut:#66707a;--line:#dde2e6;--acc:#0b6bcb;--warn:#b26a00;--card:#f6f8fa;--flash:#fff3c4}
+@media (prefers-color-scheme: dark){:root{--bg:#14181c;--fg:#e4e8ec;--mut:#98a2ad;--line:#2c333a;--acc:#5aa9ff;--warn:#f0b35a;--card:#1b2026;--flash:#4a3f12}}
+body{background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,sans-serif;margin:0 auto;max-width:1200px;padding:16px}
+a{color:var(--acc)}nav a{margin-right:14px}h1{font-size:20px;margin:10px 0}
+#status{background:var(--card);padding:8px 12px;border-radius:6px;margin-bottom:10px}
+.stale{color:var(--warn);font-weight:600}
+#filter{width:100%;max-width:360px;padding:6px 8px;margin-bottom:10px;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:8px}
+.tile{background:var(--card);border-radius:6px;padding:8px 10px;transition:background .6s}
+.tile.hot{background:var(--flash);transition:none}
+.k{font:12px ui-monospace,Menlo,monospace;color:var(--mut)}.n{font-weight:600}
+.v{font:13px ui-monospace,Menlo,monospace;word-break:break-all;margin:2px 0}
+.d{font-size:16px;font-weight:600}
+canvas{width:100%;height:44px;display:block}
+.meta{font-size:11px;color:var(--mut)}
+</style></head><body>
+<nav><a href="index.html">Overview</a><a href="live.html">Live</a><a href="findings.html">Findings</a><a href="text.html">Text</a><a href="marks.html">Timeline</a><a href="logs.html">Watch logs</a></nav>
+<h1>Live DIDs</h1>
+<div id="status">Connecting…</div>
+<input id="filter" placeholder="Filter: module, DID or name (e.g. 1635, 4802, speed)">
+<label class="meta"><input type="checkbox" id="moving" checked> sort recently changed first</label>
+<div class="grid" id="grid"></div>
+<script>
+const grid = document.getElementById('grid'), statusEl = document.getElementById('status');
+const tiles = {}; let last = {};
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+function secs(t){const [h,m,s]=t.split(':').map(Number);return h*3600+m*60+s}
+function draw(cv, hist){
+  const dpr = window.devicePixelRatio||1, w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = w*dpr; cv.height = h*dpr; const c = cv.getContext('2d'); c.scale(dpr,dpr);
+  c.clearRect(0,0,w,h); if(hist.length < 2) return;
+  const t0 = secs(hist[0][0]), t1 = Math.max(secs(hist[hist.length-1][0]), t0+1);
+  let lo = Infinity, hi = -Infinity; hist.forEach(p=>{lo=Math.min(lo,p[1]);hi=Math.max(hi,p[1])});
+  if(hi===lo){hi+=1;lo-=1}
+  c.strokeStyle = css('--acc'); c.lineWidth = 1.5; c.beginPath();
+  hist.forEach((p,i)=>{const x=(secs(p[0])-t0)/(t1-t0)*(w-2)+1, y=h-2-(p[1]-lo)/(hi-lo)*(h-4);
+    if(i){c.lineTo(x, prevY); c.lineTo(x,y)} else c.moveTo(x,y); prevY=y});
+  c.stroke(); c.fillStyle = css('--mut'); c.font = '10px system-ui';
+  c.fillText(+hi.toPrecision(6), 2, 10); c.fillText(+lo.toPrecision(6), 2, h-2);
+}
+let prevY = 0;
+function tile(key){
+  const el = document.createElement('div'); el.className='tile';
+  el.innerHTML = '<div><span class="k"></span> <span class="n"></span></div><div class="d"></div><div class="v"></div><canvas></canvas><div class="meta"></div>';
+  grid.appendChild(el); return el;
+}
+async function tick(){
+  try{
+    const r = await fetch('live.json', {cache:'no-store'}); const j = await r.json();
+    const stale = j.age == null || j.age > 30;
+    statusEl.innerHTML = j.file ? `Watch log <b>${j.file}</b> · last write ${Math.round(j.age)} s ago` +
+      (stale ? ' · <span class="stale">no active watch (showing the last one)</span>' : ' · <b>live</b>') +
+      ` · ${Object.keys(j.keys).length} DIDs` : 'No watch logs yet.';
+    const f = document.getElementById('filter').value.toLowerCase();
+    let keys = Object.keys(j.keys).filter(k => !f || (k + ' ' + (j.keys[k].name||'')).toLowerCase().includes(f));
+    if(document.getElementById('moving').checked) keys.sort((a,b)=>(j.keys[b].t||'').localeCompare(j.keys[a].t||'') || a.localeCompare(b));
+    else keys.sort();
+    Object.keys(tiles).forEach(k=>{ if(!keys.includes(k)) tiles[k].style.display='none' });
+    keys.forEach(k=>{
+      const d = j.keys[k], el = tiles[k] || (tiles[k] = tile(k)); el.style.display='';
+      grid.appendChild(el);
+      el.querySelector('.k').textContent = k; el.querySelector('.n').textContent = d.name||'';
+      el.querySelector('.d').textContent = d.decoded||'';
+      el.querySelector('.v').textContent = (d.value||'').slice(0,96);
+      el.querySelector('.meta').textContent = `last change ${d.t} · ${d.changes} changes`;
+      draw(el.querySelector('canvas'), d.hist||[]);
+      if(last[k] !== undefined && last[k] !== d.value){ el.classList.add('hot'); setTimeout(()=>el.classList.remove('hot'), 50) }
+      last[k] = d.value;
+    });
+  }catch(e){ statusEl.textContent = 'Lost contact with the server: ' + e }
+}
+tick(); setInterval(tick, 1000);
+</script></body></html>

@@ -1,0 +1,143 @@
+# Signals confirmed on the Polestar 4 by behaviour (not by catalogue names).
+# Required keys: id, module, did, name, confidence, examples. module and did are quoted hex; module may be "1BB3,1BB4".
+# Optional: offset, len (bytes of the payload to use); then one of
+#   values: {"hex": label}   bits: {"hexmask": label}   type: u|s with scale and add (value = raw * scale + add).
+# confidence: C = same change seen at least twice, in both directions, action noted in session-log.md. P = anything less.
+# A C signal's module must be status: confirmed in modules.yaml (the tests check).
+# examples are real readings; the tests check every one decodes to the value given.
+# Evidence and timestamps: local/references.md (not committed). Decoder: tool/p4doip/decode.py.
+
+# -- battery (BECM 1635) ---------------------------------------------------
+- {id: hv_soc, module: "1635", did: "4801", name: HV battery state of charge, type: u, scale: 0.002, unit: "%", confidence: C,
+   examples: [{raw: "77a7", value: 61.262}]}
+- {id: cell_soc_avg, module: "1635", did: "DA19", name: Average cell SOC, offset: 1, len: 4, type: u, scale: 0.000001, unit: "%", confidence: C,
+   examples: [{raw: "ff03a6cf37", value: 61.263671}]}
+- {id: cell_soc_max, module: "1635", did: "DA17", name: Max cell SOC, offset: 1, len: 4, type: u, scale: 0.000001, unit: "%", confidence: C,
+   examples: [{raw: "0003aa1673", value: 61.478515}]}
+- {id: cell_soc_min, module: "1635", did: "DA18", name: Min cell SOC, offset: 1, len: 4, type: u, scale: 0.000001, unit: "%", confidence: C,
+   examples: [{raw: "0003a19fb4", value: 60.923828}]}
+- {id: charging_flag, module: "1635", did: "49EF", name: Charging flag, values: {"01": idle, "00": charging}, confidence: P,
+   examples: [{raw: "00", value: charging}]}
+- {id: charge_request_flag, module: "1635", did: "49E5", name: Charge request flag, values: {"01": idle, "00": charging}, confidence: P,
+   examples: [{raw: "01", value: idle}]}
+- {id: charge_power_limit, module: "1635", did: "49DD", name: Charge power limit (unit unknown), type: u, confidence: P,
+   examples: [{raw: "24", value: 36}]}
+- {id: charge_counter, module: "1635", did: "EE14", name: Accumulated charge counter, type: u, confidence: C,
+   examples: [{raw: "009e5d88", value: 10378632}]}
+- {id: discharge_counter, module: "1635", did: "EE13", name: Accumulated discharge counter, type: u, confidence: C,
+   examples: [{raw: "00d3cf44", value: 13881156}]}
+
+# -- charger / inlet (CDD 1650) --------------------------------------------
+- {id: last_charge_avg_power, module: "1650", did: "EE72", name: Average power of last charge, type: u, unit: W, confidence: P,
+   examples: [{raw: "196a", value: 6506}]}
+- {id: last_charge_energy, module: "1650", did: "EE74", name: Energy of last charge, type: u, unit: Wh, confidence: P,
+   examples: [{raw: "000123", value: 291}]}
+- {id: charge_energy_counter, module: "1650", did: "EE71", name: Energy counter of current charge, type: u, scale: 0.1, unit: kWh, confidence: P,
+   examples: [{raw: "00b083", value: 4518.7}]}
+- {id: ac_plug_status, module: "1650", did: "EE24", name: AC plug status, values: {"00000202": idle, "00000201": charging}, confidence: P,
+   examples: [{raw: "00000201", value: charging}]}
+- {id: inlet_leds, module: "1650", did: "EE32", name: Charge inlet LEDs, values: {"00000000": "off", "01010100": lid open, "00010000": charging pulse}, confidence: C,
+   examples: [{raw: "01010100", value: lid open}]}
+
+# -- body (CEM 1A01) -------------------------------------------------------
+- {id: ajar, module: "1A01", did: "42F2", name: Door and tailgate ajar,
+   bits: {"01": tailgate, "04": left rear, "08": right rear, "10": left front, "20": right front}, confidence: C,
+   examples: [{raw: "42", value: []}, {raw: "63", value: [right front, tailgate]}, {raw: "46", value: [left rear]}]}
+- {id: charge_lid, module: "1A01", did: "EFF5", name: Charge lid, values: {"c0": closed, "40": open}, confidence: C,
+   examples: [{raw: "40", value: open}]}
+- {id: turn_lamps, module: "1A01", did: "421B", name: Turn lamps (follows the blink),
+   values: {"00000000": "off", "ff00ff00": left, "00ff00ff": right, "ffffffff": hazards}, confidence: C,
+   examples: [{raw: "00ff00ff", value: right}]}
+- {id: hazard_button, module: "1A01", did: "4300", name: Hazard button, values: {"01": idle, "00": pressed}, confidence: C,
+   examples: [{raw: "00", value: pressed}]}
+- {id: stop_lamps, module: "1A01", did: "4223", name: Stop lamps, values: {"000000": "off", "ffff01": "on"}, confidence: C,
+   examples: [{raw: "ffff01", value: "on"}]}
+- {id: reverse_lamp, module: "1A01", did: "4224", name: Reversing lamp, values: {"00": "off", "ff": "on"}, confidence: C,
+   examples: [{raw: "ff", value: "on"}]}
+- {id: beam, module: "1A01", did: "42E7", name: Headlight beam, values: {"40": dipped, "50": main or flash}, confidence: C,
+   examples: [{raw: "50", value: main or flash}]}
+
+# -- chassis (VDDM 1601) ---------------------------------------------------
+- {id: epb_state, module: "1601", did: "E37B", name: Parking brake state, values: {"03": applied, "05": moving, "09": released}, confidence: C,
+   examples: [{raw: "09", value: released}]}
+- {id: epb_position, module: "1601", did: "2B1A", name: Parking brake position,
+   values: {"00000100": applied, "00000800": releasing, "00000200": applying, "00000400": released}, confidence: C,
+   examples: [{raw: "00000800", value: releasing}]}
+- {id: epb_lamp, module: "1601", did: "2B15", name: Parking brake lamp, values: {"00": applied, "03": moving, "01": released}, confidence: C,
+   examples: [{raw: "03", value: moving}]}
+- {id: epb_operations, module: "1601", did: "2B20", name: Parking brake operation counter, type: u, confidence: C,
+   examples: [{raw: "0000056b", value: 1387}]}
+
+# -- steering (SAS 1672) ---------------------------------------------------
+- {id: steering_angle, module: "1672", did: "3019", name: "Steering wheel angle (left positive, scale approximate)", type: s, scale: 0.0554, unit: deg, confidence: P,
+   examples: [{raw: "e1b5", value: -429.627}, {raw: "1e6e", value: 431.566}]}
+
+# -- headlamps (HCML 1BB3 left, HCMR 1BB4 right) ---------------------------
+- {id: headlamp_status, module: "1BB3,1BB4", did: "4368", name: Headlamp status,
+   values: {"11001400": dipped, "51001000": main or flash, "15001400": indicating}, confidence: C,
+   examples: [{raw: "51001000", value: main or flash}]}
+- {id: main_beam_ch3_duty, module: "1BB3,1BB4", did: "435C", name: Main-beam LED channel 3 duty, len: 1, type: u, unit: "%", confidence: C,
+   examples: [{raw: "643f20f1012900000086b0", value: 100}, {raw: "000640000000000000086a", value: 0}]}
+- {id: main_beam_ch4_duty, module: "1BB3,1BB4", did: "435D", name: Main-beam LED channel 4 duty, len: 1, type: u, unit: "%", confidence: C,
+   examples: [{raw: "000640000000000000066a", value: 0}]}
+- {id: indicator_ch11_duty, module: "1BB3,1BB4", did: "4364", name: Indicator LED channel 11 duty, len: 1, type: u, unit: "%", confidence: C,
+   examples: [{raw: "642850f1012900000086b0", value: 100}]}
+- {id: indicator_ch12_duty, module: "1BB3,1BB4", did: "4367", name: Indicator LED channel 12 duty, len: 1, type: u, unit: "%", confidence: C,
+   examples: [{raw: "000640002012d00000404b", value: 0}]}
+
+# -- doors (DDM 1A12 right front, PDM 1A13 left front, RLDM 1A21, RRDM 1A22) -
+- {id: front_window, module: "1A12,1A13", did: "4047", name: Front window status,
+   values: {"2e00": closed, "1f00": fully open, "0e00": moving or short-drop, "0f00": moving or short-drop}, confidence: C,
+   examples: [{raw: "1f00", value: fully open}]}
+- {id: rear_window, module: "1A21,1A22", did: "4048", name: Rear window status,
+   values: {"2e00": closed, "1f00": fully open, "0e00": moving or short-drop, "0f00": moving or short-drop}, confidence: C,
+   examples: [{raw: "0f00", value: moving or short-drop}]}
+- {id: door_handle, module: "1A12,1A13,1A21,1A22", did: "D90C", name: Door handle, len: 1,
+   values: {"01": deployed, "00": retracted, "ff": unknown (seen on driver door after lock)}, confidence: C,
+   examples: [{raw: "010000", value: deployed}]}
+- {id: front_window_stops, module: "1A12,1A13", did: "42C5", name: Front window end-stop counter, type: u, confidence: C,
+   examples: [{raw: "0aef", value: 2799}]}
+- {id: rear_window_stops, module: "1A21,1A22", did: "42C6", name: Rear window end-stop counter, type: u, confidence: C,
+   examples: [{raw: "01a9", value: 425}]}
+
+# -- tailgate (POT 1A15) ---------------------------------------------------
+- {id: tailgate_position, module: "1A15", did: "D906", name: "Tailgate position (0 closed, ~3198 open)", offset: 1, len: 2, type: u, confidence: C,
+   examples: [{raw: "010c7e0d34", value: 3198}, {raw: "0100000d34", value: 0}]}
+
+# -- passenger seat (SMP 1A28) ---------------------------------------------
+- {id: pass_seat_slide, module: "1A28", did: "40A3", name: Passenger seat slide position (rises moving forward), offset: 6, len: 2, type: u, confidence: P,
+   examples: [{raw: "00110000ffff02470670ffffffff", value: 583}]}
+- {id: pass_seat_switches, module: "1A28", did: "40A8", name: Passenger seat switches, offset: 1, len: 1, bits: {"40": forward}, confidence: P,
+   examples: [{raw: "c043fc", value: [forward]}, {raw: "c003fc", value: []}]}
+
+# -- climate (CCM 1A11) ----------------------------------------------------
+- {id: temp_flap_fl_target, module: "1A11", did: "980E", name: Front-left temperature flap target, len: 1, type: u, confidence: P,
+   examples: [{raw: "2500000100", value: 37}]}
+- {id: temp_flap_fl, module: "1A11", did: "D927", name: Front-left temperature flap position (actual), offset: 1, len: 1, type: u, confidence: P,
+   examples: [{raw: "434421", value: 68}]}
+- {id: temp_flap_fr, module: "1A11", did: "D929", name: Front-right temperature flap position (actual), offset: 1, len: 1, type: u, confidence: P,
+   examples: [{raw: "5a5b21", value: 91}]}
+
+# -- added 2026-11-11 (drives + full scan; evidence in local/references.md) ------------------
+- {id: vehicle_speed, module: "1631", did: "D003", name: Vehicle speed, type: u, scale: 0.0140625, unit: " km/h", confidence: C,
+   examples: [{raw: "1544", value: 76.55625}, {raw: "0000", value: 0}]}
+- {id: chassis_mode, module: "1614", did: "D90F", name: Chassis mode, values: {"00": Standard, "40": Firm, "30": Nimble}, confidence: C,
+   examples: [{raw: "40", value: Firm}, {raw: "30", value: Nimble}]}
+- {id: power_mode, module: "1A01", did: "DD0A", name: Power mode (same DID on every module), values: {"01": parked, "02": awake, "0d": driving}, confidence: P,
+   examples: [{raw: "0d", value: driving}]}
+- {id: odometer, module: "1A01", did: "DD01", name: Odometer (same DID on every module), type: u, unit: " km", confidence: P,
+   examples: [{raw: "004254", value: 16980}]}
+- {id: pack_current, module: "1635", did: "4802", name: HV pack current (+ = discharge), type: u, scale: 0.1, add: -1638.4, unit: " A", confidence: P,
+   examples: [{raw: "4000", value: 0}]}
+- {id: pack_voltage, module: "1635", did: "497C", name: HV pack voltage, type: u, scale: 0.01, unit: " V", confidence: P,
+   examples: [{raw: "a83e", value: 430.7}]}
+- {id: cell_v_mean, module: "1635", did: "DA1D", name: Mean cell voltage, type: u, scale: 0.000001, unit: " V", confidence: P,
+   examples: [{raw: "003bb140", value: 3.912}]}
+- {id: low_volt_rail, module: "1635", did: "4947", name: 12 V rail, type: u, scale: 0.001, unit: " V", confidence: P,
+   examples: [{raw: "39de", value: 14.814}]}
+- {id: drive_engaged, module: "1637", did: "E307", name: Inverter drive engaged (R or D), values: {"01": "no (P/N)", "02": "yes (R/D)"}, confidence: C,
+   examples: [{raw: "02", value: "yes (R/D)"}]}
+- {id: forward_selected, module: "1637", did: "E319", name: Forward gear (D), values: {"00": "D", "01": "not D"}, confidence: C,
+   examples: [{raw: "00", value: "D"}]}
+- {id: park_selected, module: "1201", did: "D938", name: Park (P) per infotainment, values: {"00": "P", "01": "not P", "02": "changing"}, confidence: C,
+   examples: [{raw: "00", value: "P"}]}

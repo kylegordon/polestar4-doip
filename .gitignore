@@ -1,0 +1,15 @@
+# Never published. scripts/prepublish-check.sh fails if any of these are tracked.
+# local/: unsanitised working notes, drafts, raw reads, third-party extracts.
+# NEXT.md: the owner's working state (personal session notes).
+# runs/: tool output; identity reads and logs can hold the VIN, SIM and modem IDs.
+# captures/ and pcaps: raw traffic, including the VIN.
+# external/: OBDb signal files (CC BY-SA 4.0); fetch from github.com/OBDb instead.
+local/
+runs/
+captures/
+external/
+*.pcap
+*.pcapng
+__pycache__/
+.pytest_cache/
+NEXT.md

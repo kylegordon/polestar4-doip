@@ -1,0 +1,47 @@
+# Modules that answer on the Polestar 4. addr is quoted hex.
+# label: the usual Volvo/Geely short name for a module at that address on related cars (a guess, not read from this car).
+# role: usual meaning of that label.
+# status: confirmed = behaviour checked on this car; unverified = label only; unknown = no label anywhere.
+- {addr: "1001", label: VCM, role: vehicle control module / gateway address, status: unverified}
+- {addr: "1011", label: TEM, role: telematics, status: unverified}
+- {addr: "1012", label: DMM, role: driver monitoring, status: unverified}
+- {addr: "1015", label: WAM, role: wireless access (key/phone), status: unverified}
+- {addr: "1023", label: WCM, role: wireless phone charger (part 6608017285), status: unverified}
+- {addr: "1201", label: IHU, role: infotainment (park D938), status: confirmed}
+- {addr: "1202", label: TVM, role: camera/vision, status: unverified}
+- {addr: "1212", label: AUD, role: audio amplifier, status: unverified}
+- {addr: "1213", label: RSEM, role: rear seat entertainment, status: unverified}
+- {addr: "1251", label: HUD, role: head-up display, status: unverified, note: answers a physical address scan but not the 1FFF broadcast}
+- {addr: "1301", label: ADCU3, role: Mobileye SuperVision driver assistance (never read EE13), status: unverified}
+- {addr: "1314", label: DVR 12V, role: dash camera recorder, status: unverified}
+- {addr: "1316", label: "?", role: "?", status: unknown, note: "pair with 1317 (same HW 6608445312, serials 7 apart); radar guess"}
+- {addr: "1317", label: "?", role: "?", status: unknown, note: pair with 1316}
+- {addr: "1344", label: FLR4, role: front radar, status: unverified}
+- {addr: "1601", label: VDDM, role: vehicle dynamics / parking brake, status: confirmed}
+- {addr: "1614", label: SUM, role: suspension (chassis mode D90F), status: confirmed}
+- {addr: "1615", label: SCL, role: steering column lock, status: unverified}
+- {addr: "1631", label: BCM, role: brake control (vehicle speed D003), status: confirmed}
+- {addr: "1633", label: EGSM, role: gear selector, status: unverified}
+- {addr: "1635", label: BECM, role: HV battery, status: confirmed}
+- {addr: "1637", label: IEM, role: inverter / e-machine (gear state E307/E319), status: confirmed}
+- {addr: "1650", label: CDD, role: charger and charge inlet, status: confirmed}
+- {addr: "1656", label: "?", role: "?", status: unknown}
+- {addr: "1670", label: PSCM, role: power steering, status: unverified}
+- {addr: "1672", label: SAS, role: steering angle sensor, status: confirmed}
+- {addr: "1675", label: "?", role: "?", status: unknown}
+- {addr: "1676", label: "?", role: "?", status: unknown, note: "same software part numbers and placeholder serial as 1670; second steering unit guess"}
+- {addr: "1701", label: BCM2, role: brake control 2, status: unverified}
+- {addr: "1A01", label: CEM, role: central electronics / body, status: confirmed}
+- {addr: "1A11", label: CCM, role: climate, status: confirmed}
+- {addr: "1A12", label: DDM, role: driver door (right front), status: confirmed}
+- {addr: "1A13", label: PDM, role: passenger door (left front), status: confirmed}
+- {addr: "1A15", label: POT, role: tailgate, status: confirmed}
+- {addr: "1A21", label: RLDM, role: left rear door, status: confirmed}
+- {addr: "1A22", label: RRDM, role: right rear door, status: confirmed}
+- {addr: "1A27", label: SMD, role: driver seat, status: unverified}
+- {addr: "1A28", label: SMP, role: passenger seat, status: confirmed}
+- {addr: "1A29", label: SMB, role: rear seat, status: unverified}
+- {addr: "1A30", label: ILCM, role: interior lighting, status: unverified}
+- {addr: "1BB3", label: HCML, role: left headlamp, status: confirmed}
+- {addr: "1BB4", label: HCMR, role: right headlamp, status: confirmed}
+- {addr: "1C01", label: SRS, role: airbags, status: unverified}

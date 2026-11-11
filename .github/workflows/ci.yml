@@ -1,0 +1,22 @@
+name: ci
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Nothing identifying is tracked
+        run: scripts/prepublish-check.sh
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest==8.3.4 pyyaml==6.0.2
+      - name: Offline tests (simulated gateway)
+        env:
+          PYTHONPATH: tool
+          P4_ROOT: ${{ github.workspace }}
+        run: python -m pytest -p no:cacheprovider tool/tests
