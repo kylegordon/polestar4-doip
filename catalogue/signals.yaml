@@ -207,3 +207,25 @@
 # Bonnet: same byte, bit 80, seen once each way on 2026-11-12 (42 -> c2 open; e2 -> 62 shut).
 - {id: bonnet_ajar, module: "1A01", did: "42F2", name: Bonnet open, bits: {"80": bonnet}, confidence: P,
    examples: [{raw: "c2", value: [bonnet]}, {raw: "62", value: []}]}
+
+# -- suspension 1614 (drives 2026-11-11; P) and outside temperature (issue #2 offset, checked here) ------------------
+# D93A: four per-corner bytes, ~0x28 in Standard, ~0x3c-0x55 in Firm, brief spikes on road inputs: damper command? Corner order unknown.
+- {id: damper_cmd_c1, module: "1614", did: "D93A", offset: 0, len: 1, name: "Damper command? corner 1 (order unknown)", type: u, confidence: P,
+   examples: [{raw: "3c3c3b3b", value: 60}, {raw: "28282929", value: 40}]}
+- {id: damper_cmd_c2, module: "1614", did: "D93A", offset: 1, len: 1, name: "Damper command? corner 2 (order unknown)", type: u, confidence: P,
+   examples: [{raw: "3c3c3b3b", value: 60}, {raw: "28282929", value: 40}]}
+- {id: damper_cmd_c3, module: "1614", did: "D93A", offset: 2, len: 1, name: "Damper command? corner 3 (order unknown)", type: u, confidence: P,
+   examples: [{raw: "3c3c3b3b", value: 59}, {raw: "28282929", value: 41}]}
+- {id: damper_cmd_c4, module: "1614", did: "D93A", offset: 3, len: 1, name: "Damper command? corner 4 (order unknown)", type: u, confidence: P,
+   examples: [{raw: "3c3c3b3b", value: 59}, {raw: "28282929", value: 41}]}
+# D902: four signed per-corner values, moving constantly while driving and dipping under braking: ride height or body motion?
+- {id: corner_motion_c1, module: "1614", did: "D902", offset: 0, len: 2, name: "Ride height or motion? corner 1 (order unknown)", type: s, confidence: P,
+   examples: [{raw: "ffe2ffefffe5fff4", value: -30}]}
+- {id: corner_motion_c2, module: "1614", did: "D902", offset: 2, len: 2, name: "Ride height or motion? corner 2 (order unknown)", type: s, confidence: P,
+   examples: [{raw: "ffe2ffefffe5fff4", value: -17}]}
+- {id: corner_motion_c3, module: "1614", did: "D902", offset: 4, len: 2, name: "Ride height or motion? corner 3 (order unknown)", type: s, confidence: P,
+   examples: [{raw: "ffe2ffefffe5fff4", value: -27}]}
+- {id: corner_motion_c4, module: "1614", did: "D902", offset: 6, len: 2, name: "Ride height or motion? corner 4 (order unknown)", type: s, confidence: P,
+   examples: [{raw: "ffe2ffefffe5fff4", value: -12}]}
+- {id: outside_temp_becm, module: "1635", did: "EE07", name: Outside air temperature, type: u, scale: 0.01, add: -50, unit: " C", confidence: P,
+   examples: [{raw: "1644", value: 7.0}]}

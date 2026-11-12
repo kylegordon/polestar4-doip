@@ -182,6 +182,7 @@ DEFAULT_DIDS = 8192  # DIDs in the tool's default scan ranges
 def slot_secs(slot, watch):
     """Rough seconds for one scan slot plus the watch that follows it (info-block slots run back to back)."""
     mod, _, rng = slot.partition(":")
+    rng = rng[2:] if rng.startswith("X:") else rng  # phase-2 slot marker
     n = DEFAULT_DIDS
     if rng:
         try:

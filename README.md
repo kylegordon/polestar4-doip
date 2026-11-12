@@ -8,6 +8,7 @@ Read-only mapping of a Polestar 4's diagnostic data over DoIP (ISO 13400) throug
 - [`catalogue/modules.yaml`](catalogue/modules.yaml): every module address that answers, with a label and status confirmed / unverified / unknown
 - [`docs/did-map.csv`](docs/did-map.csv): every DID that answered on each module (or exists but refused), with status and response length; most are not decoded yet
 - [`docs/modules.md`](docs/modules.md): what each module is and the evidence
+- [`docs/findings.md`](docs/findings.md): everything learned so far, module by module, including unconfirmed leads and open questions
 - [`DISCOVERIES.md`](DISCOVERIES.md): what each release (a batch of sessions at the car) found
 
 > [!WARNING]

@@ -6,6 +6,17 @@ Confidence follows `catalogue/signals.yaml`: **C** = the same change seen at lea
 
 <!-- New entries go directly below this line, newest first. The heading must be "## <version> - <title>". -->
 
+## 2026.11.12.3 - Findings write-up and suspension signals
+
+No new car session: this publishes what was already known but only in working notes.
+
+**New document**
+- [`docs/findings.md`](docs/findings.md): every module with what it is, its signals, leads (unconfirmed observations, with how strong each is), what was looked for and not found, hazards, and the open questions (tyre pressure, wheel speeds, yaw, wipers, seat occupancy, surround view, charge port cover).
+
+**New signals (P)**
+- Suspension `1614` (drives on 2026-11-11): `D93A` four per-corner bytes, about `0x28` in Standard and `0x3c`-`0x55` in Firm with spikes on road inputs (damper command?); `D902` four signed per-corner values moving constantly and dipping under braking (ride height or body motion?). Corner order unknown.
+- Outside air temperature `1635 EE07`, u16 x 0.01 - 50 C (offset from issue #2's follow-up; 7.0 C on a November night here, where -40 would give 17 C).
+
 ## 2026.11.12.2 - Brakes, mirrors, CEM and module names (first pass)
 
 Evening of 2026-11-12, parked, plus an unattended session rotating scans and watches. Car: Polestar 4 **Coupe** (no rear window), customer software release 4.2.11 (EMEA). Much of this is single-pass and speculative, marked P: shared so others can test it on their cars.
@@ -32,7 +43,7 @@ Evening of 2026-11-12, parked, plus an unattended session rotating scans and wat
 
 **Leads (not in the catalogue)**
 - Displayed SoC is about 1.9 points below `1635 4801` (dash ticked 68% -> 67% at a raw 68.9%). One point so far.
-- CEM `4xxx` block: a group of DIDs whose labels on related cars suggest wiper, washer, washer-fluid level, rain sensor and light sensor; none moved in a first wiper/washer test, but that test ran before the CEM scan. To retest.
+- CEM `4000`-`45FF`: 177 DIDs answered for the first time; the wiper, washer and rain/light-sensor state may be among them. None of the CEM DIDs known before moved in a first wiper/washer test, and that test ran before the CEM scan. To retest.
 - `1601 D9AC`, `D921`/`D935`, `D989` and `D901` moved while driving (wheel speed / yaw candidates); `E3C7`/`E46A` sit at `4000` at rest (offset-binary). The Polestar 2 wheel-speed DIDs `2B06`-`2B09` are not supported here.
 - `1601 D282` and `D911`-`D913` are not tyre pressures; no DID read so far matches the 2.3 bar the app shows. `2800`-`28FF` on `1A01`/`1601` still to read.
 
