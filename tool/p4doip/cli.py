@@ -1,8 +1,10 @@
 """p4 — read-only DoIP discovery tools for the Polestar 4. See README.md."""
 import argparse
+import datetime
 import glob
 import json
 import os
+import re
 import sys
 import time
 
@@ -417,6 +419,115 @@ def cmd_import_legacy(args):
         print("%s: %d DIDs" % (tgt, n))
 
 
+# -- offline analysis ----------------------------------------------------------
+VIN_LIKE = re.compile(r"(?:YSM|LPS|LRW|YV1)[A-HJ-NPR-Z0-9]{14}", re.I)  # Polestar/Volvo/Geely WMIs
+LONG_NUMBER = re.compile(r"\d(?:[ .-]?\d){9,}")  # ICCID, IMEI, phone numbers, serials; separators allowed
+EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+PHONE = re.compile(r"\+[1-9][0-9]{1,2}[ -]?[0-9]{2,4}[ -]?[0-9]{3,4}[ -]?[0-9]{3,4}")
+
+
+def readable_text(hexdata: str) -> str:
+    """Printable ASCII in a DID value with identifiers masked, or '' if the value isn't mostly text.
+
+    Masks VIN-like strings, email addresses, phone numbers and any run of 10+ digits (spaces, dots or dashes allowed between them), so the output can go into a web
+    search. Wider than scripts/prepublish-check.sh on purpose.
+    """
+    try:
+        raw = bytes.fromhex(hexdata)
+    except ValueError:
+        return ""
+    raw = raw.strip(b"\x00\xff\x20")
+    if len(raw) < 4 or sum(1 for c in raw if 32 <= c < 127) / len(raw) < 0.9:
+        return ""
+    s = "".join(chr(c) if 32 <= c < 127 else "." for c in raw)
+    if not re.search(r"[A-Za-z0-9]{3}", s):
+        return ""
+    s = VIN_LIKE.sub("[VIN hidden]", s)
+    s = EMAIL.sub("[email hidden]", s)
+    s = PHONE.sub("[phone hidden]", s)
+    return LONG_NUMBER.sub("[number hidden]", s)
+
+
+def cmd_strings(args):
+    """Readable text in every answered DID of the given modules, identifiers masked.
+    Identity DIDs (part numbers, serials, VIN) are left out: serials identify this car."""
+    skip = set(IDENTITY_DIDS) | {VIN_DID}
+    for tgt in targets(args):
+        for did, rec in sorted(store.load_scans(tgt).items()):
+            if rec["status"] != "ok" or did in skip:
+                continue
+            text = readable_text(rec.get("data", ""))
+            if text:
+                print("%04X:%04X %s" % (tgt, did, text))
+
+
+# Watch lines that record a value change: CHANGE, and the hidden kinds (MUTED, noisy, baseline-noise).
+WATCH_LINE = re.compile(r"^(\d\d):(\d\d):(\d\d) (\S+) (CHANGE|MUTED after|noisy|baseline-noise) (.*)$")
+CLOCK = re.compile(r"^(\d\d):(\d\d):(\d\d) ")
+
+
+def watch_changes(path: str, day: datetime.date):
+    """(changes, first, last) of a watch log: changes are (local time, text) for every line that records a
+    value change; first/last are the log's time span. Log lines carry only the clock time, so the date
+    comes from the run directory and rolls over when the clock goes backwards by more than 12 h."""
+    out = []
+    first = prev = None
+    with open(path) as f:
+        for line in f:
+            m = CLOCK.match(line)
+            if not m:
+                continue
+            t = datetime.datetime.combine(day, datetime.time(*map(int, m.groups())))
+            while prev is not None and t < prev - datetime.timedelta(hours=12):
+                t += datetime.timedelta(days=1)
+            first = first or t
+            prev = t
+            c = WATCH_LINE.match(line.rstrip("\n"))
+            if c:
+                kind = "" if c.group(5) == "CHANGE" else c.group(5).split()[0] + " "
+                out.append((t, "%s %s%s" % (c.group(4), kind, c.group(6))))
+    return out, first, prev
+
+
+def cmd_correlate(args):
+    """For each mark of a run day, the watch changes from --before s before it to --after s after it.
+    Reads watch logs from that day and the day before (a watch started before midnight logs there)."""
+    try:
+        day = datetime.date.fromisoformat(args.date)
+    except ValueError:
+        raise SystemExit("date must be YYYY-MM-DD, got %r" % args.date)
+    if any(os.path.basename(n) != n for n in args.logs):
+        raise SystemExit("log names are file names inside runs/<date>/, not paths")
+    d = os.path.join(store.root(), "runs", day.isoformat())
+    marks_path = os.path.join(d, "marks.jsonl")
+    if not os.path.exists(marks_path):
+        raise SystemExit("no marks for %s (%s)" % (args.date, marks_path))
+    if args.logs:
+        logs = [(day, os.path.join(d, n)) for n in args.logs]
+    else:
+        prev_day = day - datetime.timedelta(days=1)
+        logs = [(dd, p) for dd in (prev_day, day)
+                for p in sorted(glob.glob(os.path.join(store.root(), "runs", dd.isoformat(), "watch-*.log")))]
+    if not logs:
+        raise SystemExit("no watch logs in %s" % d)
+    changes, spans = [], []
+    for dd, p in logs:
+        ch, first, last = watch_changes(p, dd)
+        changes += [(t, os.path.basename(p), text) for t, text in ch]
+        if first:
+            spans.append((first, last))
+    changes.sort()
+    lo, hi = datetime.timedelta(seconds=args.before), datetime.timedelta(seconds=args.after)
+    for mark in store.read_jsonl(marks_path):
+        mt = datetime.datetime.fromisoformat(mark["t"]).astimezone().replace(tzinfo=None)
+        near = [(t, log, text) for t, log, text in changes if mt - lo <= t <= mt + hi]
+        covered = any(a <= mt <= b for a, b in spans)
+        print("== %s %s (%d changes%s)" % (mt.strftime("%H:%M:%S"), mark["mark"], len(near),
+                                          "" if covered else "; no watch log covers this time"))
+        for t, log, text in near:
+            print("  %+4ds %s  (%s)" % ((t - mt).total_seconds(), text, log))
+
+
 def cmd_signals(args):
     sigs = decode.load()
     for s in sigs:
@@ -425,7 +536,8 @@ def cmd_signals(args):
 
 
 def main(argv=None):
-    p = argparse.ArgumentParser(prog="p4", description=__doc__)
+    # allow_abbrev=False: `--ho X` must not stand in for `--host X` (the ./p4 wrapper only knows the full names).
+    p = argparse.ArgumentParser(prog="p4", description=__doc__, allow_abbrev=False)
     p.add_argument("--host", default=os.environ.get("P4_HOST", "169.254.19.1"))
     p.add_argument("--port", type=int, default=int(os.environ.get("P4_PORT", "13400")))
     p.add_argument("--retries", type=int, default=3, help="connection attempts before giving up")
@@ -488,6 +600,17 @@ def main(argv=None):
     s = sub.add_parser("import-legacy", help="convert local/reads/*sweep*.txt from 2026-11-10 into runs/")
     s.add_argument("--date", default="2026-11-10")
     s.set_defaults(fn=cmd_import_legacy)
+
+    s = sub.add_parser("strings", help="readable text in answered DIDs, identifiers masked (offline)")
+    s.add_argument("targets", nargs="+", help="module addresses, or 'all'")
+    s.set_defaults(fn=cmd_strings)
+
+    s = sub.add_parser("correlate", help="watch CHANGE lines near each mark of a run day (offline)")
+    s.add_argument("date", help="run day, YYYY-MM-DD")
+    s.add_argument("logs", nargs="*", help="watch log file names in that day (default: all watch-*.log)")
+    s.add_argument("--before", type=float, default=2.0, help="seconds before a mark to include")
+    s.add_argument("--after", type=float, default=15.0, help="seconds after a mark to include")
+    s.set_defaults(fn=cmd_correlate)
 
     s = sub.add_parser("signals", help="list and validate catalogue/signals.yaml")
     s.set_defaults(fn=cmd_signals)

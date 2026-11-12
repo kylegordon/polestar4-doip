@@ -47,8 +47,10 @@ DoIP gateway logical address `1001`, tester `0E80`, routing activation type `00`
 | `./p4 snapshot before 1316 1317`, do the action, `./p4 snapshot after 1316 1317`, then `./p4 diff before after` | Compare two moments |
 | `./p4 mark "left front door"` | Timestamp an action in `local/session-log.md` and `runs/<date>/marks.jsonl` (works while a watch is running) |
 | `./p4 signals` | List and validate the signal catalogue |
+| `./p4 correlate 2026-11-11` | For each `mark` that day, the watch `CHANGE` lines from 2 s before to 15 s after (`--before`, `--after`; offline) |
+| `./p4 strings 1316` | Readable text in the answered DIDs, with VIN, SIM and IMEI-like values masked (offline) |
 
-The tool can only send UDS reads (0x22, 0x19, 0x3E); anything else, and any read on `BLOCKED_READS`, is refused in `tool/p4doip/client.py` before it reaches the socket, and the tests cover that. Live commands run as container `p4-live`, so a second one fails instead of knocking the first off; `docker stop p4-live` frees the gateway. Disconnect any other diagnostic tool first.
+The tool can only send UDS reads (0x22, 0x19, 0x3E); anything else, and any read on `BLOCKED_READS`, is refused in `tool/p4doip/client.py` before it reaches the socket, and the tests cover that. Every command except the offline ones (`diff`, `mark`, `known`, `signals`, `strings`, `correlate`) runs as container `p4-live`, so a second one fails instead of knocking the first off; `docker stop p4-live` frees the gateway. Disconnect any other diagnostic tool first.
 
 To capture alongside, tcpdump needs capture rights on the adaptor (`CAP_NET_RAW`), e.g. `sudo tcpdump -i <adaptor> -s 0 -U -w captures/doip-%Y%m%d-%H%M%S.pcap -G 1800`. Pcaps contain the VIN.
 

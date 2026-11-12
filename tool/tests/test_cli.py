@@ -1,4 +1,5 @@
 import json
+import os
 
 import pytest
 
@@ -315,3 +316,117 @@ def test_snapshot_and_watch_never_store_the_vin(p4, root, sim):
     p4("watch", "1601:F190", "--passes", "1", "--baseline", "0", "--name", "v", "--show-first")
     assert "59534d" not in next(root.glob("runs/*/snap-v.json")).read_text()
     assert "59534d" not in next(root.glob("runs/*/watch-v.log")).read_text()
+
+
+# -- offline analysis ---------------------------------------------------------
+def test_global_options_cannot_be_abbreviated(root):
+    # The ./p4 wrapper finds the subcommand by skipping the full option names only.
+    with pytest.raises(SystemExit):
+        main(["--ho", "127.0.0.1", "signals"])
+
+
+def test_strings_masks_identifiers(root, capsys):
+    vin = "YSM" + "4ZPAA0XX000000"  # split: no whole VIN in this file
+    iccid, imei = "8944" + "12345678" + "90123456", "1234567" + "89012345"  # split so prepublish-check passes
+    rows = [("E001", ("SW " + vin).encode().hex()), ("E002", iccid.encode().hex()),
+            ("E003", b"BOOT v1.2.3".hex()), ("E004", "0102030405"), ("E005", ("IMEI:" + imei).encode().hex()),
+            ("E006", ("vin " + vin.lower()).encode().hex()), ("E007", ("tel +" + "44 7700 900123").encode().hex()),
+            ("E008", ("id " + "35-209900-" + "176148-1").encode().hex()), ("E009", ("to a.b" + "@example.com").encode().hex()),
+            ("F18C", b"SER 0216A0038".hex()), ("F190", ("ABC" + "4ZPAA0XX000000").encode().hex())]
+    for did, data in rows:
+        store.append_jsonl(store.scan_path(0x1316, "2026-11-11"), {"tgt": "1316", "did": did, "status": "ok", "data": data})
+    main(["strings", "1316"])
+    out = capsys.readouterr().out
+    assert "1316:E001 SW [VIN hidden]" in out
+    assert "1316:E002 [number hidden]" in out
+    assert "1316:E003 BOOT v1.2.3" in out
+    assert "E004" not in out
+    assert "1316:E005 IMEI:[number hidden]" in out
+    assert "1316:E006 vin [VIN hidden]" in out
+    assert "1316:E007 tel [phone hidden]" in out
+    assert "1316:E008 id [number hidden]" in out
+    assert "1316:E009 to [email hidden]" in out
+    assert "F18C" not in out and "F190" not in out  # identity DIDs (serials, VIN) are never printed
+    assert "4ZPAA0" not in out.upper() and "8944123" not in out and "1234567890" not in out and "900123" not in out
+
+
+def write_day(root, marks, log_lines, day="2026-11-11", log="watch-drive.log"):
+    import datetime
+    d = root / "runs" / day
+    d.mkdir(parents=True, exist_ok=True)
+    with open(d / "marks.jsonl", "w") as f:
+        for hms, text in marks:
+            t = datetime.datetime.combine(datetime.date.fromisoformat(day), datetime.time(*hms)).astimezone()
+            f.write(json.dumps({"t": t.isoformat(timespec="seconds"), "mark": text}) + "\n")
+    if log_lines:
+        (d / log).write_text("".join(l + "\n" for l in log_lines))
+
+
+def test_correlate_lists_changes_near_each_mark(root, capsys):
+    write_day(root, [((16, 0, 10), "chassis Firm"), ((16, 5, 0), "nothing happens")], [
+        "16:00:00 connected: 2 reads per pass -> x",
+        "16:00:01 1614:D90F 00",
+        "16:00:07 1631:D003 CHANGE 0000 -> 0100",       # 3 s before: outside the default 2 s
+        "16:00:09 1001:D111 baseline-noise 96 -> 97",
+        "16:00:11 1001:D112 MUTED after 01 -> 02 (changing more than 5 times in 10s; still logged)",
+        "16:00:12 1614:D90F CHANGE 00 -> 40",
+        "16:00:26 1631:D003 CHANGE 0100 -> 0200",       # 16 s after: outside the default 15 s
+    ])
+    main(["correlate", "2026-11-11"])
+    out = capsys.readouterr().out
+    assert "== 16:00:10 chassis Firm (3 changes)" in out
+    assert "  +2s 1614:D90F 00 -> 40  (watch-drive.log)" in out
+    assert "  -1s 1001:D111 baseline-noise 96 -> 97" in out
+    assert "  +1s 1001:D112 MUTED 01 -> 02" in out
+    assert "D003" not in out
+    assert "== 16:05:00 nothing happens (0 changes; no watch log covers this time)" in out
+    main(["correlate", "2026-11-11", "--before", "5"])
+    assert "  -3s 1631:D003 0000 -> 0100" in capsys.readouterr().out
+
+
+def test_correlate_rolls_over_midnight(root, capsys):
+    write_day(root, [((23, 59, 58), "late")], ["23:59:50 connected", "00:00:03 1614:D90F CHANGE 00 -> 40"])
+    main(["correlate", "2026-11-11"])
+    out = capsys.readouterr().out
+    assert "== 23:59:58 late (1 changes)" in out
+    assert "  +5s 1614:D90F 00 -> 40" in out
+
+
+def test_correlate_reads_a_watch_started_the_day_before(root, capsys):
+    write_day(root, [], ["23:59:50 connected", "00:00:03 1614:D90F CHANGE 00 -> 40", "00:01:00 1614:D90F CHANGE 40 -> 00"])
+    write_day(root, [((0, 0, 1), "after midnight")], [], day="2026-11-12")
+    main(["correlate", "2026-11-12"])
+    out = capsys.readouterr().out
+    assert "== 00:00:01 after midnight (1 changes)" in out
+    assert "  +2s 1614:D90F 00 -> 40" in out
+
+
+def test_correlate_refuses_paths_and_bad_dates(root):
+    write_day(root, [((16, 0, 0), "m")], ["16:00:00 connected"])
+    with pytest.raises(SystemExit, match="file names"):
+        main(["correlate", "2026-11-11", "../x.log"])
+    with pytest.raises(SystemExit, match="YYYY-MM-DD"):
+        main(["correlate", "../2026"])
+
+
+def test_correlate_without_marks_says_so(root):
+    with pytest.raises(SystemExit, match="no marks"):
+        main(["correlate", "2026-11-11"])
+
+
+# -- ./p4 wrapper: the one-tester lock ------------------------------------------
+@pytest.mark.parametrize("argv,locked", [
+    (["scan", "1316"], True), (["--host", "x", "scan", "1316"], True), (["--host=x", "scan", "1316"], True),
+    (["--retry-wait", "1", "watch", "1601"], True), (["--ho", "x", "scan", "1316"], True), (["identify", "all"], True),
+    (["strings", "all"], False), (["--retries", "3", "correlate", "2026-11-11"], False), (["mark", "x"], False),
+    (["known", "1316"], False), (["diff", "a", "b"], False), (["signals"], False), (["--help"], False),
+])
+def test_wrapper_lock(tmp_path, argv, locked):
+    import subprocess
+    from conftest import REPO
+    stub = tmp_path / "docker"
+    stub.write_text('#!/bin/sh\n[ "$1" = image ] && exit 0\necho "$@"\n')
+    stub.chmod(0o755)
+    env = dict(os.environ, PATH="%s:%s" % (tmp_path, os.environ["PATH"]))
+    out = subprocess.run(["sh", os.path.join(REPO, "p4"), *argv], env=env, capture_output=True, text=True, check=True).stdout
+    assert ("--name p4-live" in out) == locked

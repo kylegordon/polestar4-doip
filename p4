@@ -30,7 +30,9 @@ done
 set -- --rm --init --user "$(id -u):$(id -g)" --network host -e P4_HOST -e P4_PORT \
   -v /etc/localtime:/etc/localtime:ro -v "$ROOT":/w "$IMG" "$@"
 # One tester at a time: commands that talk to the car share a container name, so a second one fails fast.
+# Listed the other way round (offline commands are exempt) so anything unrecognised takes the lock.
 case "$SUB" in
-  discover|identify|scan|dtc|snapshot|watch) set -- --name p4-live "$@" ;;
+  ""|diff|mark|known|signals|strings|correlate|import-legacy) ;;  # "" = no subcommand (--help)
+  *) set -- --name p4-live "$@" ;;
 esac
 exec docker run "$@"
