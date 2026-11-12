@@ -2,6 +2,14 @@
 
 Read-only mapping of a Polestar 4's diagnostic data over DoIP (ISO 13400) through the OBD port: which modules answer, which DIDs they hold, and what the DIDs mean. Mapped on one 2026 UK car; other markets and software versions may differ.
 
+**The data:**
+
+- [`catalogue/signals.yaml`](catalogue/signals.yaml): decoded signals (module, DID, encoding, real examples), each marked C (confirmed) or P (provisional)
+- [`catalogue/modules.yaml`](catalogue/modules.yaml): every module address that answers, with a label and status confirmed / unverified / unknown
+- [`docs/did-map.csv`](docs/did-map.csv): every DID that answered on each module (or exists but refused), with status and response length; most are not decoded yet
+- [`docs/modules.md`](docs/modules.md): what each module is and the evidence
+- [`DISCOVERIES.md`](DISCOVERIES.md): what each release (a batch of sessions at the car) found
+
 > [!WARNING]
 > **Never read DID `EE13` on module `1301`** (the Mobileye driver assistance ECU). On this car it knocked that ECU off the network for about a minute, twice, while parked. A broadcast to `1FFF` or a range sweep that includes `EE13` also reaches `1301`. The tool refuses this read (`BLOCKED_READS` in `tool/p4doip/client.py`). `1635:EE13` (HV discharge counter) is a different module and is safe.
 >
