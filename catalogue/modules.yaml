@@ -20,17 +20,17 @@
 - {addr: "1601", label: VDDM, role: vehicle dynamics / parking brake, status: confirmed}
 - {addr: "1614", label: SUM, role: suspension (chassis mode D90F), status: confirmed}
 - {addr: "1615", label: SCL, role: steering column lock, status: unverified}
-- {addr: "1631", label: BCM, role: brake control (vehicle speed D003), status: confirmed}
+- {addr: "1631", label: BCM, role: "brake control? (vehicle speed D003; a US owner reads F80A DMC2, drive motor controller)", status: confirmed}
 - {addr: "1633", label: EGSM, role: gear selector, status: unverified}
 - {addr: "1635", label: BECM, role: HV battery, status: confirmed}
 - {addr: "1637", label: IEM, role: inverter / e-machine (gear state E307/E319), status: confirmed}
 - {addr: "1650", label: CDD, role: charger and charge inlet, status: confirmed}
 - {addr: "1656", label: "?", role: "?", status: unknown}
 - {addr: "1670", label: PSCM, role: power steering, status: unverified}
-- {addr: "1672", label: SAS, role: steering angle sensor, status: confirmed}
+- {addr: "1672", label: SAS, role: "steering angle (3019 also on 1670/1676; a US owner reads F80A CHCM, chassis controller)", status: confirmed}
 - {addr: "1675", label: "?", role: "?", status: unknown}
 - {addr: "1676", label: "?", role: "?", status: unknown, note: "same software part numbers and placeholder serial as 1670; second steering unit guess"}
-- {addr: "1701", label: BCM2, role: brake control 2, status: unverified}
+- {addr: "1701", label: BSCM, role: "brake system (F80A reads BSCM-BrakeSystem, 2026-11-12)", status: confirmed}
 - {addr: "1A01", label: CEM, role: central electronics / body, status: confirmed}
 - {addr: "1A11", label: CCM, role: climate, status: confirmed}
 - {addr: "1A12", label: DDM, role: driver door (right front), status: confirmed}

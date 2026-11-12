@@ -6,6 +6,43 @@ Confidence follows `catalogue/signals.yaml`: **C** = the same change seen at lea
 
 <!-- New entries go directly below this line, newest first. The heading must be "## <version> - <title>". -->
 
+## 2026.11.12.2 - Brakes, mirrors, CEM and module names (first pass)
+
+Evening of 2026-11-12, parked, plus an unattended session rotating scans and watches. Car: Polestar 4 **Coupe** (no rear window), customer software release 4.2.11 (EMEA). Much of this is single-pass and speculative, marked P: shared so others can test it on their cars.
+
+**Coverage**
+- 4,297 DIDs now answer (`docs/did-map.csv`), up from 3,270. Full default-range scans finished on the brake controller `1601` (689), CEM `1A01` (313, from 40), climate `1A11` (138), rear doors `1A21`/`1A22` (155 each, mirror images apart from `4240`/`4241`), all three seat modules and most of the left headlamp.
+- Standard OBD-on-UDS info blocks (`F400`-`F4FF`, `F800`-`F8FF`) read on 42 modules (`F802`, the VIN, skipped). Unlike the US car in issue #2, almost nothing answers here: only `1701` (`F80A` = `BSCM-BrakeSystem`, plus PIDs `0D`, `1C`, `30`, `31`, `42`, `49`; `F400` = `00080011` and `F440` = `40800001`, identical to the US car), `1675` (`F40D` speed), `1601` (`F800` info-type mask only) and `1670`/`1676` (`F804`, an all-zero calibration ID). So there are no `F80A` module names on this car for most modules, and no `F4B2` battery-health PID.
+
+**New signals (C)**
+- Door mirrors, both sides (`1A12` right, `1A13` left): fold state `4053` (02 unfolded, 00 moving, 01 folded), fold motor `4052` (03/04 = direction, mirrored between sides, 00 stopped), heating `4051` (01 off, 02 on). Folded/unfolded and heating on/off twice each.
+
+**New signals (P, single pass)**
+- Bonnet: bit `0x80` of the ajar byte `1A01 42F2` (seen once each way; catalogued as its own P signal).
+- Brake system `1701`: `FE08` = four signed channels that rise with pedal force, two higher than the other two (off ~0; light 118/128/-10/-3; hard 462/469/252/259): looks like per-wheel or per-circuit brake pressure, front-biased. `D905`/`D906` = two sensors in step (about 0 -> 300 -> 1030): pedal travel or force. `D945`, `D946`, `D948` also step with force. `2B00` 00 -> 42 with the pedal pressed.
+- Brake controller `1601`: `E391`/`E392` fall together with pedal force; `E39D`, `E4AF`, `E362`, `EE2B`/`EE2C` also step; `E340`, `E455`/`E457` switch-like.
+- Driver seat belt buckled: bit `0x02` of `1C01 D112`.
+- `1701 F40D` speed (OBD PID 0D) and `F442` supply voltage (PID 42, 14.26 V).
+- Customer software release: `1001 D0D0` holds "4.2.11" as ASCII hex digits written in ASCII (also as text in a telematics update record, `1011 FD4A`). Not in the catalogue (the decoder has no encoding for it).
+
+**From issue #2 (a US owner's findings), checked against this car's recorded values**
+- Agree: `1635 DA31` cell-group voltages (sum = `497C` within 0.05 V), `4907`/`4908` highest/lowest cell index + mV, `EE83` pack temperatures, `EE02` 12 V in mV, `489C`/`489E` charge/discharge power limits (u32 x 0.001 W; this car's charge limit is lower than theirs at the same SoC), `EE13` in mAh (unit provisional: one parked window), `1650 EE71` = lifetime AC energy. In the catalogue at P: `4907`/`4908`, `EE02`, `489C`/`489E`; `EE13` stays C with the unit noted, and `EE71` has corrected text (the array DIDs `DA31` and `EE83` are not, as the decoder handles scalars only).
+- Differ: `DD0A` `0d` is "on" (also in P, R and N), not "driving"; `1201 D938` `01` = not in P (also when stopped), not "moving"; `1635 F45B` reads a constant `FF` here.
+- Module labels: `1631` and `1672` may be the drive motor controller 2 and chassis controller (their `F80A` names); not readable here, so ours stay with a note.
+
+**Leads (not in the catalogue)**
+- Displayed SoC is about 1.9 points below `1635 4801` (dash ticked 68% -> 67% at a raw 68.9%). One point so far.
+- CEM `4xxx` block: a group of DIDs whose labels on related cars suggest wiper, washer, washer-fluid level, rain sensor and light sensor; none moved in a first wiper/washer test, but that test ran before the CEM scan. To retest.
+- `1601 D9AC`, `D921`/`D935`, `D989` and `D901` moved while driving (wheel speed / yaw candidates); `E3C7`/`E46A` sit at `4000` at rest (offset-binary). The Polestar 2 wheel-speed DIDs `2B06`-`2B09` are not supported here.
+- `1601 D282` and `D911`-`D913` are not tyre pressures; no DID read so far matches the 2.3 bar the app shows. `2800`-`28FF` on `1A01`/`1601` still to read.
+
+**Hazards**
+- Still possible, not repeated: `1601` `D927`-`D92B` (see 2026.11.12.1). Scans here keep skipping them.
+
+**Corrections**
+- `1701` is the brake system (BSCM), not "brake control 2".
+- The bonnet bit, `EE13` units and `EE71` meaning above replace earlier catalogue text.
+
 ## 2026.11.12.1 - Doors and brake controller, first pass
 
 One drive on 2026-11-12 with an unattended session rotating default-range scans and drive watches.

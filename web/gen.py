@@ -28,7 +28,7 @@ pre{background:var(--card);padding:10px;overflow-x:auto;white-space:pre-wrap;wor
 
 
 def page(name, title, body, refresh=30):
-    nav = '<nav><a href="index.html">Overview</a><a href="live.html">Live</a><a href="findings.html">Findings</a><a href="signals.html">Signals</a><a href="text.html">Text</a><a href="marks.html">Timeline</a><a href="logs.html">Watch logs</a></nav>'
+    nav = '<nav><a href="index.html">Overview</a><a href="live.html">Live</a><a href="findings.html">Findings</a><a href="signals.html">Signals</a><a href="research.html">Research</a><a href="text.html">Text</a><a href="marks.html">Timeline</a><a href="logs.html">Watch logs</a></nav>'
     doc = ('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
            '<meta http-equiv="refresh" content="%d"><title>%s</title><style>%s</style></head><body>%s<h1>%s</h1>%s'
            '<p class="mut">Generated %s; refreshes every %ds.</p></body></html>') % (
@@ -142,6 +142,91 @@ def scan_status(catalogue=()):
     return body
 
 
+def status_lines():
+    """The first three lines of local/web-status.txt (latest status or discoveries), shown at the top of the overview."""
+    try:
+        with open(W + "/local/web-status.txt", errors="replace") as f:
+            lines = [l.strip() for l in f if l.strip()][:3]
+    except OSError:
+        return ""
+    return "<ul class=status>%s</ul>" % "".join("<li>%s</li>" % e(l) for l in lines) if lines else ""
+
+
+def research():
+    """Research reports (local/analysis/*.md, written by the Haiku agents) newest first, plus agents still running.
+    Returns (rows, top) where top is a short list for the overview."""
+    items = []
+    for p in glob.glob(W + "/local/analysis/*.md"):
+        txt = open(p, errors="replace").read()
+        title = next((ln.lstrip("# ").strip() for ln in txt.splitlines() if ln.startswith("#")), os.path.basename(p))
+        done = txt.rstrip().endswith("DONE")
+        name = "r-%s.html" % os.path.basename(p)[:-3]
+        page(name, title, "<p class=mut>%s</p><pre>%s</pre>" % (e(os.path.basename(p)), e(txt)), refresh=60)
+        items.append((os.path.getmtime(p), name, title, "done" if done else "writing"))
+    for b in glob.glob(W + "/local/unattended/investigate/brief-newdids-*.txt"):
+        out = W + "/local/analysis/" + os.path.basename(b)[6:-4] + ".md"
+        if not os.path.exists(out):
+            items.append((os.path.getmtime(b), "", "Investigating " + os.path.basename(b)[6:-4], "running"))
+    items.sort(reverse=True)
+    fmt = lambda t: time.strftime("%m-%d %H:%M", time.localtime(t))
+    rows = "".join('<tr><td class=mono>%s</td><td>%s</td><td>%s</td></tr>' % (
+        fmt(t), ('<a href="%s">%s</a>' % (n, e(ti))) if n else e(ti), e(st)) for t, n, ti, st in items)
+    top = "".join('<li>%s %s (%s)</li>' % (fmt(t), ('<a href="%s">%s</a>' % (n, e(ti))) if n else e(ti), e(st)) for t, n, ti, st in items[:3])
+    return rows, top
+
+
+RATE = 24.0  # DIDs per second the gateway manages
+DEFAULT_DIDS = 8192  # DIDs in the tool's default scan ranges
+
+
+def slot_secs(slot, watch):
+    """Rough seconds for one scan slot plus the watch that follows it (info-block slots run back to back)."""
+    mod, _, rng = slot.partition(":")
+    n = DEFAULT_DIDS
+    if rng:
+        try:
+            n = sum(int(b or a, 16) - int(a, 16) + 1 for a, _, b in (part.partition("-") for part in rng.split(",")))
+        except ValueError:
+            n = DEFAULT_DIDS  # unexpected slot text: assume a full module
+    return n / RATE + (0 if "F400" in rng else watch)
+
+
+def progress():
+    """Current task, overall progress and rough ETAs from the unattended script's progress file."""
+    files = sorted(glob.glob(W + "/runs/*/unattended.progress.json"))
+    if not files:
+        return ""
+    try:
+        p = json.load(open(files[-1]))
+    except (OSError, ValueError):
+        return ""
+    if not isinstance(p, dict):
+        return ""
+    now = time.time()
+    rem, gated, watch, parked = p.get("remaining", []), set(p.get("gated", [])), p.get("watch_secs", 240), p.get("parked", 0)
+    total = p.get("total", 0) or 1
+    done = total - len(rem)
+    mods, order = {}, []
+    t = 0.0
+    for sl in rem:
+        m = sl.split(":")[0]
+        t += slot_secs(sl, watch)
+        if m not in mods:
+            order.append(m)
+        mods[m] = (t, m in gated)
+    hm = lambda secs: "%dh %02dm" % (secs // 3600, secs % 3600 // 60) if secs >= 3600 else "%d min" % max(1, round(secs / 60))
+    age = now - p.get("since", now)
+    out = '<div class=card><b>Now:</b> %s <span class=mut>(for %s)</span><br>' % (e(p.get("current", "")), hm(age))
+    out += '<b>Scan queue:</b> %d of %d slots done (%d%%), %d left; roughly %s of car time to finish%s.</div>' % (
+        done, total, 100 * done // total, len(rem), hm(t) if rem else "0 min",
+        "" if parked else "; P-only modules wait until the car is parked in P")
+    if order:
+        rows = "".join("<tr><td>%s</td><td>%s</td><td>%s</td></tr>" % (
+            e(m), "in %s" % hm(mods[m][0]), "P only" if mods[m][1] else "any time") for m in order)
+        out += "<details><summary>Module ETAs (cumulative, car connected)</summary><table><tr><th>Module</th><th>Done</th><th>When</th></tr>%s</table></details>" % rows
+    return out
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     mods = yaml.safe_load(open(W + "/catalogue/modules.yaml")) or []
@@ -164,7 +249,16 @@ def main():
         st = m.get("status", "")
         rows.append('<tr><td><a href="m-%s.html">%s</a></td><td>%s</td><td>%s</td><td class="%s">%s</td><td>%d / %d</td><td class=mut>%s</td></tr>' % (
             a, a, e(m.get("label", "")), e(m.get("role", "")), e(st), e(st), ok, len(d), e(m.get("note", ""))))
-    body = scan_status(mods)
+    try:
+        rrows, rtop = research()
+    except (OSError, ValueError, TypeError):  # a report or brief changed mid-read: skip this section this round
+        rrows, rtop = "", ""
+    page("research.html", "Research (Haiku agents)", "<table><tr><th>Time</th><th>Report</th><th>State</th></tr>%s</table>" % rrows)
+    try:
+        prog = progress()
+    except (OSError, ValueError, TypeError, KeyError):
+        prog = ""
+    body = status_lines() + prog + ("<h2>Research</h2><ul>%s</ul><p class=mut><a href=research.html>All reports</a></p>" % rtop if rtop else "") + scan_status(mods)
     body += "<h2>Modules</h2><p class=mut>OK DIDs / DIDs tried, across all scan runs. Unknown modules in amber.</p>"
     body += "<table><tr><th>Addr</th><th>Label</th><th>Role</th><th>Status</th><th>DIDs</th><th>Note</th></tr>%s</table>" % "".join(rows)
     page("index.html", "Polestar 4 DoIP: live status", body)

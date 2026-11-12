@@ -1,6 +1,6 @@
 # Module map
 
-All 43 modules that answer on this car, with 2,856 answering DIDs across them (default-session `22` reads only). "Guess" means a label used on related Volvo/Geely cars, not checked on this car.
+All 43 modules that answer on this car, with the answering DIDs listed in `did-map.csv` across them (default-session `22` reads only). "Guess" means a label used on related Volvo/Geely cars, not checked on this car.
 
 | Address | Module | Basis |
 |---|---|---|
@@ -21,17 +21,17 @@ All 43 modules that answer on this car, with 2,856 answering DIDs across them (d
 | `1601` | Vehicle dynamics / parking brake | EPB signals |
 | `1614` | Suspension | chassis mode `D90F` |
 | `1615` | Steering column lock | guess |
-| `1631` | Brake control | speed `D003` |
+| `1631` | Brake control? | speed `D003`; a US owner reads F80A `DMC2` (drive motor controller 2): unverified here |
 | `1633` | Gear stalk | stalk movement only |
 | `1635` | HV battery | SOC, pack V/I, cells |
 | `1637` | Inverter / e-machine | gear state `E307`/`E319`; `EEC4` rose 0x3A → 0x3E on a drive (temperature?) |
 | `1650` | Charger / inlet | charge signals |
 | `1656` | Unknown, HV/12 V power path | `4947`/`D110` read 14.0–14.2 V (12 V rail, as on `1635`); hardware `HX1100`; DC-DC converter? |
 | `1670` | Power steering | steering angle `3019` |
-| `1672` | Steering angle sensor | `3019` |
-| `1675` | Unknown chassis module | config string `GE60_P03_M10_…` |
+| `1672` | Steering angle sensor? | `3019` (also answers on `1670`/`1676`); a US owner reads F80A `CHCM` (chassis controller): unverified here |
+| `1675` | Unknown chassis module | config string `GE60_P03_M10_…`; answers OBD speed `F40D` (2026-11-12) |
 | `1676` | Second (redundant) steering controller | same 43 DIDs and software part numbers as `1670` |
-| `1701` | Brake control 2 | config `BRP417EA`; shares 29 DIDs with `1631` |
+| `1701` | Brake system (BSCM) | `F80A` reads `BSCM-BrakeSystem` (2026-11-12); config `BRP417EA`; shares 29 DIDs with `1631`; brake pressure/pedal candidates `FE08`, `D905`/`D906` |
 | `1A01` | Body / central electronics | lamps, doors |
 | `1A11` | Climate | flap positions |
 | `1A12` / `1A13` | Driver / passenger door | windows, handles |

@@ -24,7 +24,7 @@
    examples: [{raw: "24", value: 36}]}
 - {id: charge_counter, module: "1635", did: "EE14", name: Accumulated charge counter, type: u, confidence: C,
    examples: [{raw: "009e5d88", value: 10378632}]}
-- {id: discharge_counter, module: "1635", did: "EE13", name: Accumulated discharge counter, type: u, confidence: C,
+- {id: discharge_counter, module: "1635", did: "EE13", name: Accumulated discharge counter (mAh; per a US owner, issue 2, and our parked current), type: u, unit: " mAh", confidence: C,
    examples: [{raw: "00d3cf44", value: 13881156}]}
 
 # -- charger / inlet (CDD 1650) --------------------------------------------
@@ -32,7 +32,7 @@
    examples: [{raw: "196a", value: 6506}]}
 - {id: last_charge_energy, module: "1650", did: "EE74", name: Energy of last charge, type: u, unit: Wh, confidence: P,
    examples: [{raw: "000123", value: 291}]}
-- {id: charge_energy_counter, module: "1650", did: "EE71", name: Energy counter of current charge, type: u, scale: 0.1, unit: kWh, confidence: P,
+- {id: charge_energy_counter, module: "1650", did: "EE71", name: Lifetime AC charge energy (4.5 MWh here; not per charge), type: u, scale: 0.1, unit: kWh, confidence: P,
    examples: [{raw: "00b083", value: 4518.7}]}
 - {id: ac_plug_status, module: "1650", did: "EE24", name: AC plug status, values: {"00000202": idle, "00000201": charging}, confidence: P,
    examples: [{raw: "00000201", value: charging}]}
@@ -56,6 +56,23 @@
    examples: [{raw: "ff", value: "on"}]}
 - {id: beam, module: "1A01", did: "42E7", name: Headlight beam, values: {"40": dipped, "50": main or flash}, confidence: C,
    examples: [{raw: "50", value: main or flash}]}
+
+# -- door mirrors (DDM 1A12 right/driver, PDM 1A13 left/passenger) ----------
+# 2026-11-12 parked test: fold/unfold twice each way and heating on/off twice, both sides (runs/2026-11-12/watch-mirrors.log).
+- {id: mirror_fold_right, module: "1A12", did: "4053", name: Right mirror fold state, values: {"02": unfolded, "00": moving, "01": folded}, confidence: C,
+   examples: [{raw: "01", value: folded}, {raw: "02", value: unfolded}]}
+- {id: mirror_fold_left, module: "1A13", did: "4053", name: Left mirror fold state, values: {"02": unfolded, "00": moving, "01": folded}, confidence: C,
+   examples: [{raw: "01", value: folded}, {raw: "02", value: unfolded}]}
+- {id: mirror_fold_motor_right, module: "1A12", did: "4052", name: Right mirror fold motor, values: {"00": stopped, "03": folding, "04": unfolding}, confidence: C,
+   examples: [{raw: "03", value: folding}, {raw: "04", value: unfolding}]}
+- {id: mirror_fold_motor_left, module: "1A13", did: "4052", name: Left mirror fold motor, values: {"00": stopped, "04": folding, "03": unfolding}, confidence: C,
+   examples: [{raw: "04", value: folding}, {raw: "03", value: unfolding}]}
+- {id: mirror_heat_right, module: "1A12", did: "4051", name: Right mirror heating, values: {"01": "off", "02": "on"}, confidence: C,
+   examples: [{raw: "02", value: "on"}, {raw: "01", value: "off"}]}
+- {id: mirror_heat_left, module: "1A13", did: "4051", name: Left mirror heating, values: {"01": "off", "02": "on"}, confidence: C,
+   examples: [{raw: "02", value: "on"}, {raw: "01", value: "off"}]}
+- {id: mirror_fold_current_right, module: "1A12", did: "FE0D", name: Right mirror fold motor current (raw; 1-2 at rest, about 0x40-0x4b moving), type: u, confidence: P,
+   examples: [{raw: "0049", value: 73}]}
 
 # -- chassis (VDDM 1601) ---------------------------------------------------
 # P: tracks 1631 D003 on two 2026-11-11 drives (r 0.95, mean ratio 1.02); sampled every ~12 s, so not yet C.
@@ -126,8 +143,8 @@
    examples: [{raw: "1544", value: 76.55625}, {raw: "0000", value: 0}]}
 - {id: chassis_mode, module: "1614", did: "D90F", name: Chassis mode, values: {"00": Standard, "40": Firm, "30": Nimble}, confidence: C,
    examples: [{raw: "40", value: Firm}, {raw: "30", value: Nimble}]}
-- {id: power_mode, module: "1A01", did: "DD0A", name: Power mode (same DID on every module), values: {"01": parked, "02": awake, "0d": driving}, confidence: P,
-   examples: [{raw: "0d", value: driving}]}
+- {id: power_mode, module: "1A01", did: "DD0A", name: Power mode (same DID on every module), values: {"01": parked, "02": awake, "0d": "on (P, R, N, D or moving; not specific to driving)"}, confidence: P,
+   examples: [{raw: "0d", value: "on (P, R, N, D or moving; not specific to driving)"}]}
 - {id: odometer, module: "1A01", did: "DD01", name: Odometer (same DID on every module), type: u, unit: " km", confidence: P,
    examples: [{raw: "004254", value: 16980}]}
 - {id: pack_current, module: "1635", did: "4802", name: HV pack current (+ = discharge), type: u, scale: 0.1, add: -1638.4, unit: " A", confidence: P,
@@ -136,6 +153,22 @@
    examples: [{raw: "a83e", value: 430.7}]}
 - {id: cell_v_mean, module: "1635", did: "DA1D", name: Mean cell voltage, type: u, scale: 0.000001, unit: " V", confidence: P,
    examples: [{raw: "003bb140", value: 3.912}]}
+# 4907/4908, EE02, 489C/489E: decodes from a US owner (issue 2), checked against this car's 2026-11-11 snapshots
+# (4907/4908 mV equal the max/min of the DA31 cell list; EE02 within 40 mV of 4947). P until seen to change as expected.
+- {id: cell_max_index, module: "1635", did: "4907", offset: 0, len: 1, name: Highest cell (0-based index), type: u, confidence: P,
+   examples: [{raw: "460f4d", value: 70}]}
+- {id: cell_max_v, module: "1635", did: "4907", offset: 1, len: 2, name: Highest cell voltage, type: u, scale: 0.001, unit: " V", confidence: P,
+   examples: [{raw: "460f4d", value: 3.917}]}
+- {id: cell_min_index, module: "1635", did: "4908", offset: 0, len: 1, name: Lowest cell (0-based index), type: u, confidence: P,
+   examples: [{raw: "070f47", value: 7}]}
+- {id: cell_min_v, module: "1635", did: "4908", offset: 1, len: 2, name: Lowest cell voltage, type: u, scale: 0.001, unit: " V", confidence: P,
+   examples: [{raw: "070f47", value: 3.911}]}
+- {id: low_volt_rail_bms, module: "1635", did: "EE02", name: 12 V rail (BMS), type: u, scale: 0.001, unit: " V", confidence: P,
+   examples: [{raw: "36ab", value: 13.995}]}
+- {id: charge_power_limit_kw, module: "1635", did: "489C", name: Charge power limit, type: u, scale: 0.000001, unit: " kW", confidence: P,
+   examples: [{raw: "04f27ac0", value: 83.0}]}
+- {id: discharge_power_limit_kw, module: "1635", did: "489E", name: Discharge power limit, type: u, scale: 0.000001, unit: " kW", confidence: P,
+   examples: [{raw: "1755d0e0", value: 391.5}]}
 - {id: low_volt_rail, module: "1635", did: "4947", name: 12 V rail, type: u, scale: 0.001, unit: " V", confidence: P,
    examples: [{raw: "39de", value: 14.814}]}
 - {id: drive_engaged, module: "1637", did: "E307", name: Inverter drive engaged (R or D), values: {"01": "no (P/N)", "02": "yes (R/D)"}, confidence: C,
@@ -144,3 +177,33 @@
    examples: [{raw: "00", value: "D"}]}
 - {id: park_selected, module: "1201", did: "D938", name: Park (P) per infotainment, values: {"00": "P", "01": "not P", "02": "changing"}, confidence: C,
    examples: [{raw: "00", value: "P"}]}
+
+# -- added 2026-11-12 (single-pass tests, parked; unconfirmed on the move) --------------------
+# Brake pedal off / light / hard, held (runs/2026-11-12/snap-brake_*.json, local only).
+- {id: brake_pressure_ch1, module: "1701", did: "FE08", offset: 0, len: 2, name: "Brake pressure? channel 1 (front?)", type: s, confidence: P,
+   examples: [{raw: "01ce01d500fc0103", value: 462}, {raw: "fffa0002fff5fffd", value: -6}]}
+- {id: brake_pressure_ch2, module: "1701", did: "FE08", offset: 2, len: 2, name: "Brake pressure? channel 2 (front?)", type: s, confidence: P,
+   examples: [{raw: "01ce01d500fc0103", value: 469}]}
+- {id: brake_pressure_ch3, module: "1701", did: "FE08", offset: 4, len: 2, name: "Brake pressure? channel 3 (rear?)", type: s, confidence: P,
+   examples: [{raw: "01ce01d500fc0103", value: 252}]}
+- {id: brake_pressure_ch4, module: "1701", did: "FE08", offset: 6, len: 2, name: "Brake pressure? channel 4 (rear?)", type: s, confidence: P,
+   examples: [{raw: "01ce01d500fc0103", value: 259}]}
+- {id: brake_pedal_sensor_a, module: "1701", did: "D905", name: "Brake pedal travel or force? sensor A", type: s, confidence: P,
+   examples: [{raw: "040a", value: 1034}, {raw: "fff8", value: -8}]}
+- {id: brake_pedal_sensor_b, module: "1701", did: "D906", name: "Brake pedal travel or force? sensor B", type: s, confidence: P,
+   examples: [{raw: "0406", value: 1030}]}
+- {id: brake_force_1601_a, module: "1601", did: "E391", name: "Falls with brake pedal force (raw)", type: u, confidence: P,
+   examples: [{raw: "0000003d", value: 61}, {raw: "00000012", value: 18}]}
+- {id: brake_force_1601_b, module: "1601", did: "E392", name: "Falls with brake pedal force (raw)", type: u, confidence: P,
+   examples: [{raw: "0000003e", value: 62}, {raw: "00000011", value: 17}]}
+# Driver belt buckled 2026-11-12 19:53 (b0 -> b2), once.
+- {id: driver_belt, module: "1C01", did: "D112", name: Driver seat belt, bits: {"02": driver belt buckled}, confidence: P,
+   examples: [{raw: "b2", value: [driver belt buckled]}, {raw: "b0", value: []}]}
+# OBD-on-UDS on the brake system (F80A reads "BSCM-BrakeSystem"); same PIDs as a US car (issue #2).
+- {id: obd_speed_bscm, module: "1701", did: "F40D", name: "Vehicle speed (OBD PID 0D)", type: u, unit: " km/h", confidence: P,
+   examples: [{raw: "00", value: 0}]}
+- {id: bscm_supply_v, module: "1701", did: "F442", name: "Module supply voltage (OBD PID 42)", type: u, scale: 0.001, unit: " V", confidence: P,
+   examples: [{raw: "37b5", value: 14.261}]}
+# Bonnet: same byte, bit 80, seen once each way on 2026-11-12 (42 -> c2 open; e2 -> 62 shut).
+- {id: bonnet_ajar, module: "1A01", did: "42F2", name: Bonnet open, bits: {"80": bonnet}, confidence: P,
+   examples: [{raw: "c2", value: [bonnet]}, {raw: "62", value: []}]}
