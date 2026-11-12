@@ -58,6 +58,9 @@
    examples: [{raw: "50", value: main or flash}]}
 
 # -- chassis (VDDM 1601) ---------------------------------------------------
+# P: tracks 1631 D003 on two 2026-11-11 drives (r 0.95, mean ratio 1.02); sampled every ~12 s, so not yet C.
+- {id: vddm_speed, module: "1601", did: "E36E", name: "Vehicle speed per the brake controller", type: u, scale: 0.00390625, unit: " km/h", confidence: P,
+   examples: [{raw: "2138", value: 33.21875}, {raw: "0000", value: 0}]}
 - {id: epb_state, module: "1601", did: "E37B", name: Parking brake state, values: {"03": applied, "05": moving, "09": released}, confidence: C,
    examples: [{raw: "09", value: released}]}
 - {id: epb_position, module: "1601", did: "2B1A", name: Parking brake position,
