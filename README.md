@@ -20,6 +20,7 @@ Read-only mapping of a Polestar 4's diagnostic data over DoIP (ISO 13400) throug
 | `scripts/drive-watch.sh` | Fast watch list for a drive (power, speed, gear, lamps, steering, chassis mode, matrix headlamps) |
 | `scripts/pcap_uds.py` | Offline decoder for DoIP/UDS in pcap files |
 | `scripts/prepublish-check.sh` | Fails if anything identifying (VIN, SIM or modem IDs, phone numbers, raw runs, pcaps) is tracked |
+| `DISCOVERIES.md` | Discovery log: what each release (session) found |
 | `PLAN.md` | Discovery method |
 
 Not in the repository (git-ignored): `runs/` (tool output, which can contain the VIN), `captures/` (pcaps), `local/` (working notes) and `external/` (OBDb signal files, CC BY-SA 4.0; get them from [OBDb](https://github.com/OBDb)).
@@ -50,6 +51,14 @@ DoIP gateway logical address `1001`, tester `0E80`, routing activation type `00`
 The tool can only send UDS reads (0x22, 0x19, 0x3E); anything else, and any read on `BLOCKED_READS`, is refused in `tool/p4doip/client.py` before it reaches the socket, and the tests cover that. Live commands run as container `p4-live`, so a second one fails instead of knocking the first off; `docker stop p4-live` frees the gateway. Disconnect any other diagnostic tool first.
 
 To capture alongside, tcpdump needs capture rights on the adaptor (`CAP_NET_RAW`), e.g. `sudo tcpdump -i <adaptor> -s 0 -U -w captures/doip-%Y%m%d-%H%M%S.pcap -G 1800`. Pcaps contain the VIN.
+
+## Releases
+
+A release is a discovery log entry, not a software build: no assets, just notes. After a session at the car:
+
+1. Add an entry at the top of `DISCOVERIES.md`, headed `## YYYY.MM.DD - <title>`, covering new signals (with C/P), modules identified, hazards, corrections and what was looked for but not found. Update `catalogue/` and `docs/` in the same change (`scripts/export-did-map.sh` regenerates the DID list).
+2. Merge it to `main` with CI passing.
+3. Run `scripts/release.sh YYYY.MM.DD` on an up-to-date, clean `main`. It runs the pre-publish check, tags the version and creates a GitHub release whose notes are that entry. A second release on the same day uses `YYYY.MM.DD.2`.
 
 ## Licence
 
