@@ -20,10 +20,10 @@
 - {addr: "1601", label: VDDM, role: vehicle dynamics / parking brake, status: confirmed}
 - {addr: "1614", label: SUM, role: suspension (chassis mode D90F), status: confirmed}
 - {addr: "1615", label: SCL, role: steering column lock, status: unverified}
-- {addr: "1631", label: BCM, role: "brake control? (vehicle speed D003; a US owner reads F80A DMC2, drive motor controller)", status: confirmed}
+- {addr: "1631", label: BCM, role: "probably the front drive motor controller (vehicle speed D003; E307/E303 active only when the front motor drives; a US owner reads F80A DMC2)", status: confirmed}
 - {addr: "1633", label: EGSM, role: gear selector, status: unverified}
 - {addr: "1635", label: BECM, role: HV battery, status: confirmed}
-- {addr: "1637", label: IEM, role: inverter / e-machine (gear state E307/E319), status: confirmed}
+- {addr: "1637", label: IEM, role: rear inverter / e-machine (drive engaged E307, torque direction E319), status: confirmed}
 - {addr: "1650", label: CDD, role: charger and charge inlet, status: confirmed}
 - {addr: "1656", label: "?", role: "?", status: unknown}
 - {addr: "1670", label: PSCM, role: power steering, status: unverified}

@@ -43,19 +43,19 @@
 - {id: ajar, module: "1A01", did: "42F2", name: Door and tailgate ajar,
    bits: {"01": tailgate, "04": left rear, "08": right rear, "10": left front, "20": right front}, confidence: C,
    examples: [{raw: "42", value: []}, {raw: "63", value: [right front, tailgate]}, {raw: "46", value: [left rear]}]}
-- {id: charge_lid, module: "1A01", did: "EFF5", name: Charge lid, values: {"c0": closed, "40": open}, confidence: C,
+- {id: charge_lid, module: "1A01", did: "EFF5", name: Charge lid, values: {"c0": closed, "40": open}, confidence: P,
    examples: [{raw: "40", value: open}]}
 - {id: turn_lamps, module: "1A01", did: "421B", name: Turn lamps (follows the blink),
    values: {"00000000": "off", "ff00ff00": left, "00ff00ff": right, "ffffffff": hazards}, confidence: C,
    examples: [{raw: "00ff00ff", value: right}]}
 - {id: hazard_button, module: "1A01", did: "4300", name: Hazard button, values: {"01": idle, "00": pressed}, confidence: C,
    examples: [{raw: "00", value: pressed}]}
-- {id: stop_lamps, module: "1A01", did: "4223", name: Stop lamps, values: {"000000": "off", "ffff01": "on"}, confidence: C,
+- {id: stop_lamps, module: "1A01", did: "4223", name: "Stop lamps (pedal, or regen deceleration from about 0.6 m/s2)", values: {"000000": "off", "ffff01": "on"}, confidence: C,
    examples: [{raw: "ffff01", value: "on"}]}
 - {id: reverse_lamp, module: "1A01", did: "4224", name: Reversing lamp, values: {"00": "off", "ff": "on"}, confidence: C,
    examples: [{raw: "ff", value: "on"}]}
-- {id: beam, module: "1A01", did: "42E7", name: Headlight beam, values: {"40": dipped, "50": main or flash}, confidence: C,
-   examples: [{raw: "50", value: main or flash}]}
+- {id: beam, module: "1A01", did: "42E7", name: Headlight beam, values: {"00": "off", "40": dipped, "50": main or flash}, confidence: C,
+   examples: [{raw: "50", value: main or flash}, {raw: "00", value: "off"}]}
 
 # -- door mirrors (DDM 1A12 right/driver, PDM 1A13 left/passenger) ----------
 # 2026-11-12 parked test: fold/unfold twice each way and heating on/off twice, both sides (runs/2026-11-12/watch-mirrors.log).
@@ -75,8 +75,8 @@
    examples: [{raw: "0049", value: 73}]}
 
 # -- chassis (VDDM 1601) ---------------------------------------------------
-# P: tracks 1631 D003 on two 2026-11-11 drives (r 0.95, mean ratio 1.02); sampled every ~12 s, so not yet C.
-- {id: vddm_speed, module: "1601", did: "E36E", name: "Vehicle speed per the brake controller", type: u, scale: 0.00390625, unit: " km/h", confidence: P,
+# C: E36E/256 over 1631 D003 has a median ratio of 0.994-1.002 over 943 paired reads on five drives (2026-11-12/13).
+- {id: vddm_speed, module: "1601", did: "E36E", name: "Vehicle speed per the brake controller", type: u, scale: 0.00390625, unit: " km/h", confidence: C,
    examples: [{raw: "2138", value: 33.21875}, {raw: "0000", value: 0}]}
 - {id: epb_state, module: "1601", did: "E37B", name: Parking brake state, values: {"03": applied, "05": moving, "09": released}, confidence: C,
    examples: [{raw: "09", value: released}]}
@@ -93,15 +93,16 @@
    examples: [{raw: "e1b5", value: -429.627}, {raw: "1e6e", value: 431.566}]}
 
 # -- headlamps (HCML 1BB3 left, HCMR 1BB4 right) ---------------------------
-- {id: headlamp_status, module: "1BB3,1BB4", did: "4368", name: Headlamp status,
-   values: {"11001400": dipped, "51001000": main or flash, "15001400": indicating}, confidence: C,
-   examples: [{raw: "51001000", value: main or flash}]}
+# Byte 0 is a bitfield (other bytes vary and are not decoded): 01 lamp active, 10 dipped, 40 main, 04 indicating; dipped and main can be set together.
+- {id: headlamp_status, module: "1BB3,1BB4", did: "4368", name: Headlamp status (byte 0), len: 1,
+   bits: {"01": lamp active, "04": indicating, "10": dipped, "40": main or flash}, confidence: C,
+   examples: [{raw: "51001000", value: [dipped, lamp active, main or flash]}, {raw: "15001400", value: [dipped, indicating, lamp active]}, {raw: "00000000", value: []}]}
 - {id: main_beam_ch3_duty, module: "1BB3,1BB4", did: "435C", name: Main-beam LED channel 3 duty, len: 1, type: u, unit: "%", confidence: C,
-   examples: [{raw: "643f20f1012900000086b0", value: 100}, {raw: "000640000000000000086a", value: 0}]}
+   examples: [{raw: "643f2005b012900000086b", value: 100}, {raw: "000640000000000000086a", value: 0}]}
 - {id: main_beam_ch4_duty, module: "1BB3,1BB4", did: "435D", name: Main-beam LED channel 4 duty, len: 1, type: u, unit: "%", confidence: C,
    examples: [{raw: "000640000000000000066a", value: 0}]}
 - {id: indicator_ch11_duty, module: "1BB3,1BB4", did: "4364", name: Indicator LED channel 11 duty, len: 1, type: u, unit: "%", confidence: C,
-   examples: [{raw: "642850f1012900000086b0", value: 100}]}
+   examples: [{raw: "6428500d5012d00000404b", value: 100}]}
 - {id: indicator_ch12_duty, module: "1BB3,1BB4", did: "4367", name: Indicator LED channel 12 duty, len: 1, type: u, unit: "%", confidence: C,
    examples: [{raw: "000640002012d00000404b", value: 0}]}
 
@@ -110,18 +111,18 @@
    values: {"2e00": closed, "1f00": fully open, "0e00": moving or short-drop, "0f00": moving or short-drop}, confidence: C,
    examples: [{raw: "1f00", value: fully open}]}
 - {id: rear_window, module: "1A21,1A22", did: "4048", name: Rear window status,
-   values: {"2e00": closed, "1f00": fully open, "0e00": moving or short-drop, "0f00": moving or short-drop}, confidence: C,
+   values: {"2e00": closed, "1f00": fully open, "0e00": moving or short-drop, "0f00": moving or short-drop}, confidence: P,
    examples: [{raw: "0f00", value: moving or short-drop}]}
 - {id: door_handle, module: "1A12,1A13,1A21,1A22", did: "D90C", name: Door handle, len: 1,
-   values: {"01": deployed, "00": retracted, "ff": unknown (seen on driver door after lock)}, confidence: C,
+   values: {"01": deployed, "00": retracted, "03": unknown (driver door), "ff": unknown (seen on driver door after lock)}, confidence: P,
    examples: [{raw: "010000", value: deployed}]}
 - {id: front_window_stops, module: "1A12,1A13", did: "42C5", name: Front window end-stop counter, type: u, confidence: C,
    examples: [{raw: "0aef", value: 2799}]}
-- {id: rear_window_stops, module: "1A21,1A22", did: "42C6", name: Rear window end-stop counter, type: u, confidence: C,
+- {id: rear_window_stops, module: "1A21,1A22", did: "42C6", name: Rear window end-stop counter, type: u, confidence: P,
    examples: [{raw: "01a9", value: 425}]}
 
 # -- tailgate (POT 1A15) ---------------------------------------------------
-- {id: tailgate_position, module: "1A15", did: "D906", name: "Tailgate position (0 closed, ~3198 open)", offset: 1, len: 2, type: u, confidence: C,
+- {id: tailgate_position, module: "1A15", did: "D906", name: "Tailgate position (0 closed, ~3198 open)", offset: 1, len: 2, type: u, confidence: P,
    examples: [{raw: "010c7e0d34", value: 3198}, {raw: "0100000d34", value: 0}]}
 
 # -- passenger seat (SMP 1A28) ---------------------------------------------
@@ -173,8 +174,9 @@
    examples: [{raw: "39de", value: 14.814}]}
 - {id: drive_engaged, module: "1637", did: "E307", name: Inverter drive engaged (R or D), values: {"01": "no (P/N)", "02": "yes (R/D)"}, confidence: C,
    examples: [{raw: "02", value: "yes (R/D)"}]}
-- {id: forward_selected, module: "1637", did: "E319", name: Forward gear (D), values: {"00": "D", "01": "not D"}, confidence: C,
-   examples: [{raw: "00", value: "D"}]}
+# E319 was catalogued as "forward gear" from parked tests; on the 2026-11-13 drives it follows the sign of the pack current (01 in regen), as issue #2 said.
+- {id: torque_direction, module: "1637", did: "E319", name: Drive torque direction, values: {"00": traction, "01": "regen, or no forward drive (P/N/R)"}, confidence: C,
+   examples: [{raw: "00", value: traction}, {raw: "01", value: "regen, or no forward drive (P/N/R)"}]}
 - {id: park_selected, module: "1201", did: "D938", name: Park (P) per infotainment, values: {"00": "P", "01": "not P", "02": "changing"}, confidence: C,
    examples: [{raw: "00", value: "P"}]}
 
@@ -192,13 +194,6 @@
    examples: [{raw: "040a", value: 1034}, {raw: "fff8", value: -8}]}
 - {id: brake_pedal_sensor_b, module: "1701", did: "D906", name: "Brake pedal travel or force? sensor B", type: s, confidence: P,
    examples: [{raw: "0406", value: 1030}]}
-- {id: brake_force_1601_a, module: "1601", did: "E391", name: "Falls with brake pedal force (raw)", type: u, confidence: P,
-   examples: [{raw: "0000003d", value: 61}, {raw: "00000012", value: 18}]}
-- {id: brake_force_1601_b, module: "1601", did: "E392", name: "Falls with brake pedal force (raw)", type: u, confidence: P,
-   examples: [{raw: "0000003e", value: 62}, {raw: "00000011", value: 17}]}
-# Driver belt buckled 2026-11-12 19:53 (b0 -> b2), once.
-- {id: driver_belt, module: "1C01", did: "D112", name: Driver seat belt, bits: {"02": driver belt buckled}, confidence: P,
-   examples: [{raw: "b2", value: [driver belt buckled]}, {raw: "b0", value: []}]}
 # OBD-on-UDS on the brake system (F80A reads "BSCM-BrakeSystem"); same PIDs as a US car (issue #2).
 - {id: obd_speed_bscm, module: "1701", did: "F40D", name: "Vehicle speed (OBD PID 0D)", type: u, unit: " km/h", confidence: P,
    examples: [{raw: "00", value: 0}]}
@@ -209,7 +204,7 @@
    examples: [{raw: "c2", value: [bonnet]}, {raw: "62", value: []}]}
 
 # -- suspension 1614 (drives 2026-11-11; P) and outside temperature (issue #2 offset, checked here) ------------------
-# D93A: four per-corner bytes, ~0x28 in Standard, ~0x3c-0x55 in Firm, brief spikes on road inputs: damper command? Corner order unknown.
+# D93A: four per-corner bytes (in equal pairs), ~0x28 in Standard, ~0x30-0x57 in Firm, brief spikes on road inputs: damper command? Corner order unknown.
 - {id: damper_cmd_c1, module: "1614", did: "D93A", offset: 0, len: 1, name: "Damper command? corner 1 (order unknown)", type: u, confidence: P,
    examples: [{raw: "3c3c3b3b", value: 60}, {raw: "28282929", value: 40}]}
 - {id: damper_cmd_c2, module: "1614", did: "D93A", offset: 1, len: 1, name: "Damper command? corner 2 (order unknown)", type: u, confidence: P,
@@ -218,7 +213,7 @@
    examples: [{raw: "3c3c3b3b", value: 59}, {raw: "28282929", value: 41}]}
 - {id: damper_cmd_c4, module: "1614", did: "D93A", offset: 3, len: 1, name: "Damper command? corner 4 (order unknown)", type: u, confidence: P,
    examples: [{raw: "3c3c3b3b", value: 59}, {raw: "28282929", value: 41}]}
-# D902: four signed per-corner values, moving constantly while driving and dipping under braking: ride height or body motion?
+# D902: four signed per-corner values, moving constantly while driving (weak negative link to deceleration): ride height or body motion?
 - {id: corner_motion_c1, module: "1614", did: "D902", offset: 0, len: 2, name: "Ride height or motion? corner 1 (order unknown)", type: s, confidence: P,
    examples: [{raw: "ffe2ffefffe5fff4", value: -30}]}
 - {id: corner_motion_c2, module: "1614", did: "D902", offset: 2, len: 2, name: "Ride height or motion? corner 2 (order unknown)", type: s, confidence: P,
@@ -227,5 +222,46 @@
    examples: [{raw: "ffe2ffefffe5fff4", value: -27}]}
 - {id: corner_motion_c4, module: "1614", did: "D902", offset: 6, len: 2, name: "Ride height or motion? corner 4 (order unknown)", type: s, confidence: P,
    examples: [{raw: "ffe2ffefffe5fff4", value: -12}]}
-- {id: outside_temp_becm, module: "1635", did: "EE07", name: Outside air temperature, type: u, scale: 0.01, add: -50, unit: " C", confidence: P,
+- {id: outside_temp_becm, module: "1635", did: "EE07", name: "Outside air temperature (offset per issue 2; not yet checked against the dash)", type: u, scale: 0.01, add: -50, unit: " C", confidence: P,
    examples: [{raw: "1644", value: 7.0}]}
+
+# -- added 2026-11-13 (drives, parked tests and an audit of all recorded data) ------------------
+# Four wheel speeds: same scale as 1631 D003; all four within ~1 km/h of each other and of E36E on 2026-11-13 drives. Corner order unknown
+# (E3E4/E3E6 move together against E3E5/E3E7 in turns, so they look like same-side pairs).
+- {id: wheel_speed_1, module: "1601", did: "E3E4", name: "Wheel speed 1 (corner unknown)", type: u, scale: 0.0140625, unit: " km/h", confidence: P,
+   examples: [{raw: "0ddc", value: 49.89375}, {raw: "0000", value: 0}]}
+- {id: wheel_speed_2, module: "1601", did: "E3E5", name: "Wheel speed 2 (corner unknown)", type: u, scale: 0.0140625, unit: " km/h", confidence: P,
+   examples: [{raw: "0d2a", value: 47.390625}, {raw: "0000", value: 0}]}
+- {id: wheel_speed_3, module: "1601", did: "E3E6", name: "Wheel speed 3 (corner unknown)", type: u, scale: 0.0140625, unit: " km/h", confidence: P,
+   examples: [{raw: "0d35", value: 47.545312}, {raw: "0000", value: 0}]}
+- {id: wheel_speed_4, module: "1601", did: "E3E7", name: "Wheel speed 4 (corner unknown)", type: u, scale: 0.0140625, unit: " km/h", confidence: P,
+   examples: [{raw: "0dec", value: 50.11875}]}
+# Motor speeds: 0x4E20 (20000) at rest, about 83 counts per km/h. E3E8 sits at 4e20 while cruising and matches E3E9 when pulling away:
+# fits the front motor disconnect in Range power delivery. Decoded with the 20000 offset removed (0 = stopped).
+- {id: motor_speed_front, module: "1601", did: "E3E8", name: "Front motor speed? (counts, 0 = stopped or disconnected)", type: u, add: -20000, confidence: P,
+   examples: [{raw: "4e20", value: 0}, {raw: "5dd6", value: 4022}]}
+- {id: motor_speed_rear, module: "1601", did: "E3E9", name: "Rear motor speed? (counts, 0 = stopped)", type: u, add: -20000, confidence: P,
+   examples: [{raw: "4e20", value: 0}, {raw: "5e56", value: 4150}]}
+# Longitudinal acceleration: about 128 counts per m/s2 against the derivative of D003 (r 0.75-0.84); + = slowing. Parked it reads a fixed
+# offset that depends on the slope where the car stands (gravity), so it is an inertial sensor.
+- {id: long_accel_vddm, module: "1601", did: "2B11", name: "Longitudinal deceleration (+ = slowing; includes slope)", type: s, scale: 0.0078125, unit: " m/s2", confidence: P,
+   examples: [{raw: "00000012", value: 0.140625}, {raw: "fffffff4", value: -0.09375}]}
+- {id: long_accel_bscm, module: "1701", did: "2B11", name: "Longitudinal deceleration (+ = slowing; includes slope and an offset)", type: s, scale: 0.0078125, unit: " m/s2", confidence: P,
+   examples: [{raw: "ffe0", value: -0.25}]}
+# Brake: E3C7 - 0x4000 = 7.2 x 1701 FE08 ch1 + 40 (r 0.998, 2026-11-13 morning drive); raw 0x4000 with the brake released, higher when held at a stop.
+- {id: brake_pressure_vddm, module: "1601", did: "E3C7", name: "Brake pressure? (counts, 0 = none)", type: u, add: -16384, confidence: P,
+   examples: [{raw: "4000", value: 0}, {raw: "48aa", value: 2218}]}
+- {id: brake_pedal_switch, module: "1701", did: "2B00", name: Brake pedal switch, values: {"00": released, "42": pressed}, confidence: P,
+   examples: [{raw: "42", value: pressed}, {raw: "00", value: released}]}
+# Wipers (2026-11-13 18:40, washer cycle): 420A and 41E9 toggle out of phase once per wipe.
+- {id: wiper_420a, module: "1A01", did: "420A", name: "Wiper state A (toggles once per wipe)", values: {"40": "a", "80": "b"}, confidence: P,
+   examples: [{raw: "40", value: "a"}, {raw: "80", value: "b"}]}
+- {id: wiper_41e9, module: "1A01", did: "41E9", name: "Wiper state B (toggles once per wipe)", values: {"00": "a", "40": "b"}, confidence: P,
+   examples: [{raw: "40", value: "b"}, {raw: "00", value: "a"}]}
+# Driver seat occupancy: 00 seated, 80 empty in 11 snapshots on 2026-11-13 (standby and car on).
+- {id: driver_occupied, module: "1A01", did: "20A8", name: Driver seat occupied, values: {"00": occupied, "80": empty}, confidence: P,
+   examples: [{raw: "00", value: occupied}, {raw: "80", value: empty}]}
+# 1C01 D112 was published as a driver-belt bit (2026-11-12). It is the module supply voltage: x 0.08 V tracks 1701 F442 at r 0.98-1.00
+# whenever the 12 V rail swings. The same DID behaves the same way on 1316, 1317, 1344 and 1672.
+- {id: srs_supply_v, module: "1C01", did: "D112", name: "Module supply voltage", type: u, scale: 0.08, unit: " V", confidence: P,
+   examples: [{raw: "b2", value: 14.24}]}

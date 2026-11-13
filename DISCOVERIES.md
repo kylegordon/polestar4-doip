@@ -6,6 +6,50 @@ Confidence follows `catalogue/signals.yaml`: **C** = the same change seen at lea
 
 <!-- New entries go directly below this line, newest first. The heading must be "## <version> - <title>". -->
 
+## 2026.11.13 - Wheel speeds, motor speeds, corrections from an audit
+
+Two drives and parked tests on 2026-11-13, unattended full-range scans, then a re-check of every catalogue signal and published claim against all recorded data. Several earlier claims were wrong; they are corrected here.
+
+**Coverage**
+- 4,401 DIDs now answer (`docs/did-map.csv`), up from 4,297. The full `0000`-`FFFF` range was read on `1A01`, `1015`, `1011`, `1201`, `1601`, `1701`, `1316`, `1317`, `1344` and `1650` (`1015` +25, `1A01` +19, `1201` +13, `1601` +13, `1635` +11, `1701` +8, `1001` +6, `1011` +3, `1316`/`1317`/`1344` +2 each).
+
+**New signals**
+- `1601:E36E` vehicle speed upgraded to C: median ratio 0.994-1.002 against `1631:D003` over 943 paired reads on five drives.
+- Wheel speeds, `1601:E3E4`-`E3E7` (P): the same scale as `D003` (x 0.0140625 km/h), all four within about 1 km/h of each other, 0 at rest. Corner order unknown; `E3E4`/`E3E6` move together against `E3E5`/`E3E7` in turns.
+- Motor speeds, `1601:E3E8`/`E3E9` (P): `0x4E20` (20000) at rest, about 83 counts per km/h. `E3E8` drops back to `0x4E20` when cruising and matches `E3E9` when pulling away, which fits the front motor disconnect Polestar describes for Range power delivery. A drive in each mode is needed to confirm.
+- Longitudinal acceleration, `2B11` on `1601` and `1701` (P): about 128 counts per m/s², + = slowing; parked it reads an offset that changes with the slope.
+- Brake: `1601:E3C7` (`0x4000` = none) tracks `1701:FE08` channel 1 (r 0.998, one drive); `1701:2B00` is the pedal switch (`00`/`42`) (P).
+- Wipers on the CEM: `1A01:420A`/`41E9` toggle out of phase once per wipe (P). `4218` (`00`/`20`/`40`) changed with the wiper button but reads `40` through the day: a switch or mode state.
+- Driver seat occupancy, `1A01:20A8`: `00` seated, `80` empty (P, 11 snapshots, standby and car on).
+- `1C01:D112` is module supply voltage, x 0.08 V (P; tracks `1701:F442` at r 0.98-1.00). The same DID behaves the same way on `1316`, `1317`, `1344` and `1672`.
+
+**Leads (not in the catalogue)**
+- `1631` is probably the front drive motor controller (issue #2's name for it): `E307` goes to `02` and `E303` carries a motor speed only in short bursts when pulling away. `1637` is then the rear.
+- `1011:FD50` holds the car's position: longitude and latitude as signed 32-bit big-endian milliarcseconds. One parked read matched where the car stood within about 100 m. Values are not published.
+- `1A01:281F` holds the four TPMS sensor IDs, so TPMS lives on the CEM; no pressure found yet (values not published).
+- `1701:F449` accelerator pedal position (OBD PID 49): 0 at rest, in regen and with the brake pressed.
+- `1601:E46A` rises on lift-off regen as well as under the pedal (a deceleration demand?); the stop lamps were on whenever it was at or above about `0x4380` on one drive.
+- `1A01:410B` looks like an ambient light sensor (a 16-bit level in daylight, `01 0000` in the evening; one day).
+- `1344:D923` byte 0 behaves like a temperature, not traffic.
+- Matrix headlamps `1BB3`/`1BB4:7022`: 84 bytes, 32 data bytes as two rows of 16 plus `ff` padding.
+- Stop lamps light on regen with the pedal released: 10 of 11 lamp episodes on one drive were regen-only, at 0.6-1.0 m/s² (UNECE R13-H allows this below 1.3 m/s² and requires it above).
+
+**Corrections**
+- **Driver belt retracted.** 2026.11.12.2 gave `1C01:D112` bit `0x02` as the driver belt from one parked pass. The value moves with supply voltage several times a second with nothing touched; no belt DID has been found, with the car in standby or on.
+- **`1637:E319` is torque direction, not forward gear** (as issue #2 said): `00` traction, `01` regen or no forward drive. It flipped 25 times in 3 minutes of driving in D, 22 times with the sign of the pack current. The gear decode in 2026.11.12 and `docs/findings.md` only works parked; while regenerating in D it would give R.
+- **`1601:E391`/`E392` withdrawn** (published P as falling with pedal force). They drift by themselves near wake-up and ramp while driving; the parked pedal pass ran in one order over two minutes, so time and force can't be separated. `E4AF` ("rises with force") is a free-running 10 Hz counter. The other `1601` steppers from that pass are unproven.
+- **`1601` hazard DIDs**: the silent reads were `D928`-`D92C`, not `D927`-`D92B` (`D927` answered normally). It happened 3 s after the car woke; silences mid-scan have also happened elsewhere with no special DID, so start-up is a likely cause.
+- **Stop lamps `1A01:4223`** mean pedal or regen deceleration, not the pedal alone.
+- **Down from C to P** (seen fewer than twice each way): charge lid `EFF5` (closing seen once), tailgate `D906`, rear windows `4048`, rear window end-stops `42C6`, door handles `D90C`.
+- **Catalogue decodes**: headlamp status `4368` is now byte 0 as a bitfield (many values were unmapped); beam `42E7` adds `00` = off; door handle adds `03` (unknown); two example values replaced with real readings.
+- **Wording**: `1301` `D921`-`D927` are seven camera entries with four type codes, not seven camera IDs; 51 DIDs (not 24) are rear-door only; `1670`/`1676` have 44 DIDs; `1316`/`1317` share software part numbers; `1614:D93A` Firm range is `0x30`-`0x57` and `D902` only weakly follows deceleration; `1635:EE07`'s -50 offset has not been checked against the dash; `1015`, `1656` and `1676` are candidate identities.
+
+**Not found**
+- Belt buckle (driver or passenger) and passenger occupancy, with the car in standby and on.
+- Rain sensor (one confounded snapshot in rain).
+- Tyre pressure, after full-range scans of `1A01`, `1601`, `1011` and `1015`.
+- Distance or object values on `1316`/`1317` in a move-closer-to-a-wall test.
+
 ## 2026.11.12.3 - Findings write-up and suspension signals
 
 No new car session: this publishes what was already known but only in working notes.

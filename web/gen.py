@@ -142,6 +142,31 @@ def scan_status(catalogue=()):
     return body
 
 
+def latest_scan_results(n=4):
+    """Automatic: the last few scan slots that found new DIDs, from the newest unattended.log (no manual upkeep)."""
+    logs = sorted(glob.glob(W + "/runs/*/unattended.log"))
+    if not logs:
+        return ""
+    hits, cur = [], None
+    try:
+        with open(logs[-1], errors="replace") as f:
+            for line in f:
+                m = re.match(r"^(\S+) (\d\d:\d\d):\d\d scan (\S+): start$", line.strip())
+                if m:
+                    cur = ("%s %s" % (m.group(1), m.group(2)), m.group(3))
+                    continue
+                m = re.match(r"^(\S+): (\d+) new OK", line.strip())
+                if m and cur and m.group(1) == cur[1].split(":")[0]:
+                    if int(m.group(2)) > 0:
+                        hits.append("%s %s: %s new DIDs" % (cur[0], cur[1].replace(":X:", " full-range ").replace(":", " "), m.group(2)))
+                    cur = None
+    except OSError:
+        return ""
+    if not hits:
+        return ""
+    return "<p class=mut>Latest scan results (automatic):</p><ul>%s</ul>" % "".join("<li>%s</li>" % e(h) for h in hits[-n:][::-1])
+
+
 def status_lines():
     """The first three lines of local/web-status.txt (latest status or discoveries), shown at the top of the overview."""
     try:
@@ -175,7 +200,7 @@ def research():
     return rows, top
 
 
-RATE = 24.0  # DIDs per second the gateway manages
+RATE = 45.0  # DIDs per second in practice (most reads get a quick NRC 31; measured 2026-11-13)
 DEFAULT_DIDS = 8192  # DIDs in the tool's default scan ranges
 
 
@@ -189,7 +214,11 @@ def slot_secs(slot, watch):
             n = sum(int(b or a, 16) - int(a, 16) + 1 for a, _, b in (part.partition("-") for part in rng.split(",")))
         except ValueError:
             n = DEFAULT_DIDS  # unexpected slot text: assume a full module
-    return n / RATE + (0 if "F400" in rng else watch)
+    if "F400" in rng:
+        return n / RATE
+    if slot.split(":")[1:2] == ["X"]:
+        watch /= 3  # phase 2: a watch only after every third chunk
+    return n / RATE + watch
 
 
 def progress():
@@ -205,13 +234,17 @@ def progress():
         return ""
     now = time.time()
     rem, gated, watch, parked = p.get("remaining", []), set(p.get("gated", [])), p.get("watch_secs", 240), p.get("parked", 0)
+    # Same order as the scanner: parked = P-only (gated) slots first; driving = the rest first, P-only after.
+    g = [x for x in rem if x.split(":")[0] in gated]
+    o = [x for x in rem if x.split(":")[0] not in gated]
+    rem = g + o if parked else o + g
     total = p.get("total", 0) or 1
     done = total - len(rem)
     mods, order = {}, []
     t = 0.0
     for sl in rem:
         m = sl.split(":")[0]
-        t += slot_secs(sl, watch)
+        t += slot_secs(sl, 0 if parked else watch)  # no watches while parked
         if m not in mods:
             order.append(m)
         mods[m] = (t, m in gated)
@@ -259,7 +292,7 @@ def main():
         prog = progress()
     except (OSError, ValueError, TypeError, KeyError):
         prog = ""
-    body = status_lines() + prog + ("<h2>Research</h2><ul>%s</ul><p class=mut><a href=research.html>All reports</a></p>" % rtop if rtop else "") + scan_status(mods)
+    body = status_lines() + latest_scan_results() + prog + ("<h2>Research</h2><ul>%s</ul><p class=mut><a href=research.html>All reports</a></p>" % rtop if rtop else "") + scan_status(mods)
     body += "<h2>Modules</h2><p class=mut>OK DIDs / DIDs tried, across all scan runs. Unknown modules in amber.</p>"
     body += "<table><tr><th>Addr</th><th>Label</th><th>Role</th><th>Status</th><th>DIDs</th><th>Note</th></tr>%s</table>" % "".join(rows)
     page("index.html", "Polestar 4 DoIP: live status", body)
