@@ -50,6 +50,7 @@ DoIP gateway logical address `1001`, tester `0E80`, routing activation type `00`
 | `./p4 dtc 1316` | Stored and supported fault codes (`all` works here too) |
 | `./p4 scan 1316` | Which DIDs answer (default ranges ~6 min; `--ranges 0000-FFFF` ~45 min). Skips DIDs already answered in any earlier run and blocked reads; `--rescan` overrides the first |
 | `./p4 scan 1317 --like 1316` | Try a sibling's answering DIDs |
+| `./p4 scan 1301 --ranges EE14-EE1F --paced 2` | Careful mode: one DID at a time, checks the module and the gateway still answer after each read, waits 2 s; stops at the first refusal, dropped connection or silence, records that DID as a hazard (scan never reads it again, even with `--rescan`; add it to `BLOCKED_READS` to block it everywhere) and reports how long the module took to come back. `./p4 known 1301 --list` lists recorded hazards |
 | `./p4 known 1316 --list` | What has been found on a module, including DIDs that exist but refused |
 | `./p4 watch 1316` | Poll all known DIDs and print changes. Leave the car alone for the first 20 s: whatever changes then is hidden as background noise (`--baseline 0` to skip) |
 | `./p4 watch 1601:E37B,2B1A --interval 0.1 --baseline 0` | Poll chosen DIDs fast (`--mute 5` hides a value that blinks) |

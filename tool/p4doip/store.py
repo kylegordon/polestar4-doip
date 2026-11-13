@@ -51,7 +51,9 @@ def scan_path(target: int, date: str | None = None) -> str:
     return os.path.join(run_dir(date), "scan-%04X.jsonl" % target)
 
 
-RANK = {"ok": 2, "nrc": 1, "nack": 1, "timeout": 0}
+# "hazard": the module (or gateway) stopped answering right after this DID in a paced scan; it outranks
+# everything so that no later answer makes a scan read it again.
+RANK = {"hazard": 3, "ok": 2, "nrc": 1, "nack": 1, "timeout": 0}
 
 
 def load_scans(target: int) -> dict[int, dict]:

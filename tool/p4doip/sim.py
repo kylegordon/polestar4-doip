@@ -6,7 +6,7 @@ Behaviour copied from what the car did on 2026-11-10:
 - unknown DID -> NRC 0x31; any non-read service -> NRC 0x11 (and is recorded)
 - only one tester connection at a time: a second one is dropped
 
-Knobs (pending, stale, delay, ignore, silent, script, drop_after, activation_code,
+Knobs (pending, stale, delay, ignore, silent, knockout, knockout_drop, nack_dids, script, drop_after, activation_code,
 nack_code, alive_check_next) let tests reproduce awkward timing a real gateway can show.
 """
 import socket
@@ -27,6 +27,9 @@ class SimGateway:
         self.delay: dict[tuple[int, int], float] = {}  # final answer arrives this many seconds late
         self.ignore: set[tuple[int, int]] = set()    # DIDs a live module never answers
         self.silent: set[int] = set()                # modules that never answer
+        self.knockout: set[tuple[int, int]] = set()  # reading this DID silences its module (like 1301:EE13)
+        self.knockout_drop: set[tuple[int, int]] = set()  # ...and also closes the tester's connection
+        self.nack_dids: set[tuple[int, int]] = set()  # the gateway NACKs a read of this DID
         self.script: dict[tuple[int, int], list[str]] = {}  # values served in order; the last one repeats
         self.seen: list[tuple[int, bytes]] = []      # every UDS request received
         self.frames: list[int] = []                  # every DoIP payload type received
@@ -94,6 +97,12 @@ class SimGateway:
                 ptype, ln = struct.unpack(">HI", buf[2:8])
                 payload, buf = buf[8:8 + ln], buf[8 + ln:]
                 self.frames.append(ptype)
+                if ptype == 0x8001 and payload[4:5] == b"\x22" and len(payload) >= 7:
+                    key = (struct.unpack(">H", payload[2:4])[0], struct.unpack(">H", payload[5:7])[0])
+                    if key in self.knockout_drop:
+                        self.seen.append((key[0], payload[4:]))
+                        self.silent.add(key[0])
+                        return
                 if ptype == 0x8001 and self.drop_after is not None:
                     if self.drop_after == 0:
                         self.drop_after = None
@@ -138,6 +147,11 @@ class SimGateway:
         if target in self.silent:
             return out
         key = (target, struct.unpack(">H", uds[1:3])[0]) if uds[:1] == b"\x22" and len(uds) >= 3 else None
+        if key in self.nack_dids:
+            return out[:-1] + [(0, frame(0x8003, struct.pack(">HHB", target, tester, self.nack_code)))]
+        if key in self.knockout:
+            self.silent.add(target)
+            return out
         if key in self.ignore:
             return out
         if key in self.stale:

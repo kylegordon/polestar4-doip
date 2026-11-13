@@ -5,6 +5,7 @@ import glob
 import json
 import os
 import re
+import signal
 import sys
 import time
 
@@ -18,6 +19,7 @@ IDENTITY_DIDS = [0xF186, 0xF187, 0xF188, 0xF189, 0xF18A, 0xF18B, 0xF18C, 0xF191,
 # not exhaustive, so an empty result here does not mean an empty module.
 DEFAULT_RANGES = ("D900-DAFF,DD00-DDFF,ED00-EDFF,F100-F1FF,FD00-FEFF,D000-D2FF,E100-E5FF,EE00-EFFF,"
                   "4000-4AFF,2B00-2BFF,3000-30FF,9000-90FF,9800-98FF")
+GATEWAY = 0x1001
 USAGE_MODE_DID = 0xDD0A  # answers on every module seen so far; recorded so results from different car states can be told apart
 
 
@@ -167,7 +169,11 @@ def cmd_scan(args):
             raise SystemExit("no recorded OK DIDs for %04X to copy" % args.like)
     else:
         dids = parse_ranges(args.ranges)
-    done = set() if args.rescan else {d for d, r in store.load_scans(args.target).items() if r["status"] in ("ok", "nrc")}
+    scans = store.load_scans(args.target)
+    hazards = {d for d, r in scans.items() if r["status"] == "hazard"}  # never read again, even with --rescan
+    done = hazards | (set() if args.rescan else {d for d, r in scans.items() if r["status"] in ("ok", "nrc")})
+    for d in sorted(hazards & set(dids)):
+        print("skipping %04X: recorded as a hazard (%s)" % (d, scans[d].get("why", "")), file=sys.stderr, flush=True)
     todo = [d for d in dids if d not in done]
     for d in [d for d in todo if blocked_reason(args.target, d)]:
         print("skipping %s" % blocked_reason(args.target, d), file=sys.stderr, flush=True)
@@ -182,6 +188,8 @@ def cmd_scan(args):
     if mode.status == "nack":
         raise SystemExit(explain_nack(mode.code, args.target))
     store.append_jsonl(path, {"run": store.stamp(), "usage_mode": mode.payload.hex() if mode.status == "ok" else mode.text()})
+    if args.paced is not None:
+        return paced_scan(args, link, todo, path)
     ok = 0
     held: list[dict] = []  # timeouts not yet proven to come from a live module
 
@@ -226,6 +234,96 @@ def cmd_scan(args):
             print("  %d/%d, %d OK, %.0f/s, ~%.0f min left" % (i, len(todo), ok, rate, (len(todo) - i) / rate / 60),
                   file=sys.stderr, flush=True)
     settle_held(todo[-1])
+    link.close()
+    print("%04X: %d new OK; %d known OK in total" % (args.target, ok, len(store.known_ok(args.target))))
+
+
+def paced_scan(args, link: "Link", todo: list[int], path: str) -> None:
+    """Careful scan for modules that may fall over (1301:EE13 knocked the Mobileye ECU off for a minute).
+
+    Per DID: read it once (never repeated, even if the connection drops), wait --paced seconds, then check that the
+    module and the gateway both answer TesterPresent. Only then is the result recorded and the next DID read. At the
+    first refusal, drop or silence the DID is recorded as a hazard (scan never reads it again), the module's recovery
+    is timed, and the scan stops.
+    """
+    if args.paced < 0:
+        raise SystemExit("--paced must be 0 or more seconds")
+    c = link.c
+    gateway = c.gateway or GATEWAY
+
+    def answers(target: int) -> bool:
+        for _ in range(3):  # a single lost reply must not mark an innocent DID
+            try:
+                if c.tester_present(target).status in ("ok", "nrc"):
+                    return True
+            except ConnectionLost:
+                return False
+        return False
+
+    def fresh_answers(target: int) -> bool:
+        """TesterPresent on a new connection (the old one may be gone); any failure counts as no answer."""
+        try:
+            with DoIP(args.host, args.port).connect() as d:
+                return d.tester_present(target).status in ("ok", "nrc")
+        except (ConnectionLost, ActivationRefused, OSError):
+            return False
+
+    def hazard(did: int, why: str):
+        store.append_jsonl(path, {"t": store.stamp(), "tgt": "%04X" % args.target, "did": "%04X" % did, "status": "hazard", "why": why})
+        print("%s %04X %04X HAZARD: %s; recorded, scan will never read it again" % (store.now(), args.target, did, why), flush=True)
+        c.close()
+        t0 = time.monotonic()
+        while time.monotonic() - t0 < args.recover:
+            time.sleep(args.recover_poll)
+            if fresh_answers(args.target) and fresh_answers(gateway):
+                raise SystemExit("%04X answered again %.0f s after DID %04X. Stopped; add it to BLOCKED_READS before going on."
+                                 % (args.target, time.monotonic() - t0, did))
+        raise SystemExit("%04X still silent %.0f s after DID %04X. Stopped; add it to BLOCKED_READS."
+                         % (args.target, args.recover, did))
+
+    if not (answers(args.target) and answers(gateway)):
+        raise SystemExit("%04X or the gateway does not answer TesterPresent before the first read; nothing read" % args.target)
+    def stop_on_term(*_):
+        raise KeyboardInterrupt  # docker stop sends SIGTERM: let the handler below record the unchecked DID
+    signal.signal(signal.SIGTERM, stop_on_term)
+    ok = 0
+    for i, did in enumerate(todo, 1):
+        sent, problem = False, None
+        try:
+            try:
+                sent = True
+                r = c.read_did(args.target, did, args.timeout)
+            except ConnectionLost as e:
+                problem = "the connection dropped on the read (%s)" % e
+            if problem is None and r.status == "nack":
+                problem = "gateway refused the read (NACK %02X)" % r.code
+            if problem is None:
+                time.sleep(args.paced)  # a knockout may land a moment after the answer: check after the pause
+                module_ok = answers(args.target)
+                gateway_ok = module_ok and answers(gateway)
+        except KeyboardInterrupt:
+            if not sent:
+                raise SystemExit("interrupted before reading %04X %04X; nothing recorded for it" % (args.target, did))
+            # Read but never checked: treat it as a hazard rather than read it again next time.
+            store.append_jsonl(path, {"t": store.stamp(), "tgt": "%04X" % args.target, "did": "%04X" % did, "status": "hazard",
+                                      "why": "scan interrupted between the read and the module check; check by hand"})
+            raise SystemExit("interrupted after reading %04X %04X; recorded as a hazard (unchecked)" % (args.target, did))
+        if problem is not None:
+            hazard(did, problem)
+        if not module_ok:
+            hazard(did, "no TesterPresent answer from %04X after the read" % args.target)
+        if not gateway_ok:
+            hazard(did, "no TesterPresent answer from the gateway after the read")
+        rec = {"t": store.stamp(), "tgt": "%04X" % args.target, "did": "%04X" % did, "status": r.status}
+        if r.status == "ok":
+            rec["data"] = stored_value(did, r.payload)
+            ok += 1
+            print("%04X %04X OK %s" % (args.target, did, rec["data"]), flush=True)
+        elif r.status == "nrc":
+            rec["code"] = "%02X" % r.code
+        store.append_jsonl(path, rec)
+        if i % 25 == 0:
+            print("  %d/%d paced, %d OK" % (i, len(todo), ok), file=sys.stderr, flush=True)
     link.close()
     print("%04X: %d new OK; %d known OK in total" % (args.target, ok, len(store.known_ok(args.target))))
 
@@ -406,6 +504,9 @@ def cmd_known(args):
                 print("  %04X %s" % (d, scans[d].get("data", "")))
             for d in refused:
                 print("  %04X NRC %s" % (d, scans[d]["code"]))
+        hazards = sorted(d for d, r in scans.items() if r["status"] == "hazard")
+        for d in hazards:
+            print("  %04X HAZARD (scan never reads it): %s" % (d, scans[d].get("why", "")))
 
 
 def cmd_import_legacy(args):
@@ -560,6 +661,11 @@ def main(argv=None):
     s.add_argument("--like", type=hexint, help="try the DIDs that answered on this other module")
     s.add_argument("--timeout", type=float, default=0.5)
     s.add_argument("--rescan", action="store_true", help="try DIDs again even if an earlier run answered them")
+    s.add_argument("--paced", type=float, default=None, metavar="SECONDS",
+                   help="careful mode: read one DID, wait this long, check the module and gateway still answer; "
+                        "stop at the first refusal, drop or silence and record that DID as a hazard")
+    s.add_argument("--recover", type=float, default=300.0, help="paced mode: seconds to wait for a silent module to come back")
+    s.add_argument("--recover-poll", type=float, default=5.0, help="paced mode: seconds between checks while waiting")
     s.set_defaults(fn=cmd_scan)
 
     s = sub.add_parser("dtc", help="read stored and supported DTCs")

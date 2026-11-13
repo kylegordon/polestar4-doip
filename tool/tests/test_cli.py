@@ -430,3 +430,118 @@ def test_wrapper_lock(tmp_path, argv, locked):
     env = dict(os.environ, PATH="%s:%s" % (tmp_path, os.environ["PATH"]))
     out = subprocess.run(["sh", os.path.join(REPO, "p4"), *argv], env=env, capture_output=True, text=True, check=True).stdout
     assert ("--name p4-live" in out) == locked
+
+
+# -- paced scan (careful mode for modules like 1301) --------------------------
+PACED = ("--paced", "0", "--timeout", "0.05", "--recover-poll", "0.05")
+
+
+def test_paced_scan_checks_module_and_gateway_after_every_read(p4, root, sim):
+    p4("scan", "1601", "--ranges", "E37A-E37C", *PACED)
+    assert [r["did"] for r in scan_records(root, "1601")] == ["E37A", "E37B", "E37C"]
+    sent = [(t, uds.hex()) for t, uds in sim.seen if uds.hex() != "22dd0a"]
+    # both answer before anything is read; then read, TesterPresent to the module, TesterPresent to the gateway
+    assert sent == [(0x1601, "3e00"), (0x1001, "3e00")] + [
+        x for d in ("e37a", "e37b", "e37c") for x in ((0x1601, "22" + d), (0x1601, "3e00"), (0x1001, "3e00"))]
+
+
+def test_paced_scan_stops_at_a_knockout_did_and_never_reads_it_again(p4, root, sim):
+    sim.knockout.add((0x1601, 0xE37B))
+    with pytest.raises(SystemExit, match="still silent"):
+        p4("scan", "1601", "--ranges", "E37A-E37C", *PACED, "--recover", "0.2")
+    recs = {r["did"]: r for r in scan_records(root, "1601")}
+    assert recs["E37B"]["status"] == "hazard" and "E37C" not in recs
+    assert "22e37c" not in reads_seen(sim)
+    sim.silent.clear()
+    sim.knockout.clear()
+    sim.seen.clear()
+    p4("scan", "1601", "--ranges", "E37A-E37C", "--rescan", *PACED)
+    assert "22e37b" not in reads_seen(sim)
+    assert "22e37c" in reads_seen(sim)
+
+
+
+def test_paced_scan_reports_recovery_time(p4, root, sim):
+    import threading
+    import time
+    sim.knockout.add((0x1601, 0xE37B))
+
+    def revive():  # bring the module back a little after the knockout
+        deadline = time.monotonic() + 5
+        while 0x1601 not in sim.silent and time.monotonic() < deadline:
+            time.sleep(0.01)
+        time.sleep(2.5)  # longer than the three TesterPresent attempts that notice the silence
+        sim.silent.discard(0x1601)
+    t = threading.Thread(target=revive)
+    t.start()
+    with pytest.raises(SystemExit, match=r"answered again [1-9]\d* s after DID E37B"):
+        p4("scan", "1601", "--ranges", "E37A-E37C", *PACED, "--recover", "10")
+    t.join()
+    assert scan_records(root, "1601")[-1]["status"] == "hazard"
+
+
+def test_paced_scan_reads_nothing_unless_module_and_gateway_answer_first(p4, root, sim):
+    sim.silent.add(0x1001)
+    with pytest.raises(SystemExit, match="nothing read"):
+        p4("scan", "1601", "--ranges", "E37A-E37B", *PACED)
+    assert scan_records(root, "1601") == []
+    assert "22e37a" not in reads_seen(sim)
+
+
+def test_paced_scan_reads_a_dropping_did_once_and_records_it(p4, root, sim):
+    sim.knockout_drop.add((0x1601, 0xE37B))
+    with pytest.raises(SystemExit, match="still silent"):
+        p4("scan", "1601", "--ranges", "E37A-E37C", *PACED, "--recover", "0.2")
+    assert reads_seen(sim).count("22e37b") == 1
+    rec = scan_records(root, "1601")[-1]
+    assert rec["did"] == "E37B" and rec["status"] == "hazard" and "dropped" in rec["why"]
+
+
+def test_paced_scan_treats_a_gateway_nack_as_a_hazard(p4, root, sim):
+    sim.nack_dids.add((0x1601, 0xE37B))
+    with pytest.raises(SystemExit, match="answered again"):
+        p4("scan", "1601", "--ranges", "E37A-E37C", *PACED, "--recover", "2")
+    rec = scan_records(root, "1601")[-1]
+    assert rec["did"] == "E37B" and rec["status"] == "hazard" and "NACK" in rec["why"]
+    assert "22e37c" not in reads_seen(sim)
+
+
+def test_paced_scan_records_nrc_and_timeouts_from_a_live_module(p4, root, sim):
+    sim.ignore.add((0x1601, 0xE37C))
+    p4("scan", "1601", "--ranges", "E37A-E37C", *PACED)
+    assert [(r["did"], r["status"], r.get("code")) for r in scan_records(root, "1601")] == [
+        ("E37A", "nrc", "31"), ("E37B", "ok", None), ("E37C", "timeout", None)]
+
+
+def test_a_hazard_outranks_a_later_answer_and_is_skipped_by_every_scan(p4, root, sim):
+    sim.set(0x1635, 0xE37B, "01")
+    day1 = root / "runs" / "2026-01-01"
+    day1.mkdir(parents=True)
+    store.append_jsonl(str(day1 / "scan-1601.jsonl"), {"t": "x", "tgt": "1601", "did": "E37B", "status": "hazard", "why": "test"})
+    p4("scan", "1601", "--ranges", "E37A")  # today's file
+    day2 = root / "runs" / "2026-01-02"
+    day2.mkdir(parents=True)
+    store.append_jsonl(str(day2 / "scan-1601.jsonl"), {"t": "x", "tgt": "1601", "did": "E37B", "status": "ok", "data": "03"})
+    assert store.load_scans(0x1601)[0xE37B]["status"] == "hazard"
+    assert 0xE37B not in store.known_ok(0x1601)
+    sim.seen.clear()
+    p4("scan", "1601", "--ranges", "E37A-E37C", "--rescan")
+    p4("scan", "1635", "--ranges", "E37B")
+    p4("scan", "1601", "--like", "1635")
+    assert ("1601", "22e37b") not in [("%04X" % t, u.hex()) for t, u in sim.seen]
+    assert "HAZARD" in p4("known", "1601", "--list")
+
+
+def test_paced_scan_interrupted_after_a_read_records_that_did(p4, root, sim, monkeypatch):
+    import time as _time
+    real_sleep = _time.sleep
+
+    def interrupt(secs):
+        if secs == 0.01:
+            raise KeyboardInterrupt
+        real_sleep(secs)
+    monkeypatch.setattr("p4doip.cli.time.sleep", interrupt)
+    with pytest.raises(SystemExit, match="interrupted after reading 1601 E37A"):
+        p4("scan", "1601", "--ranges", "E37A-E37B", "--paced", "0.01", "--timeout", "0.05")
+    rec = scan_records(root, "1601")[-1]
+    assert rec["did"] == "E37A" and rec["status"] == "hazard" and "interrupted" in rec["why"]
