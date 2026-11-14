@@ -23,12 +23,16 @@ table{border-collapse:collapse;width:100%;font-size:13px}th,td{border-bottom:1px
 th{color:var(--mut);font-weight:600}code,pre,.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
 pre{background:var(--card);padding:10px;overflow-x:auto;white-space:pre-wrap;word-break:break-all}
 .card{background:var(--card);padding:10px 12px;border-radius:6px;margin:8px 0}.mut{color:var(--mut)}
+.cells{display:grid;grid-template-columns:repeat(auto-fill,minmax(34px,1fr));gap:3px}
+.cell{position:relative;height:56px;background:var(--card);border-radius:3px;overflow:hidden;font-size:10px;text-align:center}
+.cell i{position:absolute;left:0;right:0;bottom:0;height:var(--h);background:var(--acc);opacity:.35}.cell span{position:relative;top:20px}
+.temps{display:flex;flex-wrap:wrap;gap:4px}.temps span{background:var(--card);padding:2px 6px;border-radius:3px;font-size:12px}
 .unknown{color:var(--warn);font-weight:600}.confirmed{color:var(--ok);font-weight:600}td.v{word-break:break-all;max-width:420px}
 """
 
 
 def page(name, title, body, refresh=30):
-    nav = '<nav><a href="index.html">Overview</a><a href="live.html">Live</a><a href="findings.html">Findings</a><a href="signals.html">Signals</a><a href="research.html">Research</a><a href="text.html">Text</a><a href="marks.html">Timeline</a><a href="logs.html">Watch logs</a></nav>'
+    nav = '<nav><a href="index.html">Overview</a><a href="live.html">Live</a><a href="battery.html">Battery</a><a href="findings.html">Findings</a><a href="signals.html">Signals</a><a href="research.html">Research</a><a href="text.html">Text</a><a href="marks.html">Timeline</a><a href="logs.html">Watch logs</a></nav>'
     doc = ('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
            '<meta http-equiv="refresh" content="%d"><title>%s</title><style>%s</style></head><body>%s<h1>%s</h1>%s'
            '<p class="mut">Generated %s; refreshes every %ds.</p></body></html>') % (
@@ -261,6 +265,95 @@ def progress():
     return out
 
 
+BATTERY_KEYS = ("1635:DA31", "1635:EE83", "1635:4907", "1635:4908", "1635:4801", "1635:497C", "1635:4802", "1635:DA17", "1635:DA18")
+
+
+def latest_values(keys, wl):
+    """key -> (hex, 'YYYY-MM-DD HH:MM:SS', source), the newest of the watch logs and the snapshots.
+
+    Watch logs carry local time and snapshots UTC; they are compared as text, which is right while UK time = UTC
+    (the winter months these runs cover)."""
+    out = {k: wl[k] for k in keys if k in wl and hexval(wl[k][0]) is not None}
+    for p in glob.glob(W + "/runs/*/snap-*.json"):
+        try:
+            with open(p) as f:
+                d = json.load(f)
+        except (OSError, ValueError):
+            continue
+        if not isinstance(d, dict) or not isinstance(d.get("values"), dict):
+            continue
+        t = str(d.get("t", ""))[:19].replace("T", " ")
+        for k in keys:
+            v = d["values"].get(k)
+            if isinstance(v, str) and hexval(v) is not None and (k not in out or t > out[k][1]):
+                out[k] = (v, t, os.path.basename(p))
+    return out
+
+
+def age_minutes(when):
+    """Minutes since a 'YYYY-MM-DD HH:MM:SS' local time, or None if it does not parse."""
+    try:
+        return (time.time() - time.mktime(time.strptime(when[:19], "%Y-%m-%d %H:%M:%S"))) / 60
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def hexval(s):
+    """The bytes of a hex string, or None for anything else (a watch log may hold 'nrc', '-' or a cut-off value)."""
+    try:
+        return bytes.fromhex(s)
+    except (TypeError, ValueError):
+        return None
+
+
+def u16s(hexdata):
+    b = bytes.fromhex(hexdata)
+    return [int.from_bytes(b[i:i + 2], "big") for i in range(0, len(b) - 1, 2)]
+
+
+def battery(wl):
+    """Cell-group voltages (1635 DA31, 0xFFFF = unused slot) and pack temperatures (EE83, 0.01 C - 50) as a grid."""
+    v = latest_values(BATTERY_KEYS, wl)
+    if "1635:DA31" not in v:
+        return "<p class=mut>No cell reading recorded yet (1635 DA31).</p>"
+    raw, when, src = v["1635:DA31"]
+    cells = [(i + 1, mv) for i, mv in enumerate(u16s(raw)) if mv != 0xFFFF]
+    if not cells:
+        return "<p class=mut>Latest DA31 reading has no valid cells (%s, %s).</p>" % (e(when), e(src))
+    mvs = [mv for _, mv in cells]
+    lo, hi, mean = min(mvs), max(mvs), sum(mvs) / len(mvs)
+    span = max(hi - lo, 1)
+    head = "<div class=card>%d cell groups &middot; min %d mV &middot; max %d mV &middot; mean %.1f mV &middot; spread <b>%d mV</b> &middot; sum %.2f V" % (
+        len(cells), lo, hi, mean, hi - lo, sum(mvs) / 1000)
+    extra = []
+    for k, fmt, scale, add in (("1635:4801", "SoC %.1f %%", 0.002, 0), ("1635:497C", "pack %.2f V", 0.01, 0),
+                               ("1635:4802", "current %.1f A", 0.1, -1638.4)):
+        if k in v:
+            extra.append(fmt % (int.from_bytes(hexval(v[k][0]), "big") * scale + add))
+    head += "".join(" &middot; %s" % x for x in extra)
+    head += "<br><span class=mut>Cells read %s (%s). Other values are the newest of each and may be from a different time.</span></div>" % (e(when), e(src))
+    age = age_minutes(when)
+    if age is None or age > 10:
+        head = "<p class=unknown>Old reading: these cells were read %s, not live.</p>" % (
+            "at an unknown time" if age is None else "%s ago" % ("%.0f min" % age if age < 120 else "%.1f h" % (age / 60) if age < 2880 else "%.0f days" % (age / 1440))) + head
+    grid = "".join('<div class=cell title="cell %d: %d mV" style="--h:%d%%"><i></i><span>%d</span></div>' % (
+        n, mv, 15 + 85 * (mv - lo) // span, mv - lo) for n, mv in cells)
+    body = head + "<h2>Cell groups (mV above the lowest)</h2><div class=cells>%s</div>" % grid
+    if "1635:EE83" in v:
+        traw, twhen, tsrc = v["1635:EE83"]
+        temps = [x * 0.01 - 50 for x in u16s(traw) if x != 0xFFFF]
+        if temps:
+            body += "<h2>Pack temperatures</h2><div class=card>%d sensors &middot; min %.1f &deg;C &middot; max %.1f &deg;C<br><span class=mut>Read %s (%s)</span></div>" % (
+                len(temps), min(temps), max(temps), e(twhen), e(tsrc))
+            body += "<div class=temps>%s</div>" % "".join("<span>%.1f</span>" % t for t in temps)
+    for k, label in (("1635:4907", "Highest cell"), ("1635:4908", "Lowest cell")):
+        # only beside a cell grid read in the same minute, so the two cannot contradict each other
+        if k in v and len(v[k][0]) >= 6 and v[k][1][:16] == when[:16]:
+            b = hexval(v[k][0][:6])
+            body += "<p>%s: group %d, %d mV <span class=mut>(%s)</span></p>" % (label, b[0] + 1, int.from_bytes(b[1:3], "big"), e(v[k][1]))
+    return body
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     mods = yaml.safe_load(open(W + "/catalogue/modules.yaml")) or []
@@ -296,6 +389,11 @@ def main():
     body += "<h2>Modules</h2><p class=mut>OK DIDs / DIDs tried, across all scan runs. Unknown modules in amber.</p>"
     body += "<table><tr><th>Addr</th><th>Label</th><th>Role</th><th>Status</th><th>DIDs</th><th>Note</th></tr>%s</table>" % "".join(rows)
     page("index.html", "Polestar 4 DoIP: live status", body)
+    try:
+        page("battery.html", "Battery cells", battery(wl))
+    except Exception as ex:  # a bad reading must not stop the other pages
+        print("battery page failed:", repr(ex), flush=True)
+        page("battery.html", "Battery cells", "<p class=mut>Could not draw the battery page: %s</p>" % e(ex))
 
     texts = []
     for m in mods:
