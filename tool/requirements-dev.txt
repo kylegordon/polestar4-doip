@@ -3,3 +3,4 @@ ruff==0.7.4
 mypy==1.13.0
 pytest-cov==6.0.0
 types-PyYAML==6.0.12
+types-Markdown==3.7.0.20250322
