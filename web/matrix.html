@@ -13,6 +13,7 @@ a{color:var(--acc)}nav a{margin-right:14px}h1{font-size:20px}
 .lamps{display:flex;gap:24px;flex-wrap:wrap;margin:16px 0}
 .lamp{flex:1;min-width:280px}.lamp h2{font-size:14px;margin:0 0 6px;color:var(--mut);font-weight:600}
 .grid{display:grid;grid-template-columns:repeat(16,1fr);gap:3px;background:#0a0c0e;padding:8px;border-radius:10px}
+.rowlabels{display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-top:4px}
 .seg{aspect-ratio:1/1.4;border-radius:3px;background:var(--off);transition:background-color .12s}
 .seg.nd{background:var(--nodata)}
 .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
@@ -25,7 +26,7 @@ select,button,input{font:inherit}
 <body>
 <nav><a href="index.html">Overview</a><a href="live.html">Live</a><a href="battery.html">Battery</a><a href="matrix.html">Matrix</a><a href="findings.html">Findings</a><a href="signals.html">Signals</a><a href="research.html">Research</a><a href="text.html">Text</a><a href="marks.html">Timeline</a><a href="logs.html">Watch logs</a></nav>
 <h1>Matrix headlamps</h1>
-<p class="mut">1BB3:7022 (left lamp) and 1BB4:7022 (right lamp): 32 brightness bytes each, drawn as 2 rows of 16 segments (layout is a guess). Dark segments on main beam are shaded out (an oncoming car, a vehicle ahead or a reflective sign). Dark = segment off (value 0); warm = lit, brighter for higher values (0x50 = brightest seen); mid grey = no reading.</p>
+<p class="mut">1BB3:7022 (left lamp) and 1BB4:7022 (right lamp): 32 brightness bytes each, drawn as 2 rows of 16 segments, left to right as seen from the driver's seat. Upper row (bytes 0-15) = main beam: lit only above about 29 mph in auto, brightest in the middle. Lower row (bytes 16-31) = the matrix base pattern, lit whenever the car moves in the dark; its right-hand (offside) end is the part cut for oncoming traffic. Layout inferred from 390 recorded frames (2026-11-14), not yet confirmed by a test. Dark segments are shaded out (an oncoming car, a vehicle ahead or a reflective sign); the dipped beam used when stationary is not in this data. Dark = segment off (value 0); warm = lit, brighter for higher values (0x50 = brightest seen); mid grey = no reading.</p>
 
 <div class="card controls">
   <label><input type="radio" name="mode" value="live" checked> Live</label>
@@ -33,6 +34,7 @@ select,button,input{font:inherit}
   <select id="log" disabled></select>
   <button id="play" disabled>Play</button>
   <label>Speed <select id="speed"><option>1</option><option>2</option><option selected>4</option><option>8</option><option>16</option><option>60</option></select>x</label>
+  <span class="mut">Layout test:</span>
   <label><input type="checkbox" id="flipL"> flip left</label>
   <label><input type="checkbox" id="flipR"> flip right</label>
   <label><input type="checkbox" id="flipV"> upside down</label>
@@ -40,8 +42,8 @@ select,button,input{font:inherit}
 <div class="card controls"><span class="clock" id="clock">--:--:--</span><span class="clock" id="mph">-- mph</span><span class="mut" id="kmh"></span><input type="range" id="scrub" min="0" max="0" value="0" disabled><span class="mut" id="status"></span></div>
 
 <div class="lamps">
-  <div class="lamp"><h2>Left lamp (1BB3)</h2><div class="grid" id="L"></div></div>
-  <div class="lamp"><h2>Right lamp (1BB4)</h2><div class="grid" id="R"></div></div>
+  <div class="lamp"><h2>Left lamp (1BB3)</h2><div class="grid" id="L"></div><div class="rowlabels"><span>top row: main beam &middot; bottom row: matrix base</span><span>offside &rarr;</span></div></div>
+  <div class="lamp"><h2>Right lamp (1BB4)</h2><div class="grid" id="R"></div><div class="rowlabels"><span>top row: main beam &middot; bottom row: matrix base</span><span>offside &rarr;</span></div></div>
 </div>
 <p class="mut" id="hex"></p>
 
