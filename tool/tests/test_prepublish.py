@@ -17,7 +17,8 @@ def run(repo, *cmd):
 @pytest.fixture
 def repo(tmp_path):
     os.makedirs(tmp_path / "scripts")
-    shutil.copy(os.path.join(REPO, "scripts", "prepublish-check.sh"), tmp_path / "scripts")
+    for name in ("prepublish-check.sh", "patterns.txt"):
+        shutil.copy(os.path.join(REPO, "scripts", name), tmp_path / "scripts")
     run(tmp_path, "git", "init", "-q")
     run(tmp_path, "git", "config", "user.email", "t@example.invalid")
     run(tmp_path, "git", "config", "user.name", "t")
@@ -34,6 +35,11 @@ def test_clean_repo_passes(repo):
     assert check(repo) == 0
     run(repo, "git", "commit", "-qm", "clean")
     assert check(repo) == 0
+
+
+def test_missing_patterns_file_is_an_error(repo):
+    os.remove(repo / "scripts" / "patterns.txt")
+    assert check(repo) == 2
 
 
 def test_vin_in_index_fails_even_if_removed_from_working_tree(repo):

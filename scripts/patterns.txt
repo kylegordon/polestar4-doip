@@ -1,0 +1,21 @@
+# Content patterns that must never be published, one extended regex per line, matched case-insensitively.
+# Read by scripts/prepublish-check.sh (git index and history) and by the public site's output scan
+# (tool/p4doip/site/gate.py). Lines starting with # and blank lines are ignored. Patterns use character
+# classes so this file never matches itself.
+# A third-party tool's name:
+h[a]nterill
+# USB adaptor names derived from a MAC:
+enx[0-9a-f]{12}
+# Full VINs (Polestar/Volvo/Geely WMIs), as text or hex:
+(YSM|LPS|LRW|YV1)[A-HJ-NPR-Z0-9]{14}
+(59534d|4c5053|4c5257|595631)[0-9a-f]{28}
+# SIM ICCIDs:
+89[0-9]{16,18}
+# 15-16 digit IMEI/IMEISV:
+(^|[^0-9a-fA-F])[0-9]{15,16}([^0-9a-fA-F]|$)
+# International phone numbers:
+\+[1-9][0-9]{1,2}[ -]?[0-9]{2,4}[ -]?[0-9]{3,4}[ -]?[0-9]{3,4}
+# Home paths:
+/hom[e]/[a-z]
+/User[s]/
+/roo[t]/

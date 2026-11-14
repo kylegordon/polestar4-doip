@@ -17,10 +17,10 @@ if [ -n "$binaries" ]; then
   echo "FAIL: binary files are tracked (this check cannot read them):"; echo "$binaries"; fail=1
 fi
 
-# Content patterns: a third-party tool's name (patterns use character classes so this file never matches itself),
-# full VINs (Polestar/Volvo/Geely WMIs, as text or hex), SIM ICCIDs, 15-16 digit IMEI/IMEISV, USB adaptor names
-# derived from a MAC, international phone numbers and home paths.
-patterns='h[a]nterill|enx[0-9a-f]{12}|(YSM|LPS|LRW|YV1)[A-HJ-NPR-Z0-9]{14}|(59534d|4c5053|4c5257|595631)[0-9a-f]{28}|89[0-9]{16,18}|(^|[^0-9a-fA-F])[0-9]{15,16}([^0-9a-fA-F]|$)|\+[1-9][0-9]{1,2}[ -]?[0-9]{2,4}[ -]?[0-9]{3,4}[ -]?[0-9]{3,4}|/hom[e]/[a-z]|/User[s]/|/roo[t]/'
+# Content patterns live in scripts/patterns.txt, shared with the public site's output scan: one extended regex
+# per line, # comments and blank lines ignored, joined here into one alternation.
+patterns=$(grep -v -e '^#' -e '^ *$' scripts/patterns.txt | paste -s -d '|' -)
+if [ -z "$patterns" ]; then echo "ERROR: no patterns read from scripts/patterns.txt"; exit 2; fi
 
 # Index, not working tree: this is what a commit will contain. Exit 1 = no match; anything else is an error.
 set +e
