@@ -33,7 +33,7 @@ pre{background:var(--card);padding:10px;overflow-x:auto;white-space:pre-wrap;wor
 
 
 def page(name, title, body, refresh=30):
-    nav = '<nav><a href="index.html">Overview</a><a href="live.html">Live</a><a href="battery.html">Battery</a><a href="findings.html">Findings</a><a href="signals.html">Signals</a><a href="research.html">Research</a><a href="text.html">Text</a><a href="marks.html">Timeline</a><a href="logs.html">Watch logs</a></nav>'
+    nav = '<nav><a href="index.html">Overview</a><a href="live.html">Live</a><a href="battery.html">Battery</a><a href="matrix.html">Matrix</a><a href="findings.html">Findings</a><a href="signals.html">Signals</a><a href="research.html">Research</a><a href="text.html">Text</a><a href="marks.html">Timeline</a><a href="logs.html">Watch logs</a></nav>'
     doc = ('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
            '<meta http-equiv="refresh" content="%d"><title>%s</title><style>%s</style></head><body>%s<h1>%s</h1>%s'
            '<p class="mut">Generated %s; refreshes every %ds.</p></body></html>') % (

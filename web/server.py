@@ -16,6 +16,40 @@ NUM = re.compile(r"-?\d+(?:\.\d+)?")
 
 lock = threading.Lock()
 state = {"file": None, "pos": 0, "keys": {}, "events": []}
+MATRIX = re.compile(r"^(\d\d:\d\d:\d\d) (1BB[34]):7022 (.*)$")
+MATRIX_HEX = re.compile(r"[0-9a-f]{64}")
+NO_DATA = "ff" * 32  # drawn grey: the lamp did not answer (NRC, timeout) on that read
+matrix_lock = threading.Lock()
+matrix_cache = {}  # path -> ((mtime, size), frames)
+
+
+def matrix_value(rest):
+    """New value of a watch line (plain, CHANGE, noisy, baseline-noise, MUTED after ... -> new); NO_DATA if not hex."""
+    new = rest.rsplit("-> ", 1)[1] if "-> " in rest else rest
+    m = MATRIX_HEX.match(new)
+    return m.group() if m else NO_DATA
+
+
+def matrix_logs():
+    """Every watch log with headlamp matrix readings: [{name, frames: [[HH:MM:SS, lamp, 32-byte hex]]}], oldest first."""
+    out = []
+    for p in sorted(glob.glob(W + "/runs/*/watch-*.log")):
+        try:
+            st = os.stat(p)
+            mt = (st.st_mtime, st.st_size)
+            if p not in matrix_cache or matrix_cache[p][0] != mt:
+                frames = []
+                with open(p, errors="replace") as f:
+                    for ln in f:
+                        m = MATRIX.match(ln.rstrip("\n"))
+                        if m:
+                            frames.append([m.group(1), m.group(2), matrix_value(m.group(3))])
+                matrix_cache[p] = (mt, frames)
+        except OSError:
+            continue
+        if matrix_cache[p][1]:
+            out.append({"name": "%s/%s" % (p.split("/")[-2], os.path.basename(p)), "frames": matrix_cache[p][1]})
+    return out
 
 
 def numeric(val, extra):
@@ -73,7 +107,26 @@ class H(SimpleHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
+    def send_body(self, body, ctype):
+        self.send_response(200)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_GET(self):
+        if self.path.startswith("/matrix.json"):
+            with matrix_lock:  # its own lock: a cold parse of every log must not stall /live.json
+                body = json.dumps({"logs": matrix_logs()}).encode()
+            return self.send_body(body, "application/json")
+        if self.path.split("?")[0] == "/matrix.html":
+            try:
+                with open(W + "/web/matrix.html", "rb") as f:
+                    return self.send_body(f.read(), "text/html; charset=utf-8")
+            except OSError:
+                self.send_error(404)
+                return
         if self.path.startswith("/live.json"):
             with lock:
                 try:
@@ -94,4 +147,5 @@ class H(SimpleHTTPRequestHandler):
         super().do_GET()
 
 
-ThreadingHTTPServer(("", 8088), H).serve_forever()
+if __name__ == "__main__":  # run as python /w/web/server.py in the p4-web container
+    ThreadingHTTPServer(("", 8088), H).serve_forever()
