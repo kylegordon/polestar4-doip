@@ -1,0 +1,17 @@
+name: Correction
+description: A mistake on the site or in the repository (wording, a label, a broken link, a wrong claim).
+labels: [correction]
+body:
+  - type: input
+    id: where
+    attributes:
+      label: Page or file
+      placeholder: e.g. findings.html, 1601 section
+    validations:
+      required: true
+  - type: textarea
+    id: wrong
+    attributes:
+      label: What is wrong and what it should say
+    validations:
+      required: true

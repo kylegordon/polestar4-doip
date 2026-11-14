@@ -1,0 +1,61 @@
+# Public GitHub Pages site (docs/site-design.md). The build job can only read the repository; the deploy
+# job alone can write to Pages and receives nothing but the scanned artifact.
+name: pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      PYTHONPATH: tool
+      P4_ROOT: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Nothing identifying is tracked
+        run: scripts/prepublish-check.sh
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: tool/requirements.txt
+      - name: Install (pinned)
+        run: pip install -r tool/requirements.txt
+      - name: Tests
+        run: pytest -p no:cacheprovider tool/tests
+      - name: Build from the committed tree only
+        run: |
+          src="$RUNNER_TEMP/src"
+          mkdir -p "$src"
+          git archive HEAD | tar -x -C "$src"
+          git -c core.quotepath=off ls-tree -r --name-only HEAD > "$RUNNER_TEMP/manifest"
+          PYTHONPATH="$src/tool" python -m p4doip.site build --root "$src" --manifest "$RUNNER_TEMP/manifest" \
+            --out "$RUNNER_TEMP/_site" --commit "$GITHUB_SHA"
+      - name: Output scan
+        run: PYTHONPATH="$RUNNER_TEMP/src/tool" python -m p4doip.site scan "$RUNNER_TEMP/_site" --patterns "$RUNNER_TEMP/src/scripts/patterns.txt"
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ${{ runner.temp }}/_site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

@@ -31,3 +31,5 @@ jobs:
         run: docker build -t p4doip:ci tool
       - name: Offline tests (simulated gateway)
         run: pytest -p no:cacheprovider --cov=tool/p4doip --cov-report=term-missing --cov-fail-under=87 tool/tests
+      - name: Public site builds and passes its output scan
+        run: python -m p4doip.site build --out "$RUNNER_TEMP/_site"

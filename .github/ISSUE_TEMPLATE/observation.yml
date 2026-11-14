@@ -1,0 +1,33 @@
+name: Observation
+description: Your car behaves differently from a finding, or you have seen a signal change.
+labels: [observation]
+body:
+  - type: markdown
+    attributes:
+      value: No scan needed. Describe what you saw; please do not paste raw values that could identify your car.
+  - type: input
+    id: what
+    attributes:
+      label: Which finding or signal
+      placeholder: e.g. 1635:4801 hv_soc, or the 1A11 climate section
+    validations:
+      required: true
+  - type: textarea
+    id: seen
+    attributes:
+      label: What you saw
+      description: What you did to the car, what changed (or did not), and how many times you saw it.
+    validations:
+      required: true
+  - type: input
+    id: car
+    attributes:
+      label: Market, model year and software version
+      placeholder: e.g. UK, 2026, 4.2.11
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: This issue holds no VIN, serial numbers, SIM or modem numbers, position, number plate or names.
+          required: true
