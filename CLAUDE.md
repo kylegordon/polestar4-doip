@@ -5,7 +5,7 @@ Read `README.md` (tool, hazards, commands), `docs/did.md` (DID backlog) and `CHA
 - Only `./p4` talks to the car. No raw sockets, no ad hoc scripts against the gateway. The read-only guard
   (`ALLOWED_SIDS` in `tool/p4doip/client.py`, hazards in `catalogue/hazards.yaml`) runs from the working
   tree, so treat any edit under `tool/` or `catalogue/hazards.yaml` as a change to what reaches the car.
-- Hazards: never read `1301:EE13` (blocked); `1601:D928`-`D92C` are caution (needs `--allow-caution` or
+- Hazards: never read `1301:EE13` or `1301:EE14` (blocked); `1601:D928`-`D92C` are caution (needs `--allow-caution` or
   `--paced`). Add new hazards to `catalogue/hazards.yaml` with the evidence, not to code.
 - The gateway takes one tester. Car-facing commands share the `p4-live` container name; `docker stop p4-live`
   frees it (and ends any running watch).

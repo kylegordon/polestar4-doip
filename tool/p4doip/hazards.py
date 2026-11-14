@@ -19,6 +19,8 @@ import yaml
 BUILTIN_BLOCKED = {
     (0x1301, 0xEE13): "knocks the Mobileye driver assistance ECU (1301) off the network for about a minute "
                       "(seen twice, parked, 2026-11-11)",
+    (0x1301, 0xEE14): "knocks the Mobileye driver assistance ECU (1301) off the network; the gateway then refused DoIP "
+                      "until the adaptor was replugged (paced read, parked, 2026-11-14)",
 }
 
 

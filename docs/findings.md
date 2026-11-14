@@ -32,6 +32,7 @@ What has been learned about one car, module by module, including leads that are 
 
 - **What it is**: keyless entry and phone-as-key. 162 DIDs. Software names include `PAS_VE` (passive entry?) and `…CCA…`/`…CCR…` strings, perhaps Car Connectivity Consortium digital-key components (guess). Polestar documents UWB, BLE and NFC key-card for this car.
 
+- **Signals (2026-11-14)**: the parking sensor distances live here, `B112`-`B121`, in cm (511 = nothing seen), matching the screen to within about 3 cm. Even DIDs are left, odd are right: rear corners `B112`/`B113`, rear inner `B114`/`B115`, front corners `B116`/`B117`, front inner `B118`/`B119`; `B120`/`B121` are the two extra rear sensors (the car has 4 front, 6 rear) and have not triggered yet. Active only in R or D (P).
 ## 1023 Wireless phone charger
 
 - **What it is**: part `6608017285` is sold as "control unit for wireless charging". 142 DIDs, a lot for a phone charger, so it may be a combined unit.
@@ -63,6 +64,7 @@ What has been learned about one car, module by module, including leads that are 
 
 - **What it is**: driver-assistance computer. Firmware string names `P417_EU` (P417 = Polestar 4 model code) and `GAS52`, built January 2026. `D921`-`D927` hold seven camera entries, but only four distinct type codes (`CAM000022`-`25`), so they are variant codes rather than per-camera IDs. 111 DIDs; the scan stops before `EE13` on purpose.
 - **Hazards**: **never read `EE13` on `1301`.** Twice (once parked and unattended) it knocked this ECU off the network (gateway NACK), the second time for about a minute, with no dash warning. A `1FFF` broadcast or a range sweep through `EE13` reaches it too. The tool refuses the read. `1635:EE13` is a different module and is safe. `1301` is kept out of watches while driving.
+- **Hazards (2026-11-14)**: `EE14` does the same. A paced read of it (parked, the first DID after `EE13`) stopped `1301` answering; the passenger airbag lamp blinked off and on, and the gateway refused new diagnostic connections until the adaptor was unplugged and replugged. No dash warning; afterwards `1301` held two confirmed fault codes (there is no earlier fault read to compare with). `EE14` is blocked like `EE13`.
 
 ## 1314 Dash camera
 
@@ -87,6 +89,7 @@ What has been learned about one car, module by module, including leads that are 
 
 - **What it is**: brake and stability controller with the electric parking brake (VDDM label; our label rests on the parking-brake behaviour). 702 DIDs, the largest map on the car. A US owner's `F80A` reads a hybrid-powertrain-controller name for `1601` (issue #2); here `1601` answers `F800` only, so the name cannot be read.
 - **Signals**: `epb_state` (`E37B`), `epb_position` (`2B1A`), `epb_lamp` (`2B15`), `epb_operations` (`2B20`, counts on each release) (all C; also the automatic release/apply on shifting out of and into P, five cycles). `vddm_speed` (`E36E`, km/h x 1/256, C: median ratio to `1631:D003` 0.994-1.002 over 943 paired reads on five drives). `wheel_speed_1`-`_4` (`E3E4`-`E3E7`, same scale as `D003`; all four within about 1 km/h of each other and 0 at rest; corner order unknown, `E3E4`/`E3E6` move together against `E3E5`/`E3E7` in turns; P). `motor_speed_front`/`_rear` (`E3E8`/`E3E9`, raw `0x4E20` at rest (decoded as 0), about 83 counts per km/h; `E3E8` drops to `0x4E20` when cruising and matches `E3E9` when pulling away, which fits the front motor disconnect in Range power delivery; P). `long_accel_vddm` (`2B11`, signed, about 1/128 m/s² per count, + = slowing; parked it reads an offset that changes with the slope: P). `brake_pressure_vddm` (`E3C7`, `0x4000` with the brake released; = 7.2 x `1701:FE08` ch1 + 40, r 0.998 on one drive; P).
+- **Signals (2026-11-14)**: `drive_mode` (`E450`: `01` Range, `04` Performance; C, switched twice each way in P; mirrored in `E425` byte 0, and `E42D` sets a byte in Performance). Setting ESC to Sport also selects Performance, and the front motor then reads engaged (`1631:E307`) even when stationary. `creep` (`E3B5`: `02` off, `01` on in P, `03` seen in D; P).
 - **Leads**:
   - The parked pedal pass (off / light / hard, 2026-11-12) is confounded with time: it ran in one order over about 2 minutes. `E4AF` "rising" was a free-running 10 Hz counter, and `E391`/`E392` (published as falling with pedal force) also drift by themselves near wake-up and ramp while driving, so they are withdrawn. `E39D`, `E362`, `D925`, `EE2B`/`EE2C`, `D922`/`D939`, `E340`, `E455`/`E457` are unproven for the same reason.
   - `E46A` (`0x4000` = none) rises on lift-off regen with the pedal released as well as under the pedal: a total deceleration demand? The stop lamps were on whenever it was at or above about `0x4380` on one drive (P).
@@ -103,7 +106,7 @@ What has been learned about one car, module by module, including leads that are 
 - **What it is**: suspension/chassis control (SUM label). 52 DIDs.
 - **Signals**: `chassis_mode` (`D90F`: `00` Standard, `40` Firm, `30` Nimble; C). `damper_cmd_c1`-`c4` (`D93A`, four per-corner bytes in equal pairs, ~`0x28` in Standard, `0x30`-`0x57` in one Firm interval, spikes on road inputs, Standard also spiking to `0x55`; P, corner order unknown). `corner_motion_c1`-`c4` (`D902`, four signed per-corner values, move constantly while driving, weak negative link to deceleration; ride height or body motion; P). Lead: `D92D` byte 0 reads speed in m/s.
 - **Leads**: `D901` behaves like `D93A`; `D903` moves constantly like `D902`.
-- **Not found**: drive mode (Range/Performance) and one-pedal level: no DID changes with them, parked.
+- **Not found here**: drive mode is on `1601` (`E450`, see `1601`); one-pedal level not found anywhere yet.
 
 ## 1615 Steering column lock
 
@@ -145,7 +148,7 @@ What has been learned about one car, module by module, including leads that are 
 ## 1650 Charger / charge inlet
 
 - **What it is**: on-board charger and inlet (CDD label; issue #2 reads a charger-controller name). 103 DIDs.
-- **Signals**: `inlet_leds` (`EE32`, C: `01010100` lid open, `00010000` pulses every ~3 s while charging, off after a timeout), `ac_plug_status` (`EE24`, P), `charge_energy_counter` (`EE71`, lifetime AC energy in 0.1 kWh, 4.5 MWh; P), `last_charge_avg_power` (`EE72`), `last_charge_energy` (`EE74`) (P).
+- **Signals**: `inlet_leds` (`EE32`, C: `01010100` lid open, `00010000` pulses every ~3 s while charging, off after a timeout), `ac_plug_status` (`EE24`, P; charge state only: it does not change when the cable goes in), `charge_cable_present` (`EE31`, `01` cable in, P, 2026-11-14), `charge_energy_counter` (`EE71`, lifetime AC energy in 0.1 kWh, 4.5 MWh; P), `last_charge_avg_power` (`EE72`), `last_charge_energy` (`EE74`) (P).
 - **Leads**: `EE71` rose one count every ~55 s on a 7 kW AC charge (about 6.5 kW). `EE72`/`EE74` do not form a consistent pair across two reads, so their meaning is weak. `EEE1` went up by one during a charge (a counter). DC charging not yet observed.
 
 ## 1656 Unknown, 12 V power path
@@ -185,19 +188,19 @@ What has been learned about one car, module by module, including leads that are 
 ## 1A01 Central electronics (CEM)
 
 - **What it is**: body control. 332 DIDs (40 before 2026-11-12).
-- **Signals**: `ajar` (`42F2`: `01` tailgate, `04` left rear, `08` right rear, `10` left front, `20` right front; C), `bonnet_ajar` (`42F2` bit `80`; P), `charge_lid` (`EFF5`, P: closing seen once), `turn_lamps` (`421B`, C), `hazard_button` (`4300`, momentary, active low; C), `stop_lamps` (`4223`, on with the pedal and also on regen deceleration from about 0.6 m/s², with the pedal released; C), `reverse_lamp` (`4224`, C), `beam` (`42E7`, `00` off, `40` dipped, `50` main or flash, also auto main beam; C). `power_mode`, `odometer` (P). Added 2026-11-13 (P): `driver_occupied` (`20A8`, `00` seated, `80` empty; 11 snapshots, standby and car on; the last byte of `42F9` follows it), wipers `420A`/`41E9` (toggle out of phase once per wipe). `4218` reads `00`/`20`/`40` and changed with the wiper button: a wiper switch or mode state, not a momentary button.
+- **Signals**: `ajar` (`42F2`: `01` tailgate, `04` left rear, `08` right rear, `10` left front, `20` right front; C), `bonnet_ajar` (`42F2` bit `80`; P), `charge_lid` (`EFF5`, C since 2026-11-14), `turn_lamps` (`421B`, C), `hazard_button` (`4300`, momentary, active low; C), `stop_lamps` (`4223`, on with the pedal and also on regen deceleration from about 0.6 m/s², with the pedal released; C), `reverse_lamp` (`4224`, C), `beam` (`42E7`, `00` off, `40` dipped, `50` main or flash, also auto main beam; C). `power_mode`, `odometer` (P). Added 2026-11-13 (P): `driver_occupied` (`20A8`, `00` seated, `80` empty; 11 snapshots, standby and car on; the last byte of `42F9` follows it), wipers `420A`/`41E9` (toggle out of phase once per wipe). `4218` reads `00`/`20`/`40` and changed with the wiper button: a wiper switch or mode state, not a momentary button.
 - **Leads**:
   - `42F2` bits `40` and `02` are set with everything shut (unknown). A door not fully latched keeps its bit and its frameless window dropped. `4443` and `45A3` gain the same door/tailgate bits.
   - `4222` `000000` -> `ffff01` on walking up with the key, off a minute later: approach/welcome lamp (once). `411D` `90` -> `00` and `4222` changes after locking: home-safe lighting (weak).
   - `281F` holds the four TPMS sensor IDs (one per wheel), so TPMS lives here; no pressure found yet. Values are per-car identifiers and are not published.
   - `410B` looks like an ambient light sensor: byte 0 `02` with a 16-bit level (about 2,800-10,000) in daylight, `01 0000` in the evening (one day).
   - `42ED`, `42EE`, `45B2`, `45C9` refuse with NRC 22 (conditions not correct): worth a read in another car state.
-- **Not found**: lock state (no change in 243 door/boot/window DIDs on lock/unlock); brake pedal position (`42D9`, `42FC` do not move); the wiper and washer in the 40 DIDs known before the full scan; tyre pressures in any of the 332 DIDs (searched for 2.3 bar in common encodings).
+- **Not found here**: lock state is on the door modules (`4054`/`4056`, 2026-11-14), not the CEM; brake pedal position (`42D9`, `42FC` do not move); the wiper and washer in the 40 DIDs known before the full scan; tyre pressures in any of the 332 DIDs (searched for 2.3 bar in common encodings).
 
 ## 1A11 Climate
 
 - **What it is**: climate control (CCM). 138 DIDs.
-- **Signals**: `temp_flap_fl_target` (`980E`), `temp_flap_fl` (`D927`), `temp_flap_fr` (`D929`) (P): a 2 °C setpoint drop stepped the target at once, then the flap positions crept cooler over ~15 s.
+- **Signals**: `temp_flap_fl` (`D927`, passenger) and `temp_flap_fr` (`D929`, driver) (C since 2026-11-14: four setpoint changes each side). `980E`, earlier called the front-left flap target, did not move in eight front setpoint changes on 2026-11-14 and is no longer catalogued. Earlier note: a 2 °C setpoint drop stepped the target at once, then the flap positions crept cooler over ~15 s.
 - **Leads**: `D910` stepped down with the setpoint at the same moment. `9800`/`9801` and `9802`-`9804` drift at rest. The 29 DIDs added on 2026-11-12 are mostly zero-filled; `FDE1` is a 100-byte structured block.
 - **Not found**: the setpoint itself (e.g. 20.0 °C); probably held elsewhere.
 
@@ -205,7 +208,7 @@ What has been learned about one car, module by module, including leads that are 
 
 - **What it is**: driver door module (DDM); right front on this right-hand-drive car. 200 DIDs.
 - **Signals**: `front_window` (`4047`), `front_window_stops` (`42C5`, end-stop counter), `door_handle` (`D90C`, P: one lock/unlock cycle; `ff` after locking and `03` on later days on this door, unexplained), `mirror_fold_right` (`4053`), `mirror_fold_motor_right` (`4052`), `mirror_heat_right` (`4051`) (C); `mirror_fold_current_right` (`FE0D`, P).
-- **Leads**: `D938` is a rolling log of window runs, newest first, 10-byte entries: start position, end position, a byte, timestamp (positions ~1000 closed, ~5900 open). `D008` = window direction (`04` down, `03` up; in the catalogue as `window_direction`, P). `4096` changes with the window drive command, not position. `D909` moves with every door event. `480C` read 33 when the car was at about 33 km/h (speed copy, once).
+- **Leads**: `D938` is a rolling log of window runs, newest first, 10-byte entries: start position, end position, a byte, timestamp (positions ~1000 closed, ~5900 open). `D008` = window motor request (`00` stopped, `01` manual up, `02` manual down, `03` auto up, `04` auto down; `window_direction`, C since 2026-11-14). `4054` = lock (`02` unlocked, `01` locked; P). `4035` carries the driver-door window switches as bits (raw, P). `4096` changes with the window drive command, not position. `D909` moves with every door event. `480C` read 33 when the car was at about 33 km/h (speed copy, once).
 
 ## 1A13 Passenger door (left front)
 
@@ -232,7 +235,8 @@ What has been learned about one car, module by module, including leads that are 
 
 ## 1A27 Driver seat
 
-- **What it is**: seat module; driver side by elimination (label unverified). 81 DIDs.
+- **What it is**: driver seat module (confirmed 2026-11-14: its heating DIDs follow the driver seat switch). 81 DIDs.
+- **Signals**: `seat_heat_level` (`983E`: `00`/`20`/`40`/`60` = off/1/2/3), `seat_heating_on` (`FD03`), `seat_heater_output` (`F1F4`) (P; same DIDs on `1A28`).
 - **Leads**: none. `9007` (a clock), `FD02`, `FD32` change all the time in all three seat modules.
 
 ## 1A28 Passenger seat
@@ -243,7 +247,8 @@ What has been learned about one car, module by module, including leads that are 
 
 ## 1A29 Rear seat
 
-- **What it is**: rear seat module (label unverified). 66 DIDs.
+- **What it is**: rear seat module (confirmed 2026-11-14: rear seat heating and recline). 66 DIDs.
+- **Signals**: `rear_seat_heat_levels` (`983E`: bits 5-6 left level, bits 2-3 right level), `seat_heating_on` (`FD03`), `rear_recline_left`/`rear_recline_right` (`40A3` bytes 2-3 and 8-9: `0x0013` upright, about `0x0213` fully back) (P).
 - **Leads**: `41F4` flipped by one count three times, unexplained.
 
 ## 1A30 Interior lighting
@@ -255,7 +260,7 @@ What has been learned about one car, module by module, including leads that are 
 - **What it is**: left matrix headlamp module (HCML). 63 DIDs.
 - **Signals**: `headlamp_status` (`4368` byte 0, a bitfield: `01` lamp active, `04` indicating, `10` dipped, `40` main or flash), `main_beam_ch3_duty`, `main_beam_ch4_duty` (`435C`/`435D`), `indicator_ch11_duty`, `indicator_ch12_duty` (`4364`/`4367`) (C). Flash and main beam look the same.
 - **Leads**:
-  - `7022`: 32 bytes of matrix main-beam segment brightness (2 rows of 16?): all `00` dipped, `0x0f`-`0x50` per segment on main beam, with runs of `00` where a car ahead or oncoming was shaded (P, one drive).
+  - `7022`: 32 bytes of matrix main-beam segment brightness (2 rows of 16?): dipped beam lights only the nearside (low-numbered) end of the bottom row and main beam both rows, peaking toward the car centre (confirmed parked 2026-11-14, C), `0x0f`-`0x50` per segment on main beam, with runs of `00` where a car ahead or oncoming was shaded (P, one drive).
   - `4368` = `11000000` for ~90 s after locking (home-safe), `00000020` on approach with the key.
   - Channels 6-9 (`435F`-`4362`) sit at 15 % and drop to 0 on the indicating side (DRL/position dimming, guess).
   - `43D7` on this side toggles `0800`/`0000` every few seconds at rest; the right lamp stays `0000` (meaning unknown).
@@ -279,7 +284,7 @@ What has been learned about one car, module by module, including leads that are 
 - **Wheel speeds**: found (`1601:E3E4`-`E3E7`, P). Corner order still unknown: next is a fast watch through tight low-speed turns with steering angle.
 - **Yaw rate / lateral acceleration**: not found. Longitudinal acceleration is `2B11` on `1601` and `1701` (P). Weak leads: `1601:EF06`, `EFA5`-`EFAA`, `1614:D92D` bytes 1-2.
 - **Wipers / rain sensor**: wipers found on the CEM (`420A`/`41E9`, `4218`). Rain sensor not found: one natural-rain snapshot was confounded (standby, seat occupancy changed); candidates `40E2`, `4104` unproven, and `402A` copies the module temperature.
-- **Seat occupancy and belts**: driver occupancy found (`1A01:20A8`, P). No passenger occupancy and no belt buckle found, with the car in standby or on. The driver belt published earlier (`1C01:D112`) was wrong (see `1C01`).
+- **Seat occupancy and belts**: driver occupancy found (`1A01:20A8`, P). No passenger occupancy and no belt buckle found, with the car in standby or on. Rear occupancy and the rear left buckle were not found either (2026-11-14). The car does know: the dash shows which seats are unbuckled. The airbag module `1C01` is the likely home, but only its default ranges (about 8,700 of 65,536 DIDs) have been read; a full scan of it has not been done. The driver belt published earlier (`1C01:D112`) was wrong (see `1C01`).
 - **Surround-view objects**: the cluster draws cars around the car, so the data exists somewhere (radar or sensor fusion). Watching `1316`, `1317` and `1344` alongside marks has not shown anything yet; `1301` is kept out of driving watches.
-- **Charge port cover**: the lid state (`1A01:EFF5`) and inlet LEDs (`1650:EE32`) are known; opening has been seen three times, closing once. A parked test of the motorised cover opening and closing from the screen, diffing `1650` and `1A01`, is planned to find the cover motor or position.
-- **Also not found**: drive mode (Range/Performance) and one-pedal level, parked (Range should show as the front motor `1601:E3E8` dropping out when cruising; a drive in each mode is needed); door lock state; the climate setpoint; the displayed range.
+- **Charge port cover**: the lid state (`1A01:EFF5`) and inlet LEDs (`1650:EE32`) are known; both seen at least twice (C, 2026-11-14), from the screen and the door button. Cable insertion shows in `1650:EE31` (`01` cable in; P), not in `EE24`.
+- **Also not found**: one-pedal level, Steering Feel and Hill Descent (the test in D was cut short); the climate setpoint (front and rear); the displayed range. Drive mode (`1601:E450`) and door locks (`4054`/`4056`) were found on 2026-11-14.

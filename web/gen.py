@@ -38,6 +38,7 @@ pre{background:var(--card);padding:10px;overflow-x:auto;white-space:pre-wrap;wor
 .cell i{position:absolute;left:0;right:0;bottom:0;height:var(--h);background:var(--acc);opacity:.35}
 .cell b,.cell span,.cell small{position:relative}.cell b{font-size:9px;font-weight:400;color:var(--mut)}.cell small{font-size:9px;color:var(--mut)}
 .temps{display:flex;flex-wrap:wrap;gap:4px}.temps span{background:var(--card);padding:2px 6px;border-radius:3px;font-size:12px}
+.bar{background:var(--line);height:10px;border-radius:5px;min-width:120px;overflow:hidden}.bar i{display:block;height:100%;background:var(--acc)}
 .unknown{color:var(--warn);font-weight:600}.confirmed{color:var(--ok);font-weight:600}td.v{word-break:break-all;max-width:420px}
 """
 
@@ -56,6 +57,16 @@ def page(name, title, body, refresh=30):
 
 def e(s):
     return html.escape(str(s))
+
+
+DID_SPACE = 0x10000  # every possible DID, 0000-FFFF
+
+
+def coverage_bar(tried, total=DID_SPACE):
+    """A bar for how much of a module's DID space has been tried, and the percentage as text."""
+    pct = 100.0 * min(max(tried, 0), total) / total if total else 0.0
+    return '<div class=bar title="%d of %d DIDs tried"><i style="width:%.1f%%"></i></div><small class=mut>%.0f%%</small>' % (
+        tried, total, pct, pct)
 
 
 def read_jsonl(path):
@@ -374,13 +385,15 @@ def main():
     wl = watch_last()
 
     rows = []
+    tried_all = 0
     for m in mods:
         a = m["addr"].upper()
         d = sc.get(a, {})
         ok = sum(1 for v in d.values() if v[0] == "ok")
         st = m.get("status", "")
-        rows.append('<tr><td><a href="m-%s.html">%s</a></td><td>%s</td><td>%s</td><td class="%s">%s</td><td>%d / %d</td><td class=mut>%s</td></tr>' % (
-            a, a, e(m.get("label", "")), e(m.get("role", "")), e(st), e(st), ok, len(d), e(m.get("note", ""))))
+        rows.append('<tr><td><a href="m-%s.html">%s</a></td><td>%s</td><td>%s</td><td class="%s">%s</td><td>%d / %d</td><td>%s</td><td class=mut>%s</td></tr>' % (
+            a, a, e(m.get("label", "")), e(m.get("role", "")), e(st), e(st), ok, len(d), coverage_bar(len(d)), e(m.get("note", ""))))
+        tried_all += len(d)
     try:
         rrows, rtop = research()
     except (OSError, ValueError, TypeError):  # a report or brief changed mid-read: skip this section this round
@@ -391,8 +404,9 @@ def main():
     except (OSError, ValueError, TypeError, KeyError):
         prog = ""
     body = status_lines() + latest_scan_results() + prog + ("<h2>Research</h2><ul>%s</ul><p class=mut><a href=research.html>All reports</a></p>" % rtop if rtop else "") + scan_status(mods)
-    body += "<h2>Modules</h2><p class=mut>OK DIDs / DIDs tried, across all scan runs. Unknown modules in amber.</p>"
-    body += "<table><tr><th>Addr</th><th>Label</th><th>Role</th><th>Status</th><th>DIDs</th><th>Note</th></tr>%s</table>" % "".join(rows)
+    body += "<h2>Modules</h2><p class=mut>OK DIDs / DIDs tried, across all scan runs; the bar is the share of the 65,536 possible DIDs tried. Unknown modules in amber.</p>"
+    body += '<div class=card><b>Whole car:</b> %s</div>' % coverage_bar(tried_all, DID_SPACE * len(mods))
+    body += "<table><tr><th>Addr</th><th>Label</th><th>Role</th><th>Status</th><th>DIDs</th><th>Discovery</th><th>Note</th></tr>%s</table>" % "".join(rows)
     page("index.html", "Polestar 4 DoIP: live status", body)
     try:
         page("battery.html", "Battery cells", battery(wl))

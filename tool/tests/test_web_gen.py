@@ -56,3 +56,16 @@ def test_old_cells_are_flagged(tmp_path, monkeypatch):
     import time
     now = time.strftime("%Y-%m-%d %H:%M:%S")
     assert "Old reading" not in gen.battery({"1635:DA31": ("0f480f50", now, "watch-x.log")})
+
+
+def test_coverage_bar_shows_share_of_did_space():
+    assert "width:50.0%" in gen.coverage_bar(0x8000)
+    assert ">50%<" in gen.coverage_bar(0x8000)
+    assert "width:100.0%" in gen.coverage_bar(0x10000)
+    assert "width:0.0%" in gen.coverage_bar(0)
+
+
+def test_coverage_bar_clamps_odd_counts():
+    assert "width:100.0%" in gen.coverage_bar(70000)
+    assert "width:0.0%" in gen.coverage_bar(-5)
+    assert "width:0.0%" in gen.coverage_bar(3, total=0)

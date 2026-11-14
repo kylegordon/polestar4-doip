@@ -29,7 +29,7 @@ def write_hazards(root, text):
 
 def test_repo_hazards_file_is_valid():
     hs = hazards.load(os.path.join(REPO, "catalogue", "hazards.yaml"))
-    assert {(h.module, h.did, h.action) for h in hs} >= {(0x1301, 0xEE13, "block"), (0x1601, 0xD928, "caution")}
+    assert {(h.module, h.did, h.action) for h in hs} >= {(0x1301, 0xEE13, "block"), (0x1301, 0xEE14, "block"), (0x1601, 0xD928, "caution")}
     assert all(h.why for h in hs)
 
 
@@ -78,3 +78,8 @@ def test_client_refuses_a_caution_read_unless_allowed(sim, monkeypatch):
         assert not [u for _, u in sim.seen if u == b"\x22\xd9\x28"]
         c.allow_caution = True
         assert c.read_did(0x1601, 0xD928).status in ("ok", "nrc")
+
+
+def test_ee14_is_built_in_so_a_missing_file_still_blocks_it(tmp_path):
+    hs = hazards.load(str(tmp_path / "missing.yaml"))
+    assert {(h.module, h.did, h.action) for h in hs} >= {(0x1301, 0xEE13, "block"), (0x1301, 0xEE14, "block")}

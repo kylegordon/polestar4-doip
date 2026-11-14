@@ -360,10 +360,10 @@ def test_refused_activation_is_a_clear_error(root, sim):
 def test_scan_skips_blocked_dids(p4, root, sim):
     sim.modules.setdefault(0x1301, {})
     sim.set(0x1301, 0xEE12, "01")
-    sim.set(0x1301, 0xEE14, "02")
-    p4("scan", "1301", "--ranges", "EE12-EE14")
-    assert "22ee13" not in reads_seen(sim)
-    assert {r["did"] for r in scan_records(root, "1301")} == {"EE12", "EE14"}
+    sim.set(0x1301, 0xEE15, "02")
+    p4("scan", "1301", "--ranges", "EE12-EE15")
+    assert "22ee13" not in reads_seen(sim) and "22ee14" not in reads_seen(sim)  # both blocked (EE14 since 2026-11-14)
+    assert {r["did"] for r in scan_records(root, "1301")} == {"EE12", "EE15"}
 
 
 def test_scan_like_never_copies_a_blocked_did(p4, root, sim):

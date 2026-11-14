@@ -3,6 +3,17 @@
 Owned by the project; newest first. This file records tool, catalogue and documentation changes —
 observations about the car belong in docs/findings.md and DISCOVERIES.md, not here.
 
+## 2026-11-14 — parked session: new signals, EE14 block, discovery bars
+
+- `catalogue/hazards.yaml` + built-in `BUILTIN_BLOCKED`: `1301:EE14` blocked alongside `EE13` (it knocked the
+  Mobileye ECU off and the gateway refused DoIP until the adaptor was replugged).
+- `catalogue/signals.yaml`: about 35 signals added or upgraded from a parked hands-on session (drive mode,
+  creep, door locks, seat heating and recline, steering wheel heat, rear fog, window motor and switch codes,
+  rear climate flaps, cable present, 10 parking sensor distances, Mobileye uptime); `980E` removed.
+- `catalogue/modules.yaml`: 1A27 and 1A29 confirmed; 1015 role notes the parking distances.
+- `web/gen.py`: discovery progress bars (share of the 65,536 DIDs tried, per module and whole car);
+  `web/live.html` nav matches the other pages; `web/matrix.html` layout wording.
+
 ## 2026-11-14 — audit backlog: safety, robustness, CLI, packaging
 
 Implements a full review of the tool, tests, docs and data pipeline: safety, robustness, CLI, decoder,

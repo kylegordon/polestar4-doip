@@ -37,7 +37,7 @@
    examples: [{raw: "000123", value: 291}]}
 - {id: charge_energy_counter, module: "1650", did: "EE71", name: Lifetime AC charge energy (4.5 MWh here; not per charge), type: u, scale: 0.1, unit: kWh, confidence: P,
    examples: [{raw: "00b083", value: 4518.7}]}
-- {id: ac_plug_status, module: "1650", did: "EE24", name: AC plug status, values: {"00000202": idle, "00000201": charging}, confidence: P,
+- {id: ac_plug_status, module: "1650", did: "EE24", name: AC charge state (does not change on cable insertion), values: {"00000202": idle, "00000201": charging}, confidence: P,
    examples: [{raw: "00000201", value: charging}]}
 - {id: inlet_leds, module: "1650", did: "EE32", name: Charge inlet LEDs, values: {"00000000": "off", "01010100": lid open, "00010000": charging pulse}, confidence: C,
    examples: [{raw: "01010100", value: lid open}]}
@@ -46,7 +46,7 @@
 - {id: ajar, module: "1A01", did: "42F2", name: Door and tailgate ajar,
    bits: {"01": tailgate, "04": left rear, "08": right rear, "10": left front, "20": right front}, confidence: C,
    examples: [{raw: "42", value: []}, {raw: "63", value: [right front, tailgate]}, {raw: "46", value: [left rear]}]}
-- {id: charge_lid, module: "1A01", did: "EFF5", name: Charge lid, values: {"c0": closed, "40": open}, confidence: P,
+- {id: charge_lid, module: "1A01", did: "EFF5", name: Charge lid, values: {"c0": closed, "40": open}, confidence: C,
    examples: [{raw: "40", value: open}]}
 - {id: turn_lamps, module: "1A01", did: "421B", name: Turn lamps (follows the blink),
    values: {"00000000": "off", "ff00ff00": left, "00ff00ff": right, "ffffffff": hazards}, confidence: C,
@@ -114,7 +114,7 @@
    values: {"2e00": closed, "1f00": fully open, "0e00": moving or short-drop, "0f00": moving or short-drop}, confidence: C,
    examples: [{raw: "1f00", value: fully open}]}
 - {id: rear_window, module: "1A21,1A22", did: "4048", name: Rear window status,
-   values: {"2e00": closed, "1f00": fully open, "0e00": moving or short-drop, "0f00": moving or short-drop}, confidence: P,
+   values: {"2e00": closed, "1f00": fully open, "0e00": moving or short-drop, "0f00": moving or short-drop}, confidence: C,
    examples: [{raw: "0f00", value: moving or short-drop}]}
 - {id: door_handle, module: "1A12,1A13,1A21,1A22", did: "D90C", name: Door handle, len: 1,
    values: {"01": deployed, "00": retracted, "03": unknown (driver door), "ff": unknown (seen on driver door after lock)}, confidence: P,
@@ -135,11 +135,9 @@
    examples: [{raw: "c043fc", value: [forward]}, {raw: "c003fc", value: []}]}
 
 # -- climate (CCM 1A11) ----------------------------------------------------
-- {id: temp_flap_fl_target, module: "1A11", did: "980E", name: Front-left temperature flap target, len: 1, type: u, confidence: P,
-   examples: [{raw: "2500000100", value: 37}]}
-- {id: temp_flap_fl, module: "1A11", did: "D927", name: Front-left temperature flap position (actual), offset: 1, len: 1, type: u, confidence: P,
+- {id: temp_flap_fl, module: "1A11", did: "D927", name: Front-left (passenger) temperature flap position (actual), offset: 1, len: 1, type: u, confidence: C,
    examples: [{raw: "434421", value: 68}]}
-- {id: temp_flap_fr, module: "1A11", did: "D929", name: Front-right temperature flap position (actual), offset: 1, len: 1, type: u, confidence: P,
+- {id: temp_flap_fr, module: "1A11", did: "D929", name: Front-right (driver) temperature flap position (actual), offset: 1, len: 1, type: u, confidence: C,
    examples: [{raw: "5a5b21", value: 91}]}
 
 # -- added 2026-11-11 (drives + full scan; evidence in local/references.md) ------------------
@@ -288,8 +286,8 @@
    examples: [{raw: "01", value: "no"}, {raw: "02", value: "yes"}]}
 
 # -- added 2026-11-14 (docs/did-leads.md §1; each DID's full answer is 1 byte per docs/did-map.csv) ----
-- {id: window_direction, module: "1A12,1A13", did: "D008", name: Window direction, values: {"04": down, "03": up}, confidence: P,
-   examples: [{raw: "04", value: down}, {raw: "03", value: up}]}
+- {id: window_direction, module: "1A12,1A13", did: "D008", name: Window motor request, values: {"00": stopped, "01": manual up, "02": manual down, "03": auto up, "04": auto down}, confidence: C,
+   examples: [{raw: "04", value: auto down}, {raw: "03", value: auto up}, {raw: "01", value: manual up}, {raw: "02", value: manual down}, {raw: "00", value: stopped}]}
 - {id: stalk_push_d914, module: "1633", did: "D914", name: Gear stalk push switch 1, values: {"01": idle, "04": pushed}, confidence: P,
    examples: [{raw: "01", value: idle}, {raw: "04", value: pushed}]}
 - {id: stalk_push_d915, module: "1633", did: "D915", name: Gear stalk push switch 2, values: {"01": idle, "04": pushed}, confidence: P,
@@ -316,3 +314,69 @@
 - {id: pack_temperatures, module: "1635", did: "EE83", name: "Pack temperature sensors 1-28", repeat: {count: 28, len: 2, type: u, scale: 0.01, add: -50, unit: " C"}, confidence: P,
    examples: [{raw: "164416441612161215e015e01612161215e016121612161215e01612161215e015e015e01612161215e015e015e015e015e015e0161215e0ffffffff",
      value: [7.0, 7.0, 6.5, 6.5, 6.0, 6.0, 6.5, 6.5, 6.0, 6.5, 6.5, 6.5, 6.0, 6.5, 6.5, 6.0, 6.0, 6.0, 6.5, 6.5, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.5, 6.0]}]}
+
+# -- added 2026-11-14 parked session (local/session-log.md 13:17-16:55; runs/2026-11-14 snapshots and watches) ----
+- {id: rear_temp_flap, module: "1A11", did: "D92D", name: Rear temperature blend flap position (actual), offset: 1, len: 1, type: u, confidence: C,
+   examples: [{raw: "646221", value: 98}]}
+- {id: rear_air_distribution, module: "1A11", did: "D92F", name: "Rear air distribution flap (low = floor, high = B-pillar vents)", offset: 1, len: 1, type: u, confidence: C,
+   examples: [{raw: "232321", value: 35}, {raw: "605f21", value: 95}]}
+- {id: rear_temp_flap_target, module: "1A11", did: "9809", name: Rear temperature blend flap target, offset: 2, len: 1, type: u, confidence: P,
+   examples: [{raw: "4e5c6200", value: 98}]}
+- {id: rear_air_distribution_target, module: "1A11", did: "980A", name: Rear air distribution flap target, offset: 3, len: 1, type: u, confidence: P,
+   examples: [{raw: "101c0023", value: 35}]}
+- {id: front_door_lock, module: "1A12,1A13", did: "4054", name: Door lock (front doors), values: {"02": unlocked, "01": locked}, confidence: P,
+   examples: [{raw: "02", value: unlocked}, {raw: "01", value: locked}]}
+- {id: rear_door_lock, module: "1A21,1A22", did: "4056", name: Door lock (rear doors), values: {"02": unlocked, "01": locked}, confidence: P,
+   examples: [{raw: "02", value: unlocked}, {raw: "01", value: locked}]}
+- {id: seat_heat_level, module: "1A27,1A28", did: "983E", name: Front seat heating level, values: {"00": "off", "20": "1", "40": "2", "60": "3"}, confidence: P,
+   examples: [{raw: "60", value: "3"}, {raw: "40", value: "2"}, {raw: "20", value: "1"}, {raw: "00", value: "off"}]}
+- {id: rear_seat_heat_levels, module: "1A29", did: "983E", name: "Rear seat heating levels: bits 5-6 = left level, bits 2-3 = right level (0-3)", encoding: raw, confidence: P,
+   examples: [{raw: "6c", value: "6c"}]}
+- {id: seat_heating_on, module: "1A27,1A28,1A29", did: "FD03", name: Seat heating on, values: {"00": "off", "01": "on"}, confidence: P,
+   examples: [{raw: "01", value: "on"}, {raw: "00", value: "off"}]}
+- {id: seat_heater_output, module: "1A27,1A28", did: "F1F4", name: Seat heater output (cycles while heating), len: 1, type: u, unit: "%", confidence: P,
+   examples: [{raw: "64", value: 100}]}
+- {id: rear_recline_left, module: "1A29", did: "40A3", name: "Rear left backrest recline (0x0013 upright, about 0x0213 fully back)", offset: 2, len: 2, type: u, confidence: P,
+   examples: [{raw: "ffff0013ffffffff0013ffffffffffff", value: 19}]}
+- {id: rear_recline_right, module: "1A29", did: "40A3", name: "Rear right backrest recline (0x0013 upright, about 0x0213 fully back)", offset: 8, len: 2, type: u, confidence: P,
+   examples: [{raw: "ffff0013ffffffff0212ffffffffffff", value: 530}]}
+- {id: steering_wheel_heat, module: "1A01", did: "EE71", name: Steering wheel heating on, offset: 1, len: 1, values: {"00": "off", "02": "on"}, confidence: C,
+   examples: [{raw: "0002000000000100", value: "on"}, {raw: "0000000000000100", value: "off"}]}  # first 8 of 200 bytes
+- {id: drive_mode, module: "1601", did: "E450", name: Drive mode (power delivery), values: {"01": Range, "04": Performance}, confidence: C,
+   examples: [{raw: "01", value: Range}, {raw: "04", value: Performance}]}
+- {id: creep, module: "1601", did: "E3B5", name: "Creep setting (in P: 02 off, 01 on; 03 seen in D)", values: {"02": "off", "01": "on", "03": "unknown (seen in D)"}, confidence: P,
+   examples: [{raw: "01", value: "on"}, {raw: "02", value: "off"}]}
+- {id: window_switch_own, module: "1A13", did: "4036", name: "Own-door window switch (passenger door)", values: {"00": rest, "01": step 1 up, "02": step 1 down, "03": step 2 up}, confidence: P,
+   examples: [{raw: "03", value: step 2 up}, {raw: "01", value: step 1 up}, {raw: "02", value: step 1 down}, {raw: "00", value: rest}]}
+- {id: rear_window_switch_own, module: "1A21,1A22", did: "403B", name: Own-door window switch (rear doors), values: {"00": rest, "01": step 1 up, "03": step 2 up}, confidence: C,
+   examples: [{raw: "01", value: step 1 up}, {raw: "03", value: step 2 up}, {raw: "00", value: rest}]}
+- {id: driver_door_window_switches, module: "1A12", did: "4035", name: "Driver-door window switch bits (driver 0x24/0x6c up, 0x48/0x90 down; rear left 008000/018000; rear right 001000/003000)", encoding: raw, confidence: P,
+   examples: [{raw: "6c0000", value: "6c0000"}]}
+- {id: rear_fog, module: "1A01", did: "421C", name: Rear fog lamps, values: {"00000000": "off", "0000ffff": "on"}, confidence: C,
+   examples: [{raw: "0000ffff", value: "on"}, {raw: "00000000", value: "off"}]}
+- {id: blind_spot_light_left, module: "1A13", did: "4003", name: Blind-spot warning light (left mirror), values: {"00": "off", "32": lit}, confidence: P,
+   examples: [{raw: "32", value: lit}, {raw: "00", value: "off"}]}
+- {id: charge_cable_present, module: "1650", did: "EE31", name: Charge cable present, values: {"00": "no", "01": "yes"}, confidence: P,
+   examples: [{raw: "01", value: "yes"}, {raw: "00", value: "no"}]}
+- {id: mobileye_uptime, module: "1301", did: "EE04", name: Mobileye unit uptime, type: u, scale: 0.001, unit: " s", confidence: P,
+   examples: [{raw: "0000e050", value: 57.424}]}
+- {id: park_dist_b112, module: "1015", did: "B112", name: "Parking sensor distance, rear left corner (cm; 511 = nothing seen)", type: u, unit: " cm", confidence: P,
+   examples: [{raw: "0059", value: 89}]}
+- {id: park_dist_b113, module: "1015", did: "B113", name: "Parking sensor distance, rear right corner (cm; 511 = nothing seen)", type: u, unit: " cm", confidence: P,
+   examples: [{raw: "005a", value: 90}]}
+- {id: park_dist_b114, module: "1015", did: "B114", name: "Parking sensor distance, rear left inner (cm; 511 = nothing seen)", type: u, unit: " cm", confidence: P,
+   examples: [{raw: "0027", value: 39}]}
+- {id: park_dist_b115, module: "1015", did: "B115", name: "Parking sensor distance, rear right inner (cm; 511 = nothing seen)", type: u, unit: " cm", confidence: P,
+   examples: [{raw: "0024", value: 36}]}
+- {id: park_dist_b116, module: "1015", did: "B116", name: "Parking sensor distance, front left corner (cm; 511 = nothing seen)", type: u, unit: " cm", confidence: P,
+   examples: [{raw: "0050", value: 80}]}
+- {id: park_dist_b117, module: "1015", did: "B117", name: "Parking sensor distance, front right corner (cm; 511 = nothing seen)", type: u, unit: " cm", confidence: P,
+   examples: [{raw: "0053", value: 83}]}
+- {id: park_dist_b118, module: "1015", did: "B118", name: "Parking sensor distance, front left inner (cm; 511 = nothing seen)", type: u, unit: " cm", confidence: P,
+   examples: [{raw: "0046", value: 70}]}
+- {id: park_dist_b119, module: "1015", did: "B119", name: "Parking sensor distance, front right inner (cm; 511 = nothing seen)", type: u, unit: " cm", confidence: P,
+   examples: [{raw: "0059", value: 89}]}
+- {id: park_dist_b120, module: "1015", did: "B120", name: "Parking sensor distance, extra rear (outer, side not yet known) (cm; 511 = nothing seen)", type: u, unit: " cm", confidence: P,
+   examples: [{raw: "01ff", value: 511}]}
+- {id: park_dist_b121, module: "1015", did: "B121", name: "Parking sensor distance, extra rear (outer, side not yet known) (cm; 511 = nothing seen)", type: u, unit: " cm", confidence: P,
+   examples: [{raw: "01ff", value: 511}]}

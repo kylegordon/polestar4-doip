@@ -8,6 +8,9 @@
 - {module: "1301", did: "EE13", action: block, severity: critical,
    why: "knocks the Mobileye driver assistance ECU off the network for about a minute (seen twice, parked)",
    evidence: "DISCOVERIES.md 2026.11.11; docs/findings.md 1301"}
+- {module: "1301", did: "EE14", action: block, severity: critical,
+   why: "first DID of a paced probe after EE13: 1301 stopped answering TesterPresent; the passenger airbag lamp blinked off/on and the gateway refused DoIP until the adaptor was replugged (2026-11-14 16:32, parked)",
+   evidence: "observed 2026-11-14 16:32 (paced probe, parked, first DID after EE13); recovered after the DoIP adaptor was replugged"}
 
 # 1601: reading these was followed by the module failing to answer TesterPresent, 3 s after the car woke.
 # The 2026-11-13 audit corrected the set from D927-D92B to D928-D92C and judged start-up the likely cause,
