@@ -13,7 +13,7 @@ Read `README.md` (tool, hazards, commands), `docs/did.md` (DID backlog) and `CHA
   `docs/`, `DISCOVERIES.md` and `CHANGELOG.md`. The `p4-analyst` subagent (Haiku, `.claude/agents/`) does
   offline work only: web research on `./p4 strings` output, summaries of `./p4 correlate`, module note
   drafts. Check its claims against the raw `runs/` records before anything lands in `catalogue/`.
-- Evidence: `runs/` is the source of truth; `docs/did-map.csv` is generated with `./p4 didmap`. Do not
+- Evidence: `runs/` is the source of truth; `docs/did-map.csv` and `docs/coverage.csv` are generated with `./p4 didmap`. Do not
   hand-edit either. A C signal needs the same change twice, both directions, with the action in
   `local/session-log.md`; one pass is P.
 - DISCOVERIES.md is the project's purpose: any commit that adds or changes what we know about the car

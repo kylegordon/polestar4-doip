@@ -3,6 +3,14 @@
 Owned by the project; newest first. This file records tool, catalogue and documentation changes —
 observations about the car belong in docs/findings.md and DISCOVERIES.md, not here.
 
+## 2026-11-14 — public site: discovery coverage
+
+- `./p4 didmap` also writes `docs/coverage.csv` (module, dids_tried, dids_answering, refused: counts only);
+  `--check` and `prepublish-check.sh` cover both files.
+- Public site: new Modules page (bar of DIDs tried per module, answering count, Confirmed and Provisional
+  signal counts) and a whole-car bar on Start here, reusing `render.coverage_bar`. Addresses missing from
+  `catalogue/modules.yaml` are left out of the site.
+
 ## 2026-11-14 — offline analysis subcommands
 
 - `./p4 flips`, `./p4 changes`, `./p4 findvalue` (module `tool/p4doip/analysis.py`): the snapshot and watch-log

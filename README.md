@@ -33,6 +33,7 @@ Read-only mapping of a Polestar 4's diagnostic data over DoIP (ISO 13400) throug
 | `catalogue/dids.yaml` | DID registry: names, families, which values are per-car (masked) |
 | `catalogue/dtc.yaml` | DTC code to name mappings (empty until established) |
 | `docs/modules.md` | Module map: what each module is and the evidence |
+| `docs/coverage.csv` | Per module: DIDs tried, answering, refused. Counts only, feeds the public site's Modules page. Written by `./p4 didmap` |
 | `docs/did-map.csv` | Every DID that answered, per module, with its response length (no values). Regenerate with `./p4 didmap` (or `scripts/export-did-map.sh`, a wrapper) |
 | `docs/did.md` | Entry point for the DID-decoding backlog (ledger, sessions, entry drafts, leads) |
 | `tool/` | The `p4` tool, a simulated gateway and the tests |
@@ -40,7 +41,7 @@ Read-only mapping of a Polestar 4's diagnostic data over DoIP (ISO 13400) throug
 | `scripts/drive-watch.sh` | Fast watch list for a drive (power, speed, gear, lamps, steering, chassis mode, matrix headlamps) |
 | `scripts/pcap_uds.py` | Offline decoder for DoIP/UDS in pcap files |
 | `scripts/patterns.txt` | The identifying-content patterns, shared by the prepublish check and the public site's output scan |
-| `scripts/prepublish-check.sh` | Fails if anything identifying (VIN, SIM or modem IDs, phone numbers, raw runs, pcaps) is tracked, or if `docs/did-map.csv` is stale where `runs/` exists |
+| `scripts/prepublish-check.sh` | Fails if anything identifying (VIN, SIM or modem IDs, phone numbers, raw runs, pcaps) is tracked, or if `docs/did-map.csv` or `docs/coverage.csv` is stale where `runs/` exists |
 | `DISCOVERIES.md` | Discovery log: what each release (session) found |
 | `CHANGELOG.md` | Tool/catalogue/documentation changes (not car observations) |
 | `PLAN.md` | Historical discovery method; current work is in `docs/did.md` and the audit |
@@ -115,7 +116,7 @@ Unknown plan keys are an error (a typo cannot silently become a default). `--dry
 | `./p4 runs` | Run days with scan/DTC/watch counts and size |
 | `./p4 export --format json` | Export recorded DID facts (masked values stay zeros); `--format csv --out file` |
 | `./p4 report 2026-11-13` | Markdown summary of a run day: scans, DTCs, watches, marks |
-| `./p4 didmap` | Regenerate `docs/did-map.csv` from `runs/`; `--check` exits 1 when stale |
+| `./p4 didmap` | Regenerate `docs/did-map.csv` and `docs/coverage.csv` (per module: DIDs tried, answering, refused; counts only) from `runs/`; `--check` exits 1 when either is stale |
 | `./p4 import-legacy` | Convert the 2026-11-10 text sweeps in `local/reads/` into `runs/` |
 
 `--json` is available on `hazards`, `did`, `read`, `known`, `strings`, `signals`, `whois`, `dtc`, `diff`, `similar`, `ranges`, `scandiff`, `dtcdiff`, `runs`, `tree`, `doctor` and `export`.
@@ -137,7 +138,7 @@ docker run --rm --name p4-web -p 127.0.0.1:8088:8088 \
 
 ## Public site
 
-[kylegordon.github.io/polestar4-doip](https://kylegordon.github.io/polestar4-doip/) is the plain-English, anonymised view of this repository for other owners: Start here, Hazards, Signals, Findings, Contribute and a Glossary. It is built by `.github/workflows/pages.yml` on every push to `main` from git-tracked files only (`tool/p4doip/site/`), shows session dates as month and year, and fails the build if any page matches `scripts/patterns.txt` or would be changed by the identifier masking. Design: [`docs/site-design.md`](docs/site-design.md). Build it locally:
+[kylegordon.github.io/polestar4-doip](https://kylegordon.github.io/polestar4-doip/) is the plain-English, anonymised view of this repository for other owners: Start here, Modules (discovery bars and decoded-signal counts per module), Hazards, Signals, Findings, Contribute and a Glossary. The bars come from `docs/coverage.csv` (counts only, regenerated with `./p4 didmap`), so the site is as current as the last commit of that file. It is built by `.github/workflows/pages.yml` on every push to `main` from git-tracked files only (`tool/p4doip/site/`), shows session dates as month and year, and fails the build if any page matches `scripts/patterns.txt` or would be changed by the identifier masking. Design: [`docs/site-design.md`](docs/site-design.md). Build it locally:
 
 ```sh
 git ls-files > .site-files && docker run --rm --user "$(id -u):$(id -g)" -v "$PWD":/w -w /w -e PYTHONPATH=tool --entrypoint python p4doip:local -m p4doip.site build --manifest .site-files --out _site

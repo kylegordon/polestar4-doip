@@ -887,7 +887,20 @@ def test_didmap_writes_checks_and_detects_stale(p4, root):
     assert "1601,E37B,ok,1," in lines
     assert "1601,2B1A,nrc,,22" in lines
     assert not [line for line in lines if "E37A" in line]  # NRC 31 rows are not exported
+    cov = (root / "docs" / "coverage.csv").read_text().strip().splitlines()
+    assert cov == ["module,dids_tried,dids_answering,refused", "1601,3,1,1"]  # counts only; NRC 31 is tried, not refused
+    # a repeat of E37B in a later run is not tried twice; a transient refusal is tried but neither answering nor refused
+    store.append_jsonl(store.scan_path(0x1601, "2026-11-13"), {"tgt": "1601", "did": "E37B", "status": "ok", "data": "03"})
+    store.append_jsonl(store.scan_path(0x1602, "2026-11-13"), {"tgt": "1602", "did": "0001", "status": "nrc", "code": "21"})
+    p4("didmap")
+    cov = (root / "docs" / "coverage.csv").read_text().strip().splitlines()
+    assert cov == ["module,dids_tried,dids_answering,refused", "1601,3,1,1", "1602,1,0,0"]
     p4("didmap", "--check")  # fresh: no exit
+    (root / "docs" / "coverage.csv").write_text("module,dids_tried,dids_answering,refused\n")
+    with pytest.raises(SystemExit) as exc:
+        p4("didmap", "--check")  # a stale coverage.csv alone fails the gate
+    assert exc.value.code == 1
+    p4("didmap")
     store.append_jsonl(store.scan_path(0x1601, "2026-11-13"), {"tgt": "1601", "did": "E36E", "status": "ok", "data": "0100"})
     with pytest.raises(SystemExit) as exc:
         p4("didmap", "--check")
