@@ -3,6 +3,11 @@
 Owned by the project; newest first. This file records tool, catalogue and documentation changes —
 observations about the car belong in docs/findings.md and DISCOVERIES.md, not here.
 
+## 2026-11-14 — offline analysis subcommands
+
+- `./p4 flips`, `./p4 changes`, `./p4 findvalue` (module `tool/p4doip/analysis.py`): the snapshot and watch-log
+  one-liners from hands-on sessions, offline, with tests.
+
 ## 2026-11-14 — public site, phase 1
 
 - `tool/p4doip/site/`: builder for the public GitHub Pages site (Start here, Hazards, Signals, Findings,

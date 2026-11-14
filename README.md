@@ -104,6 +104,9 @@ Unknown plan keys are an error (a typo cannot silently become a default). `--dry
 | `./p4 signals` | List and validate the signal catalogue |
 | `./p4 correlate 2026-11-11` | For each `mark` that day, the watch `CHANGE` lines from 2 s before to 15 s after (`--before`, `--after`) |
 | `./p4 strings 1316` | Readable text anywhere in the answered DIDs (plain, UTF-16, hex-wrapped), with VIN, SIM/IMEI, email and phone values masked (`--names` labels) |
+| `./p4 flips A B C` | Values equal in snapshots A and C but different in B (`--snap-d D` confirms A==C!=B==D; `--all` keeps clocks/counters; `--short N`) |
+| `./p4 changes watch-x.log` | `time key new-value` from a watch log's CHANGE lines (`--since`, `--until`, `--keys MOD:DID,..`, `--width N`, `--significant N` drops changes of N counts or fewer) |
+| `./p4 findvalue A B --from X --to Y` | Byte/word positions decoding to X in A and Y in B (u8/u16/u32 BE/LE, x2/x10/x100, /2 /10 /100, offsets ±40, Kelvin*10); `./p4 findvalue A --value X` for one snapshot |
 | `./p4 similar 1316` | Modules whose answered DIDs look most like this one's (`--top N`, `--refused`); `--families` clusters look-alike modules |
 | `./p4 scandiff 1601` | Which DIDs of a module changed status between two run days (`--day-a`, `--day-b`) |
 | `./p4 dtcdiff 1601` | Which stored fault codes appeared or cleared between two run days |

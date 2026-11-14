@@ -13,7 +13,7 @@ import time
 
 import yaml
 
-from . import __version__, decode, hazards, store
+from . import __version__, analysis, decode, hazards, store
 from .client import (NACK_UNKNOWN_TARGET, ActivationRefused, BlockedRead, CautionedRead, ConnectionLost, DoIP,
                      Result, blocked_reason, caution_reason, is_transient, nrc_name)
 from .privacy import MASKED_DIDS, readable_runs, readable_text, stored_value
@@ -842,6 +842,80 @@ def cmd_diff(args):
         label = "  [%s]" % ", ".join(s["name"] for s in sigs[(tgt, did)]) if (tgt, did) in sigs else ""
         print("%s %s -> %s%s" % (key, old, new, label))
     print("%d changed" % len(changes))
+
+
+def load_snapshot_values(name: str) -> dict:
+    with open(find_snapshot(name)) as f:
+        return json.load(f)["values"]
+
+
+def label_for(key: str, sigs: dict, dids: dict) -> str:
+    tgt, did = (int(x, 16) for x in key.split(":"))
+    names = [s["name"] for s in sigs.get((tgt, did), [])]
+    if not names and did in dids and dids[did].get("name"):
+        names = [dids[did]["name"]]
+    return "  [%s]" % ", ".join(names) if names else ""
+
+
+def cmd_flips(args):
+    """Values equal in A and C but different in B: changed with an action and changed back."""
+    names = [args.a, args.b, args.c] + (args.snap_d or [])
+    stats: dict = {}
+    out = analysis.flips([load_snapshot_values(n) for n in names], include_noise=args.all, stats=stats)
+    sigs, dids = decode.index(decode.load()), decode.load_dids()
+    for key, vals in out:
+        print("%s %s%s" % (key, " ".join(analysis.shorten(v, args.short) for v in vals[:2]), label_for(key, sigs, dids)))
+    print("%d flipped over %d snapshots" % (len(out), len(names)))
+    if stats["skipped"]:
+        print("%d keys skipped (not in every snapshot)" % stats["skipped"], file=sys.stderr)
+
+
+def find_watch_log(name: str) -> str:
+    if os.path.exists(name):
+        return name
+    found = sorted(glob.glob(os.path.join(store.root(), "runs", "*", name)))
+    if not found:
+        raise SystemExit("no watch log %r (a path, or a file name inside runs/*/)" % name)
+    return found[-1]
+
+
+def cmd_changes(args):
+    """Compact 'time key new-value' list from a watch log's CHANGE lines."""
+    keys = {k.strip().upper() for k in args.keys.split(",") if k.strip()} if args.keys else None
+    since, until = analysis.check_hms(args.since, "--since"), analysis.check_hms(args.until, "--until")
+    if since and until and since > until:
+        raise SystemExit("--since is after --until (times are clock times; ranges across midnight are not supported)")
+    stats: dict = {}
+    with open(find_watch_log(args.log)) as f:
+        rows = analysis.changes(f, since, until, keys, args.significant, stats)
+    for t, key, _old, new, _dec in rows:
+        print("%s %s %s" % (t, key, analysis.shorten(new, args.width)))
+    print("%d changes" % len(rows))
+    for n, text in ((stats["hidden"], "muted/noisy lines in the log are not shown"),
+                    (stats["unparsed"], "CHANGE lines not understood"),
+                    (stats["jitter"], "dropped by --significant (this includes 1-step flag/enum changes)")):
+        if n:
+            print("%d %s" % (n, text), file=sys.stderr)
+
+
+def cmd_findvalue(args):
+    """Positions in a snapshot (or two) that decode to a value under the usual encodings."""
+    pair = args.b is not None
+    if pair and (args.from_ is None or args.to is None):
+        raise SystemExit("two snapshots need --from X --to Y")
+    if not pair and args.value is None:
+        raise SystemExit("one snapshot needs --value X (or give a second snapshot with --from/--to)")
+    if pair and args.value is not None:
+        raise SystemExit("--value is for a single snapshot; use --from/--to with two")
+    a = load_snapshot_values(args.a)
+    if pair:
+        hits = analysis.findvalue(a, args.from_, load_snapshot_values(args.b), args.to, args.tol)
+    else:
+        hits = analysis.findvalue(a, args.value, tol=args.tol)
+    sigs, dids = decode.index(decode.load()), decode.load_dids()
+    for hit in hits:
+        print(analysis.fmt_hit(hit) + label_for(hit[0], sigs, dids))
+    print("%d hits" % len(hits))
 
 
 def parse_watch_specs(specs: list[str], allow_caution: bool = False) -> list[tuple[int, int]]:
@@ -1971,6 +2045,34 @@ def main(argv=None):
                    help="max space between consecutive DIDs in one range, e.g. 0x40")
     add_json(s)
     s.set_defaults(fn=cmd_ranges)
+
+    s = sub.add_parser("flips", help="values equal in snapshots A and C but different in B: changed and changed back (offline)")
+    s.add_argument("a")
+    s.add_argument("b")
+    s.add_argument("c")
+    s.add_argument("--snap-d", action="append", metavar="SNAP", help="further snapshot(s) to confirm A==C!=B==D (repeatable)")
+    s.add_argument("--all", action="store_true", help="include clocks and counters (DD00-DD02, D200-D2FF, 9007)")
+    s.add_argument("--short", type=int, metavar="N", help="truncate values to N characters")
+    s.set_defaults(fn=cmd_flips)
+
+    s = sub.add_parser("changes", help="compact 'time key new-value' list from a watch log's CHANGE lines (offline)")
+    s.add_argument("log", help="watch log path, or file name inside runs/*/")
+    s.add_argument("--since", metavar="HH:MM:SS")
+    s.add_argument("--until", metavar="HH:MM:SS")
+    s.add_argument("--keys", metavar="MOD:DID,...", help="only these keys")
+    s.add_argument("--width", type=int, metavar="N", help="truncate values to N characters")
+    s.add_argument("--significant", type=int, metavar="N",
+                   help="drop same-length hex changes of N counts or fewer (per byte or as a whole number)")
+    s.set_defaults(fn=cmd_changes)
+
+    s = sub.add_parser("findvalue", help="positions that decode to X in snapshot A and Y in B, or X in one snapshot (offline)")
+    s.add_argument("a")
+    s.add_argument("b", nargs="?")
+    s.add_argument("--from", dest="from_", type=float, metavar="X", help="decoded value in A")
+    s.add_argument("--to", type=float, metavar="Y", help="decoded value in B")
+    s.add_argument("--value", type=float, metavar="X", help="single-snapshot mode: positions equal to X")
+    s.add_argument("--tol", type=float, default=0.5, help="largest decoded error accepted (default 0.5, capped at half a step)")
+    s.set_defaults(fn=cmd_findvalue)
 
     s = sub.add_parser("signals", help="list and validate catalogue/signals.yaml")
     add_json(s)
