@@ -1244,54 +1244,70 @@ def cmd_import_legacy(args):
 
 
 def cmd_didmap(args):
-    """Regenerate docs/did-map.csv from runs/: every DID that answered OK plus DIDs that exist but refuse
-    with NRC 22/33 — the same rows scripts/export-did-map.sh writes. Values are never exported.
-    --check exits 1 when the file on disk is stale (used by scripts/prepublish-check.sh)."""
+    """Regenerate docs/did-map.csv and docs/coverage.csv from runs/. did-map: every DID that answered OK plus
+    DIDs that exist but refuse with NRC 22/33. coverage: per module, counts only (DIDs tried, answering, refused),
+    for the public site's discovery bars. Values are never exported.
+    --check exits 1 when either file on disk is stale (used by scripts/prepublish-check.sh)."""
     files = sorted(glob.glob(os.path.join(store.root(), "runs", "*", "scan-*.jsonl")))
     if not files:
         raise SystemExit("no runs/*/scan-*.jsonl here; nothing to export")
     best: dict[tuple[str, str], tuple[int, dict]] = {}
+    tried: dict[str, set[str]] = {}  # same definition as the private status site: any record counts as tried
     for path in files:
         for rec in store.read_jsonl(path):
             if "did" not in rec:
                 continue  # run header
+            tried.setdefault(rec["tgt"].upper(), set()).add(rec["did"].upper())
             rank = {"ok": 2, "nrc": 1}.get(rec["status"], 0)
             if store.retryable(rec):
                 rank = 0  # a transient refusal is not a map fact
-            key = (rec["tgt"], rec["did"])
+            key = (rec["tgt"].upper(), rec["did"].upper())
             if key not in best or rank >= best[key][0]:
                 best[key] = (rank, rec)
     rows = ["module,did,status,length_bytes,nrc"]
+    answering: dict[str, int] = {}
+    refused: dict[str, int] = {}
     for (tgt, did), (_, rec) in sorted(best.items()):
         if store.retryable(rec):
             continue  # a transient refusal is not a DID fact
         if rec["status"] == "ok":
             rows.append("%s,%s,ok,%d," % (tgt, did, len(rec.get("data", "")) // 2))
+            answering[tgt.upper()] = answering.get(tgt.upper(), 0) + 1
         elif rec["status"] == "nrc" and rec.get("code") in ("22", "33"):
             rows.append("%s,%s,nrc,,%s" % (tgt, did, rec["code"]))
-    text = "\n".join(rows) + "\n"
-    out = os.path.join(store.root(), "docs", "did-map.csv")
+            refused[tgt.upper()] = refused.get(tgt.upper(), 0) + 1
+    cov = ["module,dids_tried,dids_answering,refused"]
+    for m in sorted(tried):
+        cov.append("%s,%d,%d,%d" % (m, len(tried[m]), answering.get(m, 0), refused.get(m, 0)))
+    outputs = {"did-map.csv": "\n".join(rows) + "\n", "coverage.csv": "\n".join(cov) + "\n"}
+    docs = os.path.join(store.root(), "docs")
     if args.check:
-        stale = not os.path.exists(out)
-        if not stale:
-            with open(out) as f:
-                stale = f.read() != text
+        stale = []
+        for name, text in outputs.items():
+            path = os.path.join(docs, name)
+            if not os.path.exists(path):
+                stale.append(name)
+                continue
+            with open(path) as f:
+                if f.read() != text:
+                    stale.append(name)
         if stale:
+            print("stale: %s" % ", ".join("docs/" + n for n in stale), file=sys.stderr)
             raise SystemExit(1)
-        print("docs/did-map.csv is up to date (%d DIDs)" % (len(rows) - 1))
+        print("docs/did-map.csv (%d DIDs) and docs/coverage.csv (%d modules) are up to date" % (len(rows) - 1, len(cov) - 1))
         return
-    os.makedirs(os.path.dirname(out), exist_ok=True)
-    tmp = out + ".tmp"
-    with open(tmp, "w") as f:
-        f.write(text)
-    os.replace(tmp, out)
-    print("%s: %d DIDs" % (out, len(rows) - 1))
+    os.makedirs(docs, exist_ok=True)
+    for name, text in outputs.items():
+        out = os.path.join(docs, name)
+        tmp = out + ".tmp"
+        with open(tmp, "w") as f:
+            f.write(text)
+        os.replace(tmp, out)
+    print("%s: %d DIDs; docs/coverage.csv: %d modules" % (os.path.join(docs, "did-map.csv"), len(rows) - 1, len(cov) - 1))
 
 
 # -- offline analysis ----------------------------------------------------------
 # Text extraction and masking live in privacy.py (shared with web/); readable_text is imported above.
-
-
 def cmd_strings(args):
     """Readable text in every answered DID of the given modules, identifiers masked.
 

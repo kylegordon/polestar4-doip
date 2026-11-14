@@ -1,4 +1,5 @@
 """The public site build: right content, every hazard shown, no private data or exact dates in the output."""
+import csv
 import os
 import re
 import shutil
@@ -16,7 +17,7 @@ from p4doip.site.inputs import Inputs  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # What the builder reads; a tree holding only these (plus poisoned private dirs) must build.
-INPUTS = ["catalogue/signals.yaml", "catalogue/hazards.yaml", "catalogue/modules.yaml", "docs/findings.md",
+INPUTS = ["catalogue/signals.yaml", "catalogue/hazards.yaml", "catalogue/modules.yaml", "docs/coverage.csv", "docs/findings.md",
           "scripts/patterns.txt"]
 
 
@@ -33,7 +34,7 @@ def page(site, name):
 
 
 def test_builds_the_phase1_pages(site):
-    assert site[1] == ["index.html", "hazards.html", "signals.html", "findings.html", "contribute.html",
+    assert site[1] == ["index.html", "modules.html", "hazards.html", "signals.html", "findings.html", "contribute.html",
                        "glossary.html"]
 
 
@@ -188,3 +189,98 @@ def test_unknown_module_fails_the_build(tmp_path):
     (root / "catalogue" / "modules.yaml").write_text(yaml.safe_dump(mods))
     with pytest.raises(ValueError, match="1635"):
         site_build.build(Inputs(str(root), frozenset(INPUTS)), str(tmp_path / "out"))
+
+
+def _coverage_rows():
+    with open(os.path.join(REPO, "docs", "coverage.csv")) as f:
+        return list(csv.DictReader(f))
+
+
+def _catalogue_tried():
+    """Tried DIDs on catalogued modules only: the page leaves out addresses modules.yaml does not name."""
+    known = {str(m["addr"]).upper() for m in yaml.safe_load(open(os.path.join(REPO, "catalogue", "modules.yaml")))}
+    return sum(int(r["dids_tried"]) for r in _coverage_rows() if r["module"] in known)
+
+
+def test_coverage_csv_is_counts_only():
+    with open(os.path.join(REPO, "docs", "coverage.csv")) as f:
+        assert f.readline().strip() == "module,dids_tried,dids_answering,refused"
+    rows = _coverage_rows()
+    assert rows
+    for r in rows:
+        assert set(r) == {"module", "dids_tried", "dids_answering", "refused"}
+        assert re.fullmatch(r"[0-9A-F]{4}", r["module"])
+        assert all(re.fullmatch(r"[0-9]+", r[k]) for k in ("dids_tried", "dids_answering", "refused"))
+
+
+def test_modules_page_shows_every_module_and_the_whole_car_share(site):
+    text = page(site, "modules.html")
+    with open(os.path.join(REPO, "catalogue", "modules.yaml")) as f:
+        mods = yaml.safe_load(f)
+    assert len(re.findall(r"<tr><td data-label=\"Module\">", text)) == len(mods)
+    for m in mods:
+        assert "<code>%s</code>" % str(m["addr"]).upper() in text
+    tried = _catalogue_tried()
+    space = 65536 * len(mods)
+    assert "%d of %d data items tried" % (tried, space) in text
+    assert "width:%.1f%%" % (100.0 * tried / space) in text
+    assert "<title>Modules" in text and 'aria-current="page">Modules' in text
+
+
+def test_start_here_has_the_whole_car_bar(site):
+    text = page(site, "index.html")
+    tried = _catalogue_tried()
+    assert "%d of %d" % (tried, 65536 * len(yaml.safe_load(open(os.path.join(REPO, "catalogue", "modules.yaml"))))) in text
+    assert "asked about" in text and 'href="modules.html"' in text
+
+
+def test_module_signal_counts_match_the_catalogue(site):
+    text = page(site, "modules.html")
+    with open(os.path.join(REPO, "catalogue", "signals.yaml")) as f:
+        sigs = yaml.safe_load(f)
+    for m in yaml.safe_load(open(os.path.join(REPO, "catalogue", "modules.yaml"))):
+        addr = str(m["addr"]).upper()
+        want = {k: sum(1 for s in sigs if s["confidence"] == k and addr in [a.strip().upper() for a in s["module"].split(",")])
+                for k in "CP"}
+        row = re.search(r'<tr><td data-label="Module"><code>%s</code>.*?</tr>' % addr, text, re.S).group(0)
+        assert re.search(r'data-label="Confirmed">%d<' % want["C"], row), addr
+        assert re.search(r'data-label="Provisional">%d<' % want["P"], row), addr
+
+
+def _tree(tmp_path, coverage=None):
+    root = tmp_path / "repo"
+    for rel in INPUTS:
+        (root / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(os.path.join(REPO, rel), root / rel)
+    if coverage is not None:
+        (root / "docs" / "coverage.csv").write_text(coverage)
+    return root
+
+
+@pytest.mark.parametrize("csv_text, msg", [
+    ("module,dids_tried,dids_answering,refused,value\n1001,1,1,0,AB\n", "columns"),
+    ("module,dids_tried,dids_answering,refused\n1001,1.5,1,0\n", "whole numbers"),
+    ("module,dids_tried,dids_answering,refused\n1001,1,2,0\n", "inconsistent"),
+    ("module,dids_tried,dids_answering,refused\n1001,70000,1,0\n", "inconsistent"),
+    ("module,dids_tried,dids_answering,refused\n1001,1,1,0\n1001,1,1,0\n", "twice"),
+])
+def test_bad_coverage_csv_fails_the_build(tmp_path, csv_text, msg):
+    root = _tree(tmp_path, csv_text)
+    with pytest.raises(ValueError, match=msg):
+        site_build.build(Inputs(str(root), frozenset(INPUTS)), str(tmp_path / "out"))
+
+
+def test_module_without_a_coverage_row_shows_zero(tmp_path):
+    root = _tree(tmp_path, "module,dids_tried,dids_answering,refused\n1001,10,5,1\n")
+    out = tmp_path / "out"
+    site_build.build(Inputs(str(root), frozenset(INPUTS)), str(out))
+    assert "width:0.0%" in (out / "modules.html").read_text()
+
+
+def test_uncatalogued_module_in_coverage_is_left_out(tmp_path):
+    root = _tree(tmp_path, "module,dids_tried,dids_answering,refused\n1001,10,5,1\nFFFF,500,5,0\n")
+    out = tmp_path / "out"
+    site_build.build(Inputs(str(root), frozenset(INPUTS)), str(out))
+    text = (out / "modules.html").read_text()
+    assert "FFFF" not in text
+    assert "10 of %d data items tried" % (65536 * len(yaml.safe_load(open(root / "catalogue" / "modules.yaml")))) in text

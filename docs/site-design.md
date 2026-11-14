@@ -2,7 +2,7 @@
 
 Status: Phase 1 implemented (builder `tool/p4doip/site/`, workflow `.github/workflows/pages.yml`). Section 8 (panel review) overrides the earlier sections where they differ; paths such as `site/build.py` below are the pre-panel plan.
 
-Owner decisions: session dates appear on the site as month and year only; Phase 1 = Start here, Hazards, Signals, Findings, Contribute (with issue templates) and a Glossary; Modules and Discoveries pages are Phase 2; URL `kylegordon.github.io/polestar4-doip`; the owner is named by GitHub handle only. Action pinning: full commit SHAs. Local build: from tracked files (`git ls-files`, or a `git archive` export with a manifest).
+Owner decisions: session dates appear on the site as month and year only; Phase 1 = Start here, Modules, Hazards, Signals, Findings, Contribute (with issue templates) and a Glossary; the Discoveries page is Phase 2. Modules is Phase 1: per-module discovery bars (share of the 65,536 DIDs tried), answering count, and Confirmed/Provisional signal counts, from `docs/coverage.csv` (counts only, written by `p4 didmap` beside `did-map.csv`) and the catalogue; the same bar is on Start here for the whole car. Addresses in `coverage.csv` that `modules.yaml` does not name are left out; URL `kylegordon.github.io/polestar4-doip`; the owner is named by GitHub handle only. Action pinning: full commit SHAs. Local build: from tracked files (`git ls-files`, or a `git archive` export with a manifest).
 
 Open decisions were marked **[DECISION n]** and collected in section 7.
 
@@ -185,7 +185,7 @@ Search: the signal filter on `signals.html` plus a site-wide JSON index (`search
 **Phase 1: smallest useful release (no demo data, no new disclosure)**
 - `site/build.py` with the shell and CSS (light/dark, responsive), Markdown rendering for `DISCOVERIES.md`, `docs/findings.md`.
 - Pages: Home, Discoveries, Findings, Hazards, Contribute/Scan (from README), About.
-- Signals page with client-side filter; Modules page with cards and coverage bars from `did-map.csv`.
+- Signals page with client-side filter; Modules page (table, shipped) with coverage bars from `coverage.csv`; per-module cards stay Phase 2.
 - `pages.yml` with prepublish gate, build, output scan, internal link check, deploy.
 - Tests: builder canary/tripwire test, hazards-on-page test, signals-count test.
 - Update `AGENTS.md`/README/`.gitignore` in the same PR (the instruction files are load-bearing).

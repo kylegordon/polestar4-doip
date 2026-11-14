@@ -3,15 +3,18 @@
 Every page links to the file it was built from on GitHub. Free text from the repository passes through
 `gate.clean` before it is placed in a page; the finished output is scanned by `gate.scan_dir`.
 """
+import csv
+import io
 import os
 import re
 import shutil
+import sys
 
 import markdown
 import yaml
 
 from .. import decode, hazards
-from ..render import TOKENS, e
+from ..render import DID_SPACE, TOKENS, coverage_bar, e
 from . import gate
 from .inputs import Inputs
 
@@ -20,9 +23,10 @@ SOURCE_URL = REPO_URL + "/blob/main/"
 OWNER = "kylegordon"  # the owner's GitHub handle; the site names no one else
 CAR = "one UK Polestar 4, customer software 4.2.11"
 
-NAV = (("index.html", "Start here"), ("hazards.html", "Hazards"), ("signals.html", "Signals"),
+NAV = (("index.html", "Start here"), ("modules.html", "Modules"), ("hazards.html", "Hazards"), ("signals.html", "Signals"),
        ("findings.html", "Findings"), ("contribute.html", "Contribute"), ("glossary.html", "Glossary"))
 
+COVERAGE_COLUMNS = ["module", "dids_tried", "dids_answering", "refused"]  # counts only; see `p4 didmap`
 LABEL = {"C": "Confirmed", "P": "Provisional"}
 
 SITE_CSS = TOKENS + """
@@ -91,6 +95,7 @@ class Site:
         self.commit = commit if re.fullmatch(r"[0-9a-f]{7,40}", commit or "") else ""
         self.pages: list[str] = []
         self.modules = self._modules()
+        self.coverage = self._coverage()
         self.signals = decode.load(inputs.input_path("catalogue/signals.yaml"))
         hazards.clear_cache()
         self.hazards = hazards.load(inputs.input_path("catalogue/hazards.yaml"))
@@ -106,6 +111,36 @@ class Site:
     def _modules(self) -> dict[str, dict]:
         doc = yaml.safe_load(self.inputs.read_input("catalogue/modules.yaml")) or []
         return {str(m["addr"]).upper(): m for m in doc}
+
+    def _coverage(self) -> dict[str, dict[str, int]]:
+        """docs/coverage.csv: per module counts of DIDs tried / answering / refused, for catalogued modules.
+        Any other shape fails the build."""
+        reader = csv.reader(io.StringIO(self.inputs.read_input("docs/coverage.csv")))
+        header = next(reader, None)
+        if header != COVERAGE_COLUMNS:
+            raise ValueError("docs/coverage.csv: columns must be exactly %s, found %s" % (COVERAGE_COLUMNS, header))
+        cov: dict[str, dict[str, int]] = {}
+        for row in reader:
+            if len(row) != len(COVERAGE_COLUMNS):
+                raise ValueError("docs/coverage.csv: bad row %r" % (row,))
+            addr = row[0].upper()
+            if addr in cov:
+                raise ValueError("docs/coverage.csv: module %s appears twice" % row[0])
+            if not all(re.fullmatch(r"[0-9]{1,6}", v) for v in row[1:]):
+                raise ValueError("docs/coverage.csv: %s: counts must be whole numbers" % row[0])
+            tried, answering, refused = (int(v) for v in row[1:])
+            if tried > DID_SPACE or answering + refused > tried:
+                raise ValueError("docs/coverage.csv: %s: counts are inconsistent" % row[0])
+            if addr not in self.modules:
+                print("site: coverage.csv: skipping %s (not in catalogue/modules.yaml)" % row[0], file=sys.stderr)
+                continue  # scanned but not named in catalogue/modules.yaml yet: same as the private status site
+            cov[addr] = {"tried": tried, "answering": answering, "refused": refused}
+        return cov
+
+    def coverage_totals(self) -> dict[str, int]:
+        tried = sum(c["tried"] for c in self.coverage.values())
+        return {"tried": tried, "space": DID_SPACE * len(self.modules),
+                "answering": sum(c["answering"] for c in self.coverage.values())}
 
     def write(self, name: str, title: str, body: str, sources: list[str]) -> None:
         nav = "".join('<a href="%s"%s>%s</a>' % (href, ' aria-current="page"' if href == name else "", label)
@@ -148,6 +183,7 @@ class Site:
 
     def index(self) -> None:
         c = self.counts()
+        cov = self.coverage_totals()
         body = """
 <p>This project records what a Polestar 4 reports through its diagnostic (OBD) port when you only ask it
 questions. Each car module answers numbered data items. We work out what they mean by watching values change
@@ -159,11 +195,19 @@ findings against your own car. You do not need to connect anything to read it.</
 <div><b>%(confirmed)d</b>Confirmed</div>
 <div><b>%(provisional)d</b>Provisional</div>
 <div><b>%(modules)d</b>modules answering</div>
+<div><b>%(answering)d</b>data items answering</div>
 <div><b>%(blocked)d + %(caution)d</b>hazards (never read + caution)</div>
 </div>
 %(box)s
+<h2>How much of the car have we looked at?</h2>
+<div class="card">%(bar)s <span class="mut">of every possible data item on the %(modules)d catalogued modules has been tried:
+%(tried)d of %(space)d.</span></div>
+<p>This is how much we have <em>asked about</em>, not how much we understand. Each module can have up to
+65,536 numbered data items. Most are empty. A scan asks for each one and records which answer; working out
+what an answer means is a separate, slower job. The <a href="modules.html">Modules</a> page has one bar per module.</p>
 <h2>Where to go next</h2>
 <ul>
+<li><a href="modules.html">Modules</a>: every module, how much of it has been tried and how many signals are decoded.</li>
 <li><a href="findings.html">Findings</a>: what each module is and what has been learned, including leads.</li>
 <li><a href="signals.html">Signals</a>: every decoded value, searchable, with how sure we are.</li>
 <li><a href="hazards.html">Hazards</a>: reads to avoid and how to recover if a module stops answering.</li>
@@ -177,8 +221,49 @@ findings against your own car. You do not need to connect anything to read it.</
 <li>%(u)s a lead: something moved once or at a plausible time. Not in the catalogue yet.</li>
 </ul>
 <p>All of this comes from one car. Your car may run different software and answer differently.</p>
-""" % dict(c, box=self.hazard_box(), c=badge("C"), p=badge("P"), u=unconfirmed())
-        self.write("index.html", "Start here", body, ["README.md", "catalogue/signals.yaml", "catalogue/modules.yaml"])
+""" % dict(c, **cov, bar=coverage_bar(cov["tried"], cov["space"]), box=self.hazard_box(), c=badge("C"), p=badge("P"), u=unconfirmed())
+        self.write("index.html", "Start here", body,
+                   ["README.md", "catalogue/signals.yaml", "catalogue/modules.yaml", "docs/coverage.csv"])
+
+    def modules_page(self) -> None:
+        per_conf: dict[str, dict[str, int]] = {a: {"C": 0, "P": 0} for a in self.modules}
+        for sig in self.signals:
+            for addr in {a.strip().upper() for a in sig["module"].split(",")}:
+                if sig["confidence"] in per_conf[addr]:
+                    per_conf[addr][sig["confidence"]] += 1
+        rows = []
+        for addr, m in self.modules.items():
+            cov = self.coverage.get(addr, {"tried": 0, "answering": 0, "refused": 0})
+            rows.append(
+                '<tr><td data-label="Module"><code>%s</code></td><td data-label="Name">%s</td>'
+                '<td data-label="Role">%s</td><td data-label="Tried">%s</td>'
+                '<td data-label="Answering">%d</td><td data-label="Confirmed">%d</td>'
+                '<td data-label="Provisional">%d</td></tr>' % (
+                    e(addr), t(m.get("label", "")), t(m.get("role", "")), coverage_bar(cov["tried"]),
+                    cov["answering"], per_conf[addr]["C"], per_conf[addr]["P"]))
+        tot = self.coverage_totals()
+        c = self.counts()
+        body = """
+<p>Every catalogued module on this car. The bar is how much of that module's 65,536 possible data
+items we have <b>tried</b>. It says nothing about how much we <b>understand</b>: most data items are empty, and
+an answer still has to be decoded before it becomes a signal.</p>
+<div class="card"><b>Whole car:</b> %s <span class="mut">%d of %d data items tried; %d answered.
+%d signals are %s and %d are %s.</span></div>
+<ul>
+<li><b>Tried</b>: share of the 65,536 possible data items (DIDs) asked for at least once, in any scan.</li>
+<li><b>Answering</b>: data items that returned a value. Values are not shown here.</li>
+<li>%s and %s: decoded signals in the catalogue (see <a href="signals.html">Signals</a>),
+counted under every module they use.</li>
+</ul>
+<div class="table"><table class="cards"><thead><tr><th>Module</th><th>Name</th><th>Usual role</th><th>Tried</th>
+<th>Answering</th><th>Confirmed</th><th>Provisional</th></tr></thead><tbody>
+%s
+</tbody></table></div>
+<p class="mut">Names and roles are the usual ones for that address on related cars, not read from this car.
+The numbers are counts only; they are regenerated from the project's scan records on every release.</p>
+""" % (coverage_bar(tot["tried"], tot["space"]), tot["tried"], tot["space"], tot["answering"],
+       c["confirmed"], badge("C"), c["provisional"], badge("P"), badge("C"), badge("P"), "\n".join(rows))
+        self.write("modules.html", "Modules", body, ["catalogue/modules.yaml", "catalogue/signals.yaml", "docs/coverage.csv"])
 
     @staticmethod
     def _recorded_in(h: hazards.Hazard) -> str:
@@ -403,6 +488,7 @@ and the privacy check.</p>
 
     def build(self) -> list[str]:
         self.index()
+        self.modules_page()
         self.hazards_page()
         self.signals_page()
         self.findings_page()
