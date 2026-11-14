@@ -24,13 +24,13 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.cmd == "build":
             inputs = Inputs(args.root, tracked_files(args.root, args.manifest))
-            patterns = gate.load_patterns(inputs.read_input("scripts/patterns.txt"))
+            patterns = gate.load_patterns(inputs.read_input("scripts/patterns.txt", newline=""))
             pages = build(inputs, args.out, args.commit)
             for name in pages:
                 print("%-18s %7d bytes" % (name, os.path.getsize(os.path.join(args.out, name))))
             target = args.out
         else:
-            with open(args.patterns, encoding="utf-8") as f:
+            with open(args.patterns, encoding="utf-8", newline="") as f:
                 patterns = gate.load_patterns(f.read())
             target = args.dir
     except (InputError, ValueError, OSError) as e:

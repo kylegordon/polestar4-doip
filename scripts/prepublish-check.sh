@@ -23,7 +23,8 @@ cr=$(printf '\r')
 if grep -q "$cr" scripts/patterns.txt 2>/dev/null; then
   echo "ERROR: scripts/patterns.txt has CR line endings; no pattern would match"; exit 2
 fi
-patterns=$(grep -v -e '^#' -e '^ *$' scripts/patterns.txt | paste -s -d '|' -)
+tab=$(printf '\t')
+patterns=$(grep -v -e '^#' -e "^[ $tab]*\$" scripts/patterns.txt | paste -s -d '|' -)
 if [ -z "$patterns" ]; then echo "ERROR: no patterns read from scripts/patterns.txt"; exit 2; fi
 
 # Index, not working tree: this is what a commit will contain. Exit 1 = no match; anything else is an error.

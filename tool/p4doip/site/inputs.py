@@ -72,7 +72,7 @@ class Inputs:
         """The checked absolute path, for loaders that open the file themselves (decode, hazards)."""
         return self._check(rel)
 
-    def read_input(self, rel: str) -> str:
-        """The text of a tracked, non-private file."""
-        with open(self._check(rel), encoding="utf-8") as f:
+    def read_input(self, rel: str, newline: str | None = None) -> str:
+        """The text of a tracked, non-private file (newline as for open(); "" keeps CR characters)."""
+        with open(self._check(rel), encoding="utf-8", newline=newline) as f:
             return f.read()

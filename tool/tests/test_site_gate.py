@@ -26,6 +26,7 @@ def patterns():
     ("snap_2026-11-14_16:01 x", "snap_November 2026 x"),
     ("t 2026-11-14T16:01Z", "t November 2026"),
     ("folder 20261114T160130", "folder November 2026"),
+    ("log 20261114_1601 x", "log November 2026 x"),
 ])
 def test_reduce_dates(raw, want):
     assert gate.reduce_dates(raw) == want
@@ -74,7 +75,8 @@ def test_shared_pattern_is_caught(patterns):
 @pytest.mark.parametrize("text", ["on 2026-11-14", "on 14 November", "Nov 14th", "release 2026.11.12",
                                   "log_2026-11-14.md", "14/11/2026", "14.11.2026", "11-14-2026", "14/11/26",
                                   "20261114", "snap-20261114T160130", "November 14 2026", "Nov. 14",
-                                  "on the 14th of November"])
+                                  "on the 14th of November", "on 14/11/2026.", "2026_11_14", "14-Nov-2026",
+                                  "Nov14", "2026-1-5"])
 def test_exact_date_is_caught(patterns, text):
     assert "exact date" in kinds(text, patterns)
 
@@ -150,3 +152,15 @@ LETTER_VIN = "YSM" + "JZKLMNZJKLMNZJ"
 def test_hex_utf16_vin_needs_the_decoder(patterns, encoded):
     hits = gate.scan_text("x " + encoded + "\n", patterns)
     assert (1, "identifier, path or date in UTF-16 or hex-wrapped text") in hits
+
+
+def test_numbers_in_adjacent_table_cells_are_not_joined(patterns):
+    assert gate.scan_text("<td>12345</td>\n<td>67890</td>\n<td>2026</td>\n<td>11</td>\n<td>14</td>\n", patterns) == []
+
+
+def test_crlf_pattern_file_fails_the_cli(tmp_path, capsys):
+    from p4doip.site.__main__ import main
+    (tmp_path / "p.txt").write_bytes(b"abc\r\n")
+    (tmp_path / "out").mkdir()
+    (tmp_path / "out" / "a.html").write_text("x\n")
+    assert main(["scan", str(tmp_path / "out"), "--patterns", str(tmp_path / "p.txt")]) == 2

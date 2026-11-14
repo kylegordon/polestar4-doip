@@ -24,20 +24,20 @@ MONTHS = ("January", "February", "March", "April", "May", "June", "July", "Augus
 _L = r"(?<![A-Za-z0-9])"
 _R = r"(?![A-Za-z0-9])"
 # 2026-11-14, 2026.11.14 (a release, maybe .2), 2026/11/14; optionally followed by a time of day.
-DATE = re.compile(_L + r"((?:19|20)\d{2})([-./])(0[1-9]|1[0-2])\2(0[1-9]|[12]\d|3[01])(?:\.\d+)?"
+DATE = re.compile(_L + r"((?:19|20)\d{2})([-./_])(0?[1-9]|1[0-2])\2(0?[1-9]|[12]\d|3[01])(?:\.\d+)?"
                   r"(?:[ T_]([01]?\d|2[0-3])[:.]?[0-5]\d(?:[:.]?[0-5]\d)?Z?)?(?!\d)")
 # 14/11/2026, 14.11.2026, 11-14-2026, 14/11/26: day and month first (either order). A 2-digit year only with
 # slashes, so software versions like 4.2.11 are not dates.
 DATE_DMY = re.compile(_L + r"(0?[1-9]|[12]\d|3[01])(?:([-./])(0?[1-9]|[12]\d|3[01])\2(?:19|20)\d{2}"
-                      r"|/(0?[1-9]|[12]\d|3[01])/\d{2})(?![\d.])")
+                      r"|/(0?[1-9]|[12]\d|3[01])/\d{2})(?!\d|\.\d)")
 # 20261114: compact year-month-day.
-DATE_COMPACT = re.compile(_L + r"(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])(?:T\d{4,6}Z?)?" + _R)
+DATE_COMPACT = re.compile(_L + r"(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])(?:[T_]\d{4,6}Z?)?" + _R)
 # 16:01, 16:01:30, 16:01-16:02 standing alone (DID references like 1A01:4209 have a letter or digit before).
 TIME = re.compile(r"(?<![A-Za-z0-9:])([01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?"
                   r"(?:\s*-\s*([01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?)?(?![A-Za-z0-9:])")
 _MONTH_NAMES = "|".join(MONTHS + tuple(m[:3] for m in MONTHS) + ("Sept",))
 _DAY = r"\d{1,2}(?:st|nd|rd|th)?"
-DAY_MONTH = re.compile(r"%s%s(?:\s+of)?\s+(?:%s)\b|\b(?:%s)\.?\s+%s(?!\d)"
+DAY_MONTH = re.compile(r"%s%s(?:\s+of)?[\s-]*(?:%s)\b|\b(?:%s)\.?[\s-]*%s(?!\d)"
                        % (_L, _DAY, _MONTH_NAMES, _MONTH_NAMES, _DAY), re.I)
 EXACT_DATES = (DATE, DATE_DMY, DATE_COMPACT, DAY_MONTH)
 TAG = re.compile(r"<[^>]*>")
@@ -87,7 +87,7 @@ def text_views(text: str) -> list[str]:
     """What a reader sees: tags removed, entities decoded; once with whitespace collapsed and once with line
     breaks removed, so an identifier split by markup (YSM<b>..</b>, &#89;SM..) or a line break is whole again."""
     plain = html.unescape(TAG.sub("", text))
-    return [re.sub(r"\s+", " ", plain), re.sub(r"\s*\n\s*", "", plain)]
+    return [re.sub(r"\s+", " ", plain), re.sub(r"\s*\n\s*", "", plain)]  # [1] is checked for VINs only
 
 
 def _view_problems(view: str, patterns: list[re.Pattern]) -> list[str]:
@@ -123,8 +123,11 @@ def scan_text(text: str, patterns: list[re.Pattern]) -> list[tuple[int, str]]:
                 hits.append((n, "identifier, path or date in UTF-16 or hex-wrapped text"))
                 break
     if not hits:
-        for view in text_views(text):
-            hits.extend((0, k + " (in the text with markup removed)") for k in _view_problems(view, patterns))
+        collapsed, unbroken = text_views(text)
+        hits.extend((0, k + " (in the text with markup removed)") for k in _view_problems(collapsed, patterns))
+        # Lines glued together: only a VIN is checked, since numbers in adjacent table cells would join.
+        if privacy.VIN_LIKE.search(unbroken):
+            hits.append((0, "VIN split across lines"))
     return hits
 
 
