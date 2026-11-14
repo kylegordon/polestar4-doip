@@ -324,8 +324,8 @@ def battery(wl):
     mvs = [mv for _, mv in cells]
     lo, hi, mean = min(mvs), max(mvs), sum(mvs) / len(mvs)
     span = max(hi - lo, 1)
-    head = "<div class=card>%d cell groups &middot; min %d mV &middot; max %d mV &middot; mean %.1f mV &middot; spread <b>%d mV</b> &middot; sum %.2f V" % (
-        len(cells), lo, hi, mean, hi - lo, sum(mvs) / 1000)
+    head = "<div class=card>%d cell groups &middot; min %.3f V &middot; max %.3f V &middot; mean %.4f V &middot; spread <b>%d mV</b> &middot; sum %.2f V" % (
+        len(cells), lo / 1000, hi / 1000, mean / 1000, hi - lo, sum(mvs) / 1000)
     extra = []
     for k, fmt, scale, add in (("1635:4801", "SoC %.1f %%", 0.002, 0), ("1635:497C", "pack %.2f V", 0.01, 0),
                                ("1635:4802", "current %.1f A", 0.1, -1638.4)):
@@ -337,9 +337,9 @@ def battery(wl):
     if age is None or age > 10:
         head = "<p class=unknown>Old reading: these cells were read %s, not live.</p>" % (
             "at an unknown time" if age is None else "%s ago" % ("%.0f min" % age if age < 120 else "%.1f h" % (age / 60) if age < 2880 else "%.0f days" % (age / 1440))) + head
-    grid = "".join('<div class=cell title="cell %d: %d mV" style="--h:%d%%"><i></i><b>%d</b><span>%d</span><small>+%d</small></div>' % (
-        n, mv, 15 + 85 * (mv - lo) // span, n, mv, mv - lo) for n, mv in cells)
-    body = head + "<h2>Cell groups</h2><p class=mut>Each box: group number, voltage in mV, and mV above the lowest group. Bar height shows the same difference.</p><div class=cells>%s</div>" % grid
+    grid = "".join('<div class=cell title="cell %d: %d mV" style="--h:%d%%"><i></i><b>%d</b><span>%.3f</span><small>+%d mV</small></div>' % (
+        n, mv, 15 + 85 * (mv - lo) // span, n, mv / 1000, mv - lo) for n, mv in cells)
+    body = head + "<h2>Cell groups</h2><p class=mut>Each box: group number, voltage in V, and mV above the lowest group. Bar height shows the same difference.</p><div class=cells>%s</div>" % grid
     if "1635:EE83" in v:
         traw, twhen, tsrc = v["1635:EE83"]
         temps = [x * 0.01 - 50 for x in u16s(traw) if x != 0xFFFF]
@@ -351,7 +351,7 @@ def battery(wl):
         # only beside a cell grid read in the same minute, so the two cannot contradict each other
         if k in v and len(v[k][0]) >= 6 and v[k][1][:16] == when[:16]:
             b = hexval(v[k][0][:6])
-            body += "<p>%s: group %d, %d mV <span class=mut>(%s)</span></p>" % (label, b[0] + 1, int.from_bytes(b[1:3], "big"), e(v[k][1]))
+            body += "<p>%s: group %d, %.3f V <span class=mut>(%s)</span></p>" % (label, b[0] + 1, int.from_bytes(b[1:3], "big") / 1000, e(v[k][1]))
     return body
 
 
