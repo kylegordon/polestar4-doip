@@ -16,7 +16,12 @@ Read `README.md` (tool, hazards, commands), `docs/did.md` (DID backlog) and `CHA
 - Evidence: `runs/` is the source of truth; `docs/did-map.csv` is generated with `./p4 didmap`. Do not
   hand-edit either. A C signal needs the same change twice, both directions, with the action in
   `local/session-log.md`; one pass is P.
-- Before every push: `scripts/prepublish-check.sh`, the tests (`./p4 test`, or `pytest tool/tests` on a
+- DISCOVERIES.md is the project's purpose: any commit that adds or changes what we know about the car
+  (catalogue signals or confidence, hazards, findings, corrections) adds or updates the matching
+  DISCOVERIES.md entry in the same commit. One entry per session or release; update today's entry
+  rather than starting a second one.
+- Before every push: `scripts/prepublish-check.sh` (run it after `git add`: it checks the index and
+  history, not the working tree), the tests (`./p4 test`, or `pytest tool/tests` on a
   host) and, after code changes, `ruff check tool/p4doip web scripts`, `mypy tool/p4doip`,
   `shellcheck p4 scripts/*.sh web/start.sh`. CI runs all of them plus the image build.
 - Never commit `local/`, `runs/`, `captures/`, `external/` or `NEXT.md`, the VIN, or the name of any

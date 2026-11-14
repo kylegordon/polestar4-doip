@@ -105,3 +105,33 @@ def test_scripts_are_posix_sh():
     for path in glob.glob(os.path.join(REPO, "scripts", "*.sh")):
         text = open(path).read()
         assert "compgen" not in text and "[[" not in text, path
+
+
+# The one known false positive pushed in ea12ced (an 8-byte 1A01:EE71 reading that is all decimal digits), built
+# from halves so this file never holds a 15-16 digit run itself.
+_A, _B, _C = "00020000", "00000000", "00000100"
+EXCUSED = '   examples: [{raw: "%s%s", value: "on"}, {raw: "%s%s", value: "off"}]}  # first 8 of 200 bytes' % (_A, _C, _B, _C)
+
+
+def _commit_then_remove(repo, text):
+    (repo / "x.yaml").write_text(text + "\n")
+    run(repo, "git", "add", "x.yaml")
+    run(repo, "git", "commit", "-qm", "add")
+    run(repo, "git", "rm", "-q", "x.yaml")
+    run(repo, "git", "commit", "-qm", "remove")
+
+
+def test_the_excused_line_in_history_passes(repo):
+    _commit_then_remove(repo, EXCUSED)
+    assert check(repo) == 0
+
+
+def test_the_excused_line_with_anything_added_still_fails(repo):
+    _commit_then_remove(repo, EXCUSED + " " + FAKE_VIN)
+    assert check(repo) == 1
+
+
+def test_the_excused_line_in_the_index_fails(repo):
+    (repo / "x.yaml").write_text(EXCUSED + "\n")
+    run(repo, "git", "add", "x.yaml")
+    assert check(repo) == 1

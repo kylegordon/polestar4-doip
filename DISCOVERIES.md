@@ -6,6 +6,44 @@ Confidence follows `catalogue/signals.yaml`: **C** = the same change seen at lea
 
 <!-- New entries go directly below this line, newest first. The heading must be "## <version> - <title>". -->
 
+## 2026.11.14 - Parking sensors, drive mode, locks, seats, a second Mobileye hazard
+
+A long parked session on 2026-11-14 (P and stationary D, owner at the car), plus offline analysis of earlier Mobileye reads.
+
+**New signals**
+- Parking sensor distances, `1015:B112`-`B121` (P): centimetres, matching the screen to within about 3 cm; 511 = nothing seen. Even DIDs are left, odd right: rear corners `B112`/`B113`, rear inner `B114`/`B115`, front corners `B116`/`B117`, front inner `B118`/`B119`; `B120`/`B121` are probably the two extra rear sensors (4 front, 6 rear on this car); they did not trigger, so their side is not yet known. They only report in R or D. They sit on `1015`, probably the keyless module, not a separate parking module.
+- Drive mode, `1601:E450` (C): `01` Range, `04` Performance, switched twice each way in P. Setting ESC to Sport also selects Performance, and the front motor then reads engaged (`1631:E307`) even when stationary.
+- Creep, `1601:E3B5` (P): `02` off, `01` on in P; `03` seen in D.
+- Door locks (P): `4054` on the front doors, `4056` on the rear doors, `02` unlocked, `01` locked; door handles and `D921`/`FE11` follow the lock too.
+- Window motor request, `D008` on the front doors (C): `00` stopped, `01` manual up, `02` manual down, `03` auto up, `04` auto down. Own-door window switches: `1A13:4036` (passenger door) and `1A21`/`1A22:403B` (rear doors): `01` first step up, `03` second step up; `02` first step down seen on `4036`. The driver-door panel switches are bits in `1A12:4035`; the passenger-window switch there does not show in it.
+- Rear window position `4048` upgraded to C (both rear doors, full cycles).
+- Seat heating (P): level `983E` (`00`/`20`/`40`/`60` = off/1/2/3 on the front seats; the rear module packs left and right levels into one byte), on/off `FD03`, heater output `F1F4` (cycles while heating). Module identities: `1A27` is the driver seat and `1A29` the rear seats (both modules now marked confirmed).
+- Rear backrest recline, `1A29:40A3` bytes 2-3 (left) and 8-9 (right): `0x0013` upright, about `0x0213` fully back (P).
+- Steering wheel heating, `1A01:EE71` byte 1 (C): `02` on. Other bytes of the same DID set for a few seconds when the wheel is bumped.
+- Climate flaps: front left (passenger) `1A11:D927` and front right (driver) `D929` upgraded to C; rear temperature blend `D92D` and rear air distribution `D92F` (floor vs B-pillar vents) are C, with their targets in `9809`/`980A` (P).
+- Rear fog lamps, `1A01:421C` (C): `0000ffff` on (the two short segments low in the rear light bar).
+- Left blind-spot light, `1A13:4003` (P): `00` off, `32` lit, matched to what the driver saw.
+- Charge cable present, `1650:EE31` (P): `01` with the cable in. `EE24` only follows charging, not the cable.
+- Mobileye uptime, `1301:EE04` (P): milliseconds since boot. The unit takes about 30 s to boot after the car wakes and is unreachable until then.
+
+**Leads (not in the catalogue)**
+- Matrix headlamps confirmed parked: dipped beam lights only the nearside (low-numbered) end of the bottom row; main beam lights both rows, brightest toward the car's centre (left lamp segments 9-10, right lamp 7-8); left to right on both lamps, no flips.
+- `1301:EE00` (and `D018`, the same values big-endian) looks like 45 internal supply rails in millivolts (14.0, 12.1, 5.0, 3.3, 1.8, 1.5, 1.1, 0.9, 0.85, 0.75 V). `EE01`/`D017` look like 10 temperatures. `EE10` lists 11 slots, the same number as SuperVision's 11 cameras. `EE11` names the release `SV52_P417_25.11.RC1`.
+- `1650:EE12` reads 235-238 while a cable is in (`ffff` without). Mains voltage or the plug's proximity resistance (220 ohm = 32 A cable); not settled.
+- Dash charge reading: 86 % on the dash at 87.2 % in the pack (`1635:4801`). The formula from issue #2 predicts 88.7 % here, so it does not hold near full; the gap shrinks as the pack fills.
+
+**Hazards**
+- **`1301:EE14` is blocked**, like `EE13`. A slow, one-at-a-time read of it (parked) stopped the Mobileye ECU answering; the passenger airbag lamp blinked off and on, and the gateway refused new diagnostic connections until the adaptor was unplugged and replugged. No dash warning; afterwards the ECU held two confirmed fault codes (no earlier fault read to compare). The tool now refuses `EE14` even if `catalogue/hazards.yaml` is missing.
+- **`1601:D928`-`D92C`: no repeat of the silence.** Read one at a time with the module checked after each, `D928`-`D92B` answered "not supported" (NRC 31) and the module kept answering; `D92C` had already answered. The earlier silence was probably the car still waking. They stay recorded as caution for now.
+
+**Looked for, not found**
+- The climate temperature setpoint (front and rear), the steering wheel heating level, the glovebox, the rear reading light, rear seat occupancy and rear belts (the airbag module has only been read in its default ranges), key fob presence or UWB range, the vehicles drawn on the dash. One-pedal level, Steering Feel and Hill Descent could not be tested (greyed out in P; the test in D was cut short).
+
+**Corrections**
+- `1A11:980E` is not the front-left flap target (it did not move in eight setpoint changes); removed from the catalogue.
+- `1A01:4222` carries more than the welcome lamp: one byte follows the rear fog lamps.
+- The earlier reading of the matrix bottom row as a "matrix base pattern" while driving was the dipped beam.
+
 ## 2026.11.13 - Wheel speeds, motor speeds, corrections from an audit
 
 Two drives and parked tests on 2026-11-13, unattended full-range scans, then a re-check of every catalogue signal and published claim against all recorded data. Several earlier claims were wrong; they are corrected here.

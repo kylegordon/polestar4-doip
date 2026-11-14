@@ -280,7 +280,7 @@
    examples: [{raw: "010000", value: dark}]}
 - {id: ambient_light_level, module: "1A01", did: "410B", offset: 1, len: 2, name: "Ambient light level (counts; scale not established)", type: u, confidence: P,
    examples: [{raw: "010000", value: 0}]}
-# E307 on 1631 goes 01 -> 02 only in pull-away bursts (findings.md 1631), so it is per-motor engagement
+# E307 on 1631 goes 01 -> 02 in pull-away bursts in Range, and stays 02 in Performance even stationary (2026-11-14), so it is per-motor engagement
 # (front motor drives, drops out in Range cruising), not 1637's gear engagement: a separate entry, P.
 - {id: front_drive_engaged, module: "1631", did: "E307", name: Front motor drive engaged (same DID as 1637 drive_engaged), values: {"01": "no", "02": "yes"}, confidence: P,
    examples: [{raw: "01", value: "no"}, {raw: "02", value: "yes"}]}
@@ -341,7 +341,7 @@
 - {id: rear_recline_right, module: "1A29", did: "40A3", name: "Rear right backrest recline (0x0013 upright, about 0x0213 fully back)", offset: 8, len: 2, type: u, confidence: P,
    examples: [{raw: "ffff0013ffffffff0212ffffffffffff", value: 530}]}
 - {id: steering_wheel_heat, module: "1A01", did: "EE71", name: Steering wheel heating on, offset: 1, len: 1, values: {"00": "off", "02": "on"}, confidence: C,
-   examples: [{raw: "0002000000000100", value: "on"}, {raw: "0000000000000100", value: "off"}]}  # first 8 of 200 bytes
+   examples: [{raw: "0002", value: "on"}, {raw: "0000", value: "off"}]}  # first 2 of 200 bytes
 - {id: drive_mode, module: "1601", did: "E450", name: Drive mode (power delivery), values: {"01": Range, "04": Performance}, confidence: C,
    examples: [{raw: "01", value: Range}, {raw: "04", value: Performance}]}
 - {id: creep, module: "1601", did: "E3B5", name: "Creep setting (in P: 02 off, 01 on; 03 seen in D)", values: {"02": "off", "01": "on", "03": "unknown (seen in D)"}, confidence: P,

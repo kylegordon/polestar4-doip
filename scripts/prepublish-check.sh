@@ -35,7 +35,12 @@ fi
 if [ -n "$(git rev-list -n1 --all)" ]; then
   # Added lines in every commit on every ref, with the leading + stripped so ^ anchors work.
   log=$(git log -p --cc --all --format=)
-  hist=$(printf '%s\n' "$log" | grep -E '^\+' | grep -v -E '^\+\+\+ ' | cut -c2- | grep -n -i -E "$patterns" || true)
+  # Known false positive, already pushed in ea12ced: two 8-byte DID readings (1A01:EE71) made only of decimal
+  # digits, which look like an IMEI to the 15-16 digit pattern. History only, and only that exact whole line.
+  # (built from halves so this file does not match the pattern itself)
+  a='00020000'; b='00000000'; c='00000100'
+  fp="   examples: [{raw: \"$a$c\", value: \"on\"}, {raw: \"$b$c\", value: \"off\"}]}  # first 8 of 200 bytes"
+  hist=$(printf '%s\n' "$log" | grep -E '^\+' | grep -v -E '^\+\+\+ ' | cut -c2- | grep -v -x -F "$fp" | grep -n -i -E "$patterns" || true)
   if [ -n "$hist" ]; then
     echo "FAIL: identifying or private content in git history:"; echo "$hist" | head -20; fail=1
   fi
