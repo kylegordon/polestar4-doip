@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Matrix headlamps</title>
 <style>
-:root{--bg:#fff;--fg:#1d2329;--mut:#66707a;--line:#dde2e6;--acc:#0b6bcb;--card:#f6f8fa;--off:#e4e8ec;--nodata:#c8ced4;--lit:255,214,120}
-@media (prefers-color-scheme: dark){:root{--bg:#14181c;--fg:#e4e8ec;--mut:#98a2ad;--line:#2c333a;--acc:#5aa9ff;--card:#1b2026;--off:#22282e;--nodata:#3a424a;--lit:255,214,120}}
+:root{--bg:#fff;--fg:#1d2329;--mut:#66707a;--line:#dde2e6;--acc:#0b6bcb;--card:#f6f8fa;--off:#262b31;--nodata:#5a6470;--lit:255,214,120}
+@media (prefers-color-scheme: dark){:root{--bg:#14181c;--fg:#e4e8ec;--mut:#98a2ad;--line:#2c333a;--acc:#5aa9ff;--card:#1b2026;--off:#262b31;--nodata:#5a6470;--lit:255,214,120}}
 body{background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,sans-serif;margin:0 auto;max-width:1100px;padding:16px}
 a{color:var(--acc)}nav a{margin-right:14px}h1{font-size:20px}
 .card{background:var(--card);padding:10px 12px;border-radius:6px;margin:8px 0}.mut{color:var(--mut)}
@@ -25,7 +25,7 @@ select,button,input{font:inherit}
 <body>
 <nav><a href="index.html">Overview</a><a href="live.html">Live</a><a href="battery.html">Battery</a><a href="matrix.html">Matrix</a><a href="findings.html">Findings</a><a href="signals.html">Signals</a><a href="research.html">Research</a><a href="text.html">Text</a><a href="marks.html">Timeline</a><a href="logs.html">Watch logs</a></nav>
 <h1>Matrix headlamps</h1>
-<p class="mut">1BB3:7022 (left lamp) and 1BB4:7022 (right lamp): 32 brightness bytes each, drawn as 2 rows of 16 segments (layout is a guess). Dark segments on main beam are shaded out (an oncoming car, a vehicle ahead or a reflective sign). Grey = no reading yet.</p>
+<p class="mut">1BB3:7022 (left lamp) and 1BB4:7022 (right lamp): 32 brightness bytes each, drawn as 2 rows of 16 segments (layout is a guess). Dark segments on main beam are shaded out (an oncoming car, a vehicle ahead or a reflective sign). Dark = segment off (value 0); warm = lit, brighter for higher values (0x50 = brightest seen); mid grey = no reading.</p>
 
 <div class="card controls">
   <label><input type="radio" name="mode" value="live" checked> Live</label>
