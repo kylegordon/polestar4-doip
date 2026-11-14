@@ -200,9 +200,25 @@ def test_same_did_on_another_module_is_allowed(sim, c):
 
 
 def test_multi_did_read_including_a_blocked_did_is_refused(sim, c):
-    with pytest.raises(ReadOnlyViolation):
-        c.request(0x1301, bytes.fromhex("22ee12ee13"))
+    # multi=True, so the length check passes and the block check itself must refuse it, before the socket
+    with pytest.raises(client.BlockedRead, match="1301:EE13"):
+        c.read_dids(0x1301, [0xEE12, 0xEE13])
+    with pytest.raises(client.BlockedRead):
+        c.request(0x1301, bytes.fromhex("22ee12ee13"), multi=True)
     assert sim.seen == []
+
+
+def test_multi_did_read_including_a_caution_did_needs_allow_caution(sim, c):
+    assert client.caution_reason(0x1601, 0xD928), "test assumes 1601:D928 is a caution read in catalogue/hazards.yaml"
+    with pytest.raises(client.CautionedRead, match="1601:D928"):
+        c.read_dids(0x1601, [0xE37B, 0xD928])
+    assert sim.seen == []
+
+
+def test_read_dids_lists_every_did_of_a_read():
+    assert client.read_dids(bytes.fromhex("22ee12ee13")) == [0xEE12, 0xEE13]
+    assert client.read_dids(bytes.fromhex("22e37b")) == [0xE37B]
+    assert client.read_dids(bytes.fromhex("3e00")) == []
 
 
 @pytest.mark.parametrize("target", [0x1FFF, 0xE400, 0xE401, 0xE000, 0xEFFF])

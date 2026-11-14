@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from p4doip.client import blocked_reason
+from p4doip.client import blocked_reason, read_dids
 from p4doip.sim import SimGateway
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -25,9 +25,9 @@ def sim():
         yield s
         # Suite-wide invariant: whatever a test did, only reads ever reached the gateway.
         assert {uds[0] for _, uds in s.seen} <= {0x22, 0x19, 0x3E}, "a non-read UDS request was sent"
-        # ...and no blocked read reached the gateway.
-        sent = [(tgt, uds) for tgt, uds in s.seen if uds[:1] == b"\x22" and len(uds) == 3]
-        assert not [x for x in sent if blocked_reason(x[0], int.from_bytes(x[1][1:3], "big"))], "a blocked read was sent"
+        # ...and no blocked read reached the gateway, alone or inside a multi-DID 0x22.
+        sent = [(tgt, did) for tgt, uds in s.seen for did in read_dids(uds)]
+        assert not [x for x in sent if blocked_reason(*x)], "a blocked read was sent"
 
 
 @pytest.fixture
