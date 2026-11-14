@@ -27,6 +27,7 @@ def patterns():
     ("t 2026-11-14T16:01Z", "t November 2026"),
     ("folder 20261114T160130", "folder November 2026"),
     ("log 20261114_1601 x", "log November 2026 x"),
+    ("on 2026-11-14 1500 frames", "on November 2026 1500 frames"),
 ])
 def test_reduce_dates(raw, want):
     assert gate.reduce_dates(raw) == want
@@ -127,8 +128,11 @@ def test_hex_of_a_path_or_date_is_caught(patterns):
     assert gate.scan_text("x a" + FAKE_VIN.encode("utf-16-le").hex(), patterns)  # odd alignment
 
 
-def test_coordinates_are_caught(patterns):
-    assert any(k.startswith("matches shared pattern") for k in kinds("at 55.8" + "642, -4.2518", patterns))
+@pytest.mark.parametrize("pair", ["55.8#642, -4.2518", "55.8#642 -4.2518", "lat 55.8#642 lon -4.2518",
+                                  "55.8#642N 4.2518W", "55.8#642;-4.2518"])
+def test_coordinates_are_caught(patterns, pair):
+    pair = pair.replace("#", "")  # '#' keeps this file itself clear of the pattern
+    assert any(k.startswith("matches shared pattern") for k in kinds("at " + pair, patterns))
 
 
 def test_symlink_in_output_is_a_failure(patterns, tmp_path):

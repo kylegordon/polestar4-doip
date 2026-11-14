@@ -25,7 +25,7 @@ _L = r"(?<![A-Za-z0-9])"
 _R = r"(?![A-Za-z0-9])"
 # 2026-11-14, 2026.11.14 (a release, maybe .2), 2026/11/14; optionally followed by a time of day.
 DATE = re.compile(_L + r"((?:19|20)\d{2})([-./_])(0?[1-9]|1[0-2])\2(0?[1-9]|[12]\d|3[01])(?:\.\d+)?"
-                  r"(?:[ T_]([01]?\d|2[0-3])[:.]?[0-5]\d(?:[:.]?[0-5]\d)?Z?)?(?!\d)")
+                  r"(?:(?:[T_]([01]?\d|2[0-3])[:.]?|\s([01]?\d|2[0-3])[:.])[0-5]\d(?:[:.]?[0-5]\d)?Z?)?(?!\d)")
 # 14/11/2026, 14.11.2026, 11-14-2026, 14/11/26: day and month first (either order). A 2-digit year only with
 # slashes, so software versions like 4.2.11 are not dates.
 DATE_DMY = re.compile(_L + r"(0?[1-9]|[12]\d|3[01])(?:([-./])(0?[1-9]|[12]\d|3[01])\2(?:19|20)\d{2}"
