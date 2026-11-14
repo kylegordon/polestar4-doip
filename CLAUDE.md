@@ -28,3 +28,23 @@ Read `README.md` (tool, hazards, commands), `docs/did.md` (DID backlog) and `CHA
   third-party diagnostic tool.
 - Commit straight to `main`, one coherent change at a time; stage the whole tree (`git add -A`) so a docs
   migration cannot leave replacements untracked.
+- Two sites. `web/` is the PRIVATE status site (raw `runs/`/`local/` data, GPS, VIN-bearing records): trusted
+  local network only, never published or port-forwarded. The PUBLIC GitHub Pages site (builder under
+  `tool/p4doip/site/`, design in `docs/site-design.md` once committed) is anonymised:
+  - it reads only git-tracked files, through one gated reader; never `runs/`, `local/`, `captures/`,
+    `external/` or `NEXT.md`, and no live data;
+  - never publish GPS (`1011:FD50` or anything position-like), VIN or serials (`MASKED_DIDS` or embedded
+    in other DIDs, plain, UTF-16 or hex-wrapped), ICCID/IMEI, TPMS sensor IDs (`1A01:281F`), home or
+    destination, number plates, names, or exact session dates (month and year only on the site);
+  - the build fails if any rendered string would be changed by `privacy.mask`, or matches the shared
+    pattern file used by `scripts/prepublish-check.sh`;
+  - plain English for owners: Confirmed / Provisional / Unconfirmed labels, hazards with recovery steps,
+    an honest scan guide (Linux, Docker, terminal) with stop-if lines;
+  - the owner reads the rendered site before the first deploy and before any new data type is published
+    (demo data needs a strict per-DID schema: fixed length, numeric range, bounded window, relative time);
+  - the Pages workflow: build job `contents: read` (tests, prepublish, build, output scan, upload), deploy
+    job alone has `pages: write`; every action SHA-pinned; Python deps pinned.
+- Hands-on car sessions: before proposing a test, check `local/session-log.md` and `runs/*/snap-*` and say
+  when it last ran and what it found; a test that found nothing is a retest, not new. One simple step at a
+  time; if the car cuts a test short (auto-P, sleep), offer to redo it at once. When a candidate is one or
+  two passes from C, go straight into the extra passes. Never suggest ending the session.
