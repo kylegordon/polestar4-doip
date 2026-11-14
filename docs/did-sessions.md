@@ -9,7 +9,7 @@ the action noted (`catalogue/signals.yaml:5`; one pass is not confirmation, `doc
 session works each stimulus twice each way. After a session, finalise the drafts named in its Follow-up and
 paste them into [did-entries.md](did-entries.md), then log the session in `DISCOVERIES.md`.
 
-House rules, every session ([README.md:15-17](../README.md), [CLAUDE.md](../CLAUDE.md)):
+House rules, every session ([README.md:15-17](../README.md), [AGENTS.md](../AGENTS.md)):
 
 - Read-only tool only; one tester at the gateway (`docker stop p4-live` frees it). Disconnect any other diagnostic tool first.
 - **Never read `EE13` on `1301`** — it knocked the Mobileye ECU off the network twice. The tool refuses it

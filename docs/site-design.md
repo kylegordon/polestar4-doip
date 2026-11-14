@@ -188,7 +188,7 @@ Search: the signal filter on `signals.html` plus a site-wide JSON index (`search
 - Signals page with client-side filter; Modules page with cards and coverage bars from `did-map.csv`.
 - `pages.yml` with prepublish gate, build, output scan, internal link check, deploy.
 - Tests: builder canary/tripwire test, hazards-on-page test, signals-count test.
-- Update `CLAUDE.md`/README/`.gitignore` in the same PR (the instruction files are load-bearing).
+- Update `AGENTS.md`/README/`.gitignore` in the same PR (the instruction files are load-bearing).
 
 **Phase 2: contribution funnel**
 - Issue templates, a "what to send back" checklist, per-module pages with answering-DID tables.
@@ -215,7 +215,7 @@ Each phase is its own branch and PR. Each PR goes through the standard review (c
 7. **Issue templates** in Phase 1/2 (recommended) or leave contribution to free-form issues.
 8. **Site name and URL**: default `kylegordon.github.io/polestar4-doip`; custom domain out of scope unless you want one.
 9. **Branding/attribution**: how the site refers to you (GitHub handle only, recommended, no email or real name beyond what the repo already shows).
-10. **Third-party tool names**: `CLAUDE.md` forbids naming any third-party diagnostic tool in commits; assumed to apply to the site too, so the builder's output scan includes that pattern from `prepublish-check.sh` (confirm).
+10. **Third-party tool names**: `AGENTS.md` forbids naming any third-party diagnostic tool in commits; assumed to apply to the site too, so the builder's output scan includes that pattern from `prepublish-check.sh` (confirm).
 
 ## 8. Note on review
 
