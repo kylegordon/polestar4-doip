@@ -24,23 +24,7 @@ for _p in (os.path.join(_REPO, "tool"), os.path.join(W, "tool")):
         sys.path.insert(0, _p)
         break
 from p4doip.privacy import MASKED_DIDS, text_of  # noqa: E402
-CSS = """
-:root{--bg:#fff;--fg:#1d2329;--mut:#66707a;--line:#dde2e6;--acc:#0b6bcb;--ok:#2e7d32;--warn:#b26a00;--card:#f6f8fa}
-@media (prefers-color-scheme: dark){:root{--bg:#14181c;--fg:#e4e8ec;--mut:#98a2ad;--line:#2c333a;--acc:#5aa9ff;--ok:#7bc47f;--warn:#f0b35a;--card:#1b2026}}
-body{background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,sans-serif;margin:0 auto;max-width:1100px;padding:16px}
-a{color:var(--acc)}nav a{margin-right:14px}h1{font-size:20px}h2{font-size:16px;margin-top:24px}
-table{border-collapse:collapse;width:100%;font-size:13px}th,td{border-bottom:1px solid var(--line);padding:4px 6px;text-align:left;vertical-align:top}
-th{color:var(--mut);font-weight:600}code,pre,.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
-pre{background:var(--card);padding:10px;overflow-x:auto;white-space:pre-wrap;word-break:break-all}
-.card{background:var(--card);padding:10px 12px;border-radius:6px;margin:8px 0}.mut{color:var(--mut)}
-.cells{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:3px}
-.cell{position:relative;height:60px;background:var(--card);border-radius:3px;overflow:hidden;font-size:11px;text-align:center;display:flex;flex-direction:column;justify-content:center}
-.cell i{position:absolute;left:0;right:0;bottom:0;height:var(--h);background:var(--acc);opacity:.35}
-.cell b,.cell span,.cell small{position:relative}.cell b{font-size:9px;font-weight:400;color:var(--mut)}.cell small{font-size:9px;color:var(--mut)}
-.temps{display:flex;flex-wrap:wrap;gap:4px}.temps span{background:var(--card);padding:2px 6px;border-radius:3px;font-size:12px}
-.bar{background:var(--line);height:10px;border-radius:5px;min-width:120px;overflow:hidden}.bar i{display:block;height:100%;background:var(--acc)}
-.unknown{color:var(--warn);font-weight:600}.confirmed{color:var(--ok);font-weight:600}td.v{word-break:break-all;max-width:420px}
-"""
+from p4doip.render import CSS, DID_SPACE, coverage_bar, e  # noqa: E402
 
 
 def page(name, title, body, refresh=30):
@@ -53,20 +37,6 @@ def page(name, title, body, refresh=30):
     with open(tmp, "w") as f:
         f.write(doc)
     os.replace(tmp, os.path.join(OUT, name))
-
-
-def e(s):
-    return html.escape(str(s))
-
-
-DID_SPACE = 0x10000  # every possible DID, 0000-FFFF
-
-
-def coverage_bar(tried, total=DID_SPACE):
-    """A bar for how much of a module's DID space has been tried, and the percentage as text."""
-    pct = 100.0 * min(max(tried, 0), total) / total if total else 0.0
-    return '<div class=bar title="%d of %d DIDs tried"><i style="width:%.1f%%"></i></div><small class=mut>%.0f%%</small>' % (
-        tried, total, pct, pct)
 
 
 def read_jsonl(path):
