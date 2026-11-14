@@ -5,18 +5,9 @@ import os
 import re
 import threading
 import time
-import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 W = os.environ.get("P4_WEB_W", "/w")
-
-# One privacy list for CLI and web (tool/p4doip/privacy.py), from the repo or the /w mount.
-_REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-for _p in (os.path.join(_REPO, "tool"), os.path.join(W, "tool")):
-    if os.path.isdir(os.path.join(_p, "p4doip")):
-        sys.path.insert(0, _p)
-        break
-from p4doip.privacy import HIDDEN_TEXT, web_hidden  # noqa: E402
 SRV = os.environ.get("P4_WEB_OUT", "/srv")
 HOST = os.environ.get("P4_WEB_HOST", "127.0.0.1")  # localhost by default: the pages hold car data
 PORT = int(os.environ.get("P4_WEB_PORT", "8088"))
@@ -116,8 +107,6 @@ def update():
             val = parts[0]
         ex = EXTRA.search(rest)
         name, dec = (ex.group(1), ex.group(2)) if ex else ("", "")
-        if web_hidden(key):  # GPS and TPMS IDs are stored for analysis but never served
-            val, dec = HIDDEN_TEXT, ""
         k = state["keys"].setdefault(key, {"name": "", "hist": [], "changes": 0})
         if name:
             k["name"] = name

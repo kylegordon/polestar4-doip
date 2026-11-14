@@ -37,18 +37,3 @@ def test_matrix_logs_reads_new_values_and_skips_other_dids(tmp_path, monkeypatch
     with open(log, "a") as f:
         f.write("10:00:11 1BB3:7022 %s\n" % B)
     assert server.matrix_logs()[0]["frames"][-1] == ["10:00:11", "1BB3", "22" * 32]
-
-
-def test_private_values_are_hidden_in_live_json(tmp_path, monkeypatch):
-    day = tmp_path / "runs" / "2026-11-15"
-    day.mkdir(parents=True)
-    (day / "watch-drive.log").write_text(
-        "2026-11-15T10:00:00+00:00 1011:FD50 aabbccdd11223344\n"
-        "2026-11-15T10:00:01+00:00 1011:FD50 CHANGE aabbccdd11223344 -> aabbccdd11223355\n"
-        "2026-11-15T10:00:02+00:00 1631:D003 0640\n")
-    monkeypatch.setattr(server, "W", str(tmp_path))
-    server.state.update(file=None, pos=0, keys={}, events=[])
-    server.update()
-    assert server.state["keys"]["1011:FD50"]["value"] == "(hidden: private)"
-    assert server.state["keys"]["1011:FD50"]["hist"] == []
-    assert server.state["keys"]["1631:D003"]["value"] == "0640"
