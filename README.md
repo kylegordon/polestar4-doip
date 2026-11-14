@@ -39,6 +39,7 @@ Read-only mapping of a Polestar 4's diagnostic data over DoIP (ISO 13400) throug
 | `web/` | Optional status site and live DID view (Docker image, http://localhost:8088) |
 | `scripts/drive-watch.sh` | Fast watch list for a drive (power, speed, gear, lamps, steering, chassis mode, matrix headlamps) |
 | `scripts/pcap_uds.py` | Offline decoder for DoIP/UDS in pcap files |
+| `scripts/patterns.txt` | The identifying-content patterns, shared by the prepublish check and the public site's output scan |
 | `scripts/prepublish-check.sh` | Fails if anything identifying (VIN, SIM or modem IDs, phone numbers, raw runs, pcaps) is tracked, or if `docs/did-map.csv` is stale where `runs/` exists |
 | `DISCOVERIES.md` | Discovery log: what each release (session) found |
 | `CHANGELOG.md` | Tool/catalogue/documentation changes (not car observations) |
@@ -130,6 +131,16 @@ docker run --rm --name p4-web -p 127.0.0.1:8088:8088 \
 ```
 
 **It shows raw car data unfiltered, including the GPS position, records that contain the VIN, and the TPMS sensor IDs. Run it only on a trusted private network; never publish it or forward its port to the internet.** It regenerates every 20 s from `runs/` (`sweep.progress.json`, `sweep.log`, scans, watches, marks) and serves the live DID view from the newest watch log. Inside the container it binds `0.0.0.0` so Docker can publish it; publish it on `127.0.0.1` only unless you intend the LAN to see the pages. The generator and server take `P4_WEB_W`, `P4_WEB_OUT`, `P4_WEB_SCANLOG`, `P4_WEB_HOST` and `P4_WEB_PORT` if you run them directly.
+
+## Public site
+
+[kylegordon.github.io/polestar4-doip](https://kylegordon.github.io/polestar4-doip/) is the plain-English, anonymised view of this repository for other owners: Start here, Hazards, Signals, Findings, Contribute and a Glossary. It is built by `.github/workflows/pages.yml` on every push to `main` from git-tracked files only (`tool/p4doip/site/`), shows session dates as month and year, and fails the build if any page matches `scripts/patterns.txt` or would be changed by the identifier masking. Design: [`docs/site-design.md`](docs/site-design.md). Build it locally:
+
+```sh
+git ls-files > .site-files && docker run --rm --user "$(id -u):$(id -g)" -v "$PWD":/w -w /w -e PYTHONPATH=tool --entrypoint python p4doip:local -m p4doip.site build --manifest .site-files --out _site
+```
+
+The image has no git, so the tracked-file list is passed in (`.site-files` and `_site/` are git-ignored). This reads the working-tree copies of tracked files; CI builds from `git archive HEAD`. After pulling this change, `./p4 build` once so the image has the Markdown package.
 
 ## Development
 

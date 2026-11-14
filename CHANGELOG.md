@@ -3,6 +3,19 @@
 Owned by the project; newest first. This file records tool, catalogue and documentation changes —
 observations about the car belong in docs/findings.md and DISCOVERIES.md, not here.
 
+## 2026-11-14 — public site, phase 1
+
+- `tool/p4doip/site/`: builder for the public GitHub Pages site (Start here, Hazards, Signals, Findings,
+  Contribute, Glossary). Inputs only through `Inputs.read_input` (git-tracked, never `runs/`, `local/`,
+  `captures/`, `external/` or `NEXT.md`); free text has exact dates reduced to month and year and
+  identifiers masked; every output file is scanned (`python -m p4doip.site scan`) and the build fails on a hit.
+- `scripts/patterns.txt`: the prepublish patterns, now shared by `prepublish-check.sh` and the site scan.
+- `tool/p4doip/render.py`: `CSS`, `TOKENS`, `coverage_bar` and `e`, shared by `web/gen.py` and the site.
+- `.github/workflows/pages.yml` (SHA-pinned; build job read-only, deploy job alone writes Pages),
+  `.github/dependabot.yml`, issue forms under `.github/ISSUE_TEMPLATE/`; `ci.yml` also builds the site.
+- `tool/requirements.txt`: `markdown==3.7` (rebuild the image with `./p4 build`).
+- `docs/site-design.md`: the design and the owner's decisions.
+
 ## 2026-11-14 — parked session: new signals, EE14 block, discovery bars
 
 - `catalogue/hazards.yaml` + built-in `BUILTIN_BLOCKED`: `1301:EE14` blocked alongside `EE13` (it knocked the

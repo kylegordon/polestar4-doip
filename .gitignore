@@ -17,3 +17,4 @@ NEXT.md
 htmlcov/
 # Public site build output (python -m p4doip.site build); built in CI, never committed.
 _site/
+.site-files

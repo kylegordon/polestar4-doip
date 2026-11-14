@@ -30,7 +30,7 @@ Read `README.md` (tool, hazards, commands), `docs/did.md` (DID backlog) and `CHA
   migration cannot leave replacements untracked.
 - Two sites. `web/` is the PRIVATE status site (raw `runs/`/`local/` data, GPS, VIN-bearing records): trusted
   local network only, never published or port-forwarded. The PUBLIC GitHub Pages site (builder under
-  `tool/p4doip/site/`, design in `docs/site-design.md` once committed) is anonymised:
+  `tool/p4doip/site/`, design in `docs/site-design.md`) is anonymised:
   - it reads only git-tracked files, through one gated reader; never `runs/`, `local/`, `captures/`,
     `external/` or `NEXT.md`, and no live data;
   - never publish GPS (`1011:FD50` or anything position-like), VIN or serials (`MASKED_DIDS` or embedded
