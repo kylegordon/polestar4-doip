@@ -21,7 +21,9 @@ def test_every_signal_has_an_example():
 @pytest.mark.parametrize("sig,ex", EXAMPLES, ids=["%s:%s" % (s["id"], ex["raw"]) for s, ex in EXAMPLES])
 def test_example_decodes_to_recorded_value(sig, ex):
     got = decode.decode(sig, bytes.fromhex(ex["raw"]))
-    if isinstance(ex["value"], float):
+    numeric_list = isinstance(ex["value"], list) and ex["value"] and all(
+        isinstance(v, (int, float)) and not isinstance(v, bool) for v in ex["value"])
+    if isinstance(ex["value"], float) or numeric_list:  # scaled values: compare with a tolerance
         assert got == pytest.approx(ex["value"], abs=1e-6)
     else:
         assert got == ex["value"]

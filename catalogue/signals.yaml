@@ -304,3 +304,15 @@
    examples: [{raw: "01", value: idle}, {raw: "03", value: held}]}
 - {id: obd_speed_1675, module: "1675", did: "F40D", name: OBD PID 0D vehicle speed, type: u, unit: " km/h", confidence: P,
    examples: [{raw: "00", value: 0}]}
+
+# -- battery arrays (array decoding from PR #3), checked against this car --------------------------
+# DA31: 130 u16 slots, the first 110 = cell groups in mV (EE19 = 110), 0xFFFF padding after. Their sum matches 497C
+# within 0.03 V in all nine 2026-11-11 snapshots; the 4907/4908 max/min equal its extremes. Example: 2026-11-11 22:25, 66 %.
+- {id: cell_group_voltages, module: "1635", did: "DA31", name: "Cell-group voltages, groups 1-110", repeat: {count: 110, len: 2, type: u, scale: 0.001, unit: " V"}, confidence: P,
+   examples: [{raw: "0f460f480f480f480f480f480f470f450f450f450f460f460f470f450f480f450f480f480f460f460f470f450f450f470f4a0f480f480f490f490f470f480f470f490f480f490f480f4a0f470f480f480f470f490f470f480f470f470f480f460f460f470f470f480f460f470f480f460f450f460f460f470f450f470f460f490f480f480f480f490f470f470f4b0f470f4a0f480f4a0f4a0f450f470f460f480f480f490f4b0f490f490f4a0f4b0f4a0f480f480f490f490f480f4a0f480f480f4b0f480f470f490f470f490f470f460f480f470f4a0f4a0f480f46ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+     value: [3.91, 3.912, 3.912, 3.912, 3.912, 3.912, 3.911, 3.909, 3.909, 3.909, 3.91, 3.91, 3.911, 3.909, 3.912, 3.909, 3.912, 3.912, 3.91, 3.91, 3.911, 3.909, 3.909, 3.911, 3.914, 3.912, 3.912, 3.913, 3.913, 3.911, 3.912, 3.911, 3.913, 3.912, 3.913, 3.912, 3.914, 3.911, 3.912, 3.912, 3.911, 3.913, 3.911, 3.912, 3.911, 3.911, 3.912, 3.91, 3.91, 3.911, 3.911, 3.912, 3.91, 3.911, 3.912, 3.91, 3.909, 3.91, 3.91, 3.911, 3.909, 3.911, 3.91, 3.913, 3.912, 3.912, 3.912, 3.913, 3.911, 3.911, 3.915, 3.911, 3.914, 3.912, 3.914, 3.914, 3.909, 3.911, 3.91, 3.912, 3.912, 3.913, 3.915, 3.913, 3.913, 3.914, 3.915, 3.914, 3.912, 3.912, 3.913, 3.913, 3.912, 3.914, 3.912, 3.912, 3.915, 3.912, 3.911, 3.913, 3.911, 3.913, 3.911, 3.91, 3.912, 3.911, 3.914, 3.914, 3.912, 3.91]}]}
+# EE83: 30 u16 slots, the first 28 = pack temperatures (EE20 = 28), 0.01 C with -50 (issue #2), 0xFFFF padding after.
+# 6.5-7.0 C on a November night here. Example: same snapshot.
+- {id: pack_temperatures, module: "1635", did: "EE83", name: "Pack temperature sensors 1-28", repeat: {count: 28, len: 2, type: u, scale: 0.01, add: -50, unit: " C"}, confidence: P,
+   examples: [{raw: "164416441612161215e015e01612161215e016121612161215e01612161215e015e015e01612161215e015e015e015e015e015e0161215e0ffffffff",
+     value: [7.0, 7.0, 6.5, 6.5, 6.0, 6.0, 6.5, 6.5, 6.0, 6.5, 6.5, 6.5, 6.0, 6.5, 6.5, 6.0, 6.0, 6.0, 6.5, 6.5, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.5, 6.0]}]}

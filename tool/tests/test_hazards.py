@@ -71,8 +71,10 @@ def test_caution_applies_to_the_module_and_functional_targets(root, monkeypatch)
 def test_client_refuses_a_caution_read_unless_allowed(sim, monkeypatch):
     monkeypatch.setenv("P4_ROOT", REPO)
     hazards.clear_cache()
-    with pytest.raises(CautionedRead):
-        with DoIP("127.0.0.1", sim.port) as c:
+    # one connection: the simulator, like the car, takes one tester, and a quick reconnect can race its release
+    with DoIP("127.0.0.1", sim.port) as c:
+        with pytest.raises(CautionedRead):
             c.read_did(0x1601, 0xD928)
-    with DoIP("127.0.0.1", sim.port, allow_caution=True) as c:
+        assert not [u for _, u in sim.seen if u == b"\x22\xd9\x28"]
+        c.allow_caution = True
         assert c.read_did(0x1601, 0xD928).status in ("ok", "nrc")
