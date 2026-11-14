@@ -284,3 +284,9 @@ def test_uncatalogued_module_in_coverage_is_left_out(tmp_path):
     text = (out / "modules.html").read_text()
     assert "FFFF" not in text
     assert "10 of %d data items tried" % (65536 * len(yaml.safe_load(open(root / "catalogue" / "modules.yaml")))) in text
+
+
+def test_pages_with_coverage_bars_carry_the_bar_style():
+    from p4doip.render import BAR_CSS
+    from p4doip.site import build
+    assert BAR_CSS in build.SITE_CSS  # the bars are empty boxes without it

@@ -11,6 +11,9 @@ TOKENS = """
 @media (prefers-color-scheme: dark){:root{--bg:#14181c;--fg:#e4e8ec;--mut:#98a2ad;--line:#2c333a;--acc:#5aa9ff;--ok:#7bc47f;--warn:#f0b35a;--card:#1b2026}}
 """
 
+# The coverage bar drawn by coverage_bar(): any page that uses the bar must include this rule.
+BAR_CSS = ".bar{background:var(--line);height:10px;border-radius:5px;min-width:120px;overflow:hidden}.bar i{display:block;height:100%;background:var(--acc)}\n"
+
 # The private status site's stylesheet: the tokens plus its layout rules.
 CSS = TOKENS + """body{background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,sans-serif;margin:0 auto;max-width:1100px;padding:16px}
 a{color:var(--acc)}nav a{margin-right:14px}h1{font-size:20px}h2{font-size:16px;margin-top:24px}
@@ -23,8 +26,7 @@ pre{background:var(--card);padding:10px;overflow-x:auto;white-space:pre-wrap;wor
 .cell i{position:absolute;left:0;right:0;bottom:0;height:var(--h);background:var(--acc);opacity:.35}
 .cell b,.cell span,.cell small{position:relative}.cell b{font-size:9px;font-weight:400;color:var(--mut)}.cell small{font-size:9px;color:var(--mut)}
 .temps{display:flex;flex-wrap:wrap;gap:4px}.temps span{background:var(--card);padding:2px 6px;border-radius:3px;font-size:12px}
-.bar{background:var(--line);height:10px;border-radius:5px;min-width:120px;overflow:hidden}.bar i{display:block;height:100%;background:var(--acc)}
-.unknown{color:var(--warn);font-weight:600}.confirmed{color:var(--ok);font-weight:600}td.v{word-break:break-all;max-width:420px}
+""" + BAR_CSS + """.unknown{color:var(--warn);font-weight:600}.confirmed{color:var(--ok);font-weight:600}td.v{word-break:break-all;max-width:420px}
 """
 
 DID_SPACE = 0x10000  # every possible DID, 0000-FFFF

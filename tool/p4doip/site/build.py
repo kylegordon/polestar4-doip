@@ -14,7 +14,7 @@ import markdown
 import yaml
 
 from .. import decode, hazards
-from ..render import DID_SPACE, TOKENS, coverage_bar, e
+from ..render import BAR_CSS, DID_SPACE, TOKENS, coverage_bar, e
 from . import gate
 from .inputs import Inputs
 
@@ -29,7 +29,7 @@ NAV = (("index.html", "Start here"), ("modules.html", "Modules"), ("hazards.html
 COVERAGE_COLUMNS = ["module", "dids_tried", "dids_answering", "refused"]  # counts only; see `p4 didmap`
 LABEL = {"C": "Confirmed", "P": "Provisional"}
 
-SITE_CSS = TOKENS + """
+SITE_CSS = TOKENS + BAR_CSS + """
 :root{color-scheme:light dark;--bad:#b3261e}
 @media (prefers-color-scheme: dark){:root{--bad:#ff8a80}}
 *{box-sizing:border-box}
