@@ -10,6 +10,16 @@ import re
 # The machine-readable twin is catalogue/dids.yaml (`masked: true`); a test keeps them in step.
 MASKED_DIDS = {0xF190, 0xF18C, 0xF192, 0xF198}
 
+# Stored and used for analysis, but never shown on the status site: the car's GPS position (1011:FD50) and the
+# four TPMS sensor IDs (1A01:281F). Keyed "MODULE:DID" in upper case, as the web pages key values.
+WEB_HIDDEN = {"1011:FD50", "1A01:281F"}
+HIDDEN_TEXT = "(hidden: private)"
+
+
+def web_hidden(key: str) -> bool:
+    """True if a "MODULE:DID" value must not be shown on the status site."""
+    return key.upper() in WEB_HIDDEN
+
 VIN_LIKE = re.compile(r"(?:YSM|LPS|LRW|YV1)[A-HJ-NPR-Z0-9]{14}", re.I)  # Polestar/Volvo/Geely WMIs
 LONG_NUMBER = re.compile(r"\d(?:[ .-]?\d){9,}")  # ICCID, IMEI, phone numbers, serials; separators allowed
 EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")

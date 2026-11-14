@@ -23,7 +23,7 @@ for _p in (os.path.join(_REPO, "tool"), os.path.join(W, "tool")):
     if os.path.isdir(os.path.join(_p, "p4doip")):
         sys.path.insert(0, _p)
         break
-from p4doip.privacy import MASKED_DIDS, text_of  # noqa: E402
+from p4doip.privacy import HIDDEN_TEXT, MASKED_DIDS, text_of, web_hidden  # noqa: E402
 CSS = """
 :root{--bg:#fff;--fg:#1d2329;--mut:#66707a;--line:#dde2e6;--acc:#0b6bcb;--ok:#2e7d32;--warn:#b26a00;--card:#f6f8fa}
 @media (prefers-color-scheme: dark){:root{--bg:#14181c;--fg:#e4e8ec;--mut:#98a2ad;--line:#2c333a;--acc:#5aa9ff;--ok:#7bc47f;--warn:#f0b35a;--card:#1b2026}}
@@ -97,6 +97,25 @@ def scans():
             if cur is None or rank.get(new[0], 0) >= rank.get(cur[0], 0):
                 d[r["did"]] = new
     return res
+
+
+KEY_IN_LINE = re.compile(r"(?<![0-9A-Fa-f:])([0-9A-Fa-f]{4}:[0-9A-Fa-f]{4})(?![0-9A-Fa-f])")
+
+
+def masked_did(did):
+    """True for identity DIDs (VIN, serials) given as scan records store them: hex text such as "F190"."""
+    try:
+        return int(did, 16) in MASKED_DIDS
+    except (TypeError, ValueError):
+        return False
+
+
+def hide_line(ln):
+    """A watch-log line cut after its MODULE:DID when that key is private (GPS, TPMS IDs), whatever the line format."""
+    for m in KEY_IN_LINE.finditer(ln):
+        if web_hidden(m.group(1)):
+            return "%s %s" % (ln[:m.end()], HIDDEN_TEXT)
+    return ln
 
 
 def watch_last():
@@ -421,11 +440,16 @@ def main():
         r = []
         for did in sorted(d):
             st, data, t = d[did]
-            if st != "ok" or did in MASKED_DIDS:
+            if st != "ok" or masked_did(did):
                 continue
             k = "%s:%s" % (a, did)
             w = wl.get(k)
-            txt = text_of(data)
+            txt = ""
+            if web_hidden(k):  # stored for analysis, never shown here
+                data = HIDDEN_TEXT
+                w = (HIDDEN_TEXT, w[1], w[2]) if w else None
+            else:
+                txt = text_of(data)
             if txt:
                 texts.append((a, m.get("label", ""), did, txt))
             r.append('<tr><td class=mono>%s</td><td>%s</td><td class="v mono">%s</td><td class=mono><b>%s</b></td><td class="v mono">%s</td><td class=mut>%s</td></tr>' % (
@@ -471,7 +495,7 @@ def main():
     li = []
     for p in logs:
         name = "log-%s-%s.html" % (p.split("/")[-2], os.path.basename(p)[:-4])
-        lines = [ln for ln in open(p).read().splitlines() if " CHANGE " in ln or "connected" in ln or "ERROR" in ln]
+        lines = [hide_line(ln) for ln in open(p).read().splitlines() if " CHANGE " in ln or "connected" in ln or "ERROR" in ln]
         page(name, os.path.basename(p), "<p class=mut>%d changes (newest first)</p><pre>%s</pre>" % (len(lines), e("\n".join(reversed(lines)))), refresh=60)
         li.append('<tr><td><a href="%s">%s</a></td><td>%s</td><td>%d</td></tr>' % (name, e(p.split("/")[-2]), e(os.path.basename(p)), len(lines)))
     page("logs.html", "Watch logs", "<table><tr><th>Day</th><th>Log</th><th>Changes</th></tr>%s</table>" % "".join(li))

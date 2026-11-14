@@ -129,7 +129,7 @@ docker run --rm --name p4-web -p 127.0.0.1:8088:8088 \
 # http://localhost:8088  (Live: /live.html)
 ```
 
-It regenerates every 20 s from `runs/` (`sweep.progress.json`, `sweep.log`, scans, watches, marks) and serves the live DID view from the newest watch log. Inside the container it binds `0.0.0.0` so Docker can publish it; publish it on `127.0.0.1` only unless you intend the LAN to see the pages. The generator and server take `P4_WEB_W`, `P4_WEB_OUT`, `P4_WEB_SCANLOG`, `P4_WEB_HOST` and `P4_WEB_PORT` if you run them directly.
+It never shows the VIN or ECU serials, the car's GPS position (`1011:FD50`) or the TPMS sensor IDs (`1A01:281F`): those values stay on disk for analysis only. It regenerates every 20 s from `runs/` (`sweep.progress.json`, `sweep.log`, scans, watches, marks) and serves the live DID view from the newest watch log. Inside the container it binds `0.0.0.0` so Docker can publish it; publish it on `127.0.0.1` only unless you intend the LAN to see the pages. The generator and server take `P4_WEB_W`, `P4_WEB_OUT`, `P4_WEB_SCANLOG`, `P4_WEB_HOST` and `P4_WEB_PORT` if you run them directly.
 
 ## Development
 
