@@ -1,0 +1,50 @@
+# DID registry: names and families for DIDs the tool annotates in its output. Names only — values never live here.
+# Sources: docs/did-identity.md (ISO 14229-1:2020 names, length verdicts), docs/findings.md (established meanings).
+# did is quoted hex. masked: true marks a per-car identifier — stored_value() records it as zeros (tool/p4doip/cli.py)
+# and identify/strings never print its value. "not observed" = defined by the standard, no module answers it yet;
+# kept here so identify probes and labels stay in step with docs/did-identity.md.
+- {did: "F180", name: boot software ID, family: identity}
+- {did: "F181", name: application software ID, family: identity}
+- {did: "F182", name: application software fingerprint, family: identity, note: probe; not observed yet}
+- {did: "F183", name: application data fingerprint, family: identity, note: probe; not observed yet}
+- {did: "F184", name: application software fingerprint (ISO 14229-1:2020), family: identity, note: edition-sensitive name; answers on 1023}
+- {did: "F18E", name: vehicle manufacturer kit assembly part number, family: identity, note: probe; not observed yet}
+- {did: "F18F", name: manufacturer identification (probe), family: identity, note: no standard name; not observed yet}
+- {did: "F186", name: active diagnostic session, family: identity, note: CONFIRMED-FIT, 1 byte on all 43 modules}
+- {did: "F187", name: vehicle manufacturer spare part number, family: identity, note: not observed}
+- {did: "F188", name: vehicle manufacturer ECU software number, family: identity, note: not observed}
+- {did: "F189", name: vehicle manufacturer ECU software version number, family: identity, note: not observed}
+- {did: "F18A", name: system supplier identifier, family: identity, note: hardware-part-number-like on related cars; both fit}
+- {did: "F18B", name: ECU manufacturing date, family: identity, note: not observed}
+- {did: "F18C", name: ECU serial number (ISO reading), family: identity, masked: true, note: values are per-car if the ISO name holds; never print or store them}
+- {did: "F190", name: vehicle VIN, family: identity, masked: true, note: 17 bytes on the 11 modules that serve it}
+- {did: "F191", name: vehicle manufacturer ECU hardware number, family: identity}
+- {did: "F192", name: system supplier ECU hardware number, family: identity, masked: true, note: may carry per-car identifiers}
+- {did: "F193", name: system supplier ECU hardware version number, family: identity}
+- {did: "F194", name: system supplier ECU software number, family: identity, note: not observed}
+- {did: "F195", name: system supplier ECU software version number, family: identity}
+- {did: "F196", name: exhaust regulation / type approval number, family: identity}
+- {did: "F197", name: system name or engine type, family: identity}
+- {did: "F198", name: repair shop code / tester serial number, family: identity, masked: true, note: may carry per-car identifiers}
+- {did: "F199", name: programming date, family: identity}
+- {did: "F19D", name: ECU installation date, family: identity}
+- {did: "F120", name: manufacturer-specific identification, family: identity, note: uniform 7 bytes on every answering module}
+- {did: "F121", name: manufacturer-specific identification, family: identity, note: uniform 7 bytes; same coverage as F125/F1A1/F1A5}
+- {did: "F125", name: manufacturer-specific identification, family: identity, note: uniform 7 bytes}
+- {did: "F12A", name: manufacturer-specific identification, family: identity, note: uniform 7 bytes}
+- {did: "F12B", name: manufacturer-specific identification, family: identity, note: uniform 7 bytes}
+- {did: "F12E", name: manufacturer-specific record (count + 7-byte entries), family: identity, note: coupled to F1AE; lengths are 8+7k}
+- {did: "F1A0", name: manufacturer-specific identification, family: identity, note: uniform 8 bytes}
+- {did: "F1A1", name: manufacturer-specific identification, family: identity, note: uniform 8 bytes}
+- {did: "F1A5", name: manufacturer-specific identification, family: identity, note: uniform 8 bytes}
+- {did: "F1AA", name: manufacturer-specific identification, family: identity, note: uniform 8 bytes}
+- {did: "F1AB", name: manufacturer-specific identification, family: identity, note: uniform 8 bytes}
+- {did: "F1AE", name: manufacturer-specific record (coupled to F12E), family: identity, note: F1AE = F12E + 1 + (F12E-8)/7 on every module}
+- {did: "DD00", name: free-running clock, family: common}
+- {did: "DD01", name: odometer, family: common, note: km, every answering module}
+- {did: "DD02", name: unknown flag, family: common, note: 1 byte, undecoded}
+- {did: "DD0A", name: power mode, family: common, note: recorded with scan runs so car states stay comparable}
+- {did: "D134", name: unknown flag, family: common, note: 1 byte, undecoded}
+- {did: "E103", name: traceability string, family: identity, note: 31 bytes; production date and P417 model code}
+- {did: "D0B5", name: unknown identification-adjacent, family: identity, note: 3 bytes on 28 modules}
+- {did: "D03A", name: unknown 32-byte value, family: common, note: hash-like; static-vs-live not yet settled}

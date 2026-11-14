@@ -16,7 +16,7 @@ What has been learned about one car, module by module, including leads that are 
 ## 1001 Gateway
 
 - **What it is**: the DoIP entity (logical address `1001`); tester `0E80`, functional address `1FFF`. 88 DIDs. Gateway firmware build string dated December 2025.
-- **Leads**: `D0D0` holds the customer software release "4.2.11", stored as ASCII hex digits written in ASCII (P; the decoder has no encoding for it, so it is not in the catalogue). The same release appears as text in a telematics update record (`1011`).
+- **Leads**: `D0D0` holds the customer software release "4.2.11", stored as ASCII hex digits written in ASCII (P; the decoder supports `encoding: ascii-hex`, but no full-payload raw is quoted here yet, so it is not catalogued). The same release appears as text in a telematics update record (`1011`).
 - **Not found**: no range or distance-to-empty value; values that happened to match the displayed range were configuration or hash bytes.
 
 ## 1011 Telematics
@@ -96,7 +96,7 @@ What has been learned about one car, module by module, including leads that are 
   - `D905`/`D907`/`D914`/`D91A` changed together 45 s after the cluster showed two cars to the left (timing only).
   - The long `EExx`/`EFxx` blocks change on almost every read while parked: rolling logs or history buffers (guess).
 - **Not found**: tyre pressures (`D282` holds several unequal words, about 455-560, when the app showed 2.3 bar on all four: ruled out; `D911`-`D913`: three values in steps of 5 around 2,600 that sometimes shift along and sometimes flicker: ruled out). The Polestar 2 wheel-speed DIDs `2B06`-`2B09` and other `2Bxx`/`20xx` dynamics DIDs return NRC 31 (not supported). `2B34` flips on its own when parked. Gear does not show here.
-- **Hazards**: possible, not repeated: one silence of about 10 s while reading `D928`-`D92C` (earlier releases said `D927`-`D92B`; `D927` answered normally), 3 s after the car had woken. Silences mid-scan have also happened on other modules with no special DID, so start-up is a likely cause. Scans skip `D927`-`D92B` until they are tested one at a time; `D92C` has since been read without trouble.
+- **Hazards**: possible, not repeated: one silence of about 10 s while reading `D928`-`D92C` (earlier releases said `D927`-`D92B`; `D927` answered normally), 3 s after the car had woken. Silences mid-scan have also happened on other modules with no special DID, so start-up is a likely cause. The tool records `D928`-`D92C` as **caution** in `catalogue/hazards.yaml`: ordinary scans skip them, and `--allow-caution` or a paced scan is needed to test one. `D92C` has since been read without trouble.
 
 ## 1614 Suspension
 
@@ -118,7 +118,7 @@ What has been learned about one car, module by module, including leads that are 
 ## 1633 Gear selector stalk
 
 - **What it is**: the column gear stalk (EGSM label). 51 DIDs. Reports stalk movement only, not the selected gear.
-- **Leads**: `D914`, `D915`, `D919`, `D920` go `01` -> `04` while the stalk is pushed (back within ~2 s); `DA02`/`DA03` go `01` -> `03` while held down (the N gesture); `DA00`/`DA01` jitter by a count or two (raw positions?). P, one test.
+- **Leads**: `D914`, `D915`, `D919`, `D920` go `01` -> `04` while the stalk is pushed (back within ~2 s); `DA02`/`DA03` go `01` -> `03` while held down (the N gesture); `DA00`/`DA01` jitter by a count or two (raw positions?). P, one test. The push and hold channels are in the catalogue as `stalk_push_*` / `stalk_hold_*`.
 - **Not found**: the wiper button on the stalk (single wipe, washer) moved nothing here.
 
 ## 1635 HV battery (BECM)
@@ -167,7 +167,7 @@ What has been learned about one car, module by module, including leads that are 
 ## 1675 Unknown chassis module
 
 - **What it is**: unknown, between the steering units. Configuration string `GE60_P03_M10_…`. 56 DIDs.
-- **Leads**: answers `F40D` (OBD PID 0D vehicle speed), `00` parked; not yet seen moving.
+- **Leads**: answers `F40D` (OBD PID 0D vehicle speed), `00` parked; not yet seen moving. In the catalogue as `obd_speed_1675` (P).
 
 ## 1676 Second steering controller
 
@@ -205,7 +205,7 @@ What has been learned about one car, module by module, including leads that are 
 
 - **What it is**: driver door module (DDM); right front on this right-hand-drive car. 200 DIDs.
 - **Signals**: `front_window` (`4047`), `front_window_stops` (`42C5`, end-stop counter), `door_handle` (`D90C`, P: one lock/unlock cycle; `ff` after locking and `03` on later days on this door, unexplained), `mirror_fold_right` (`4053`), `mirror_fold_motor_right` (`4052`), `mirror_heat_right` (`4051`) (C); `mirror_fold_current_right` (`FE0D`, P).
-- **Leads**: `D938` is a rolling log of window runs, newest first, 10-byte entries: start position, end position, a byte, timestamp (positions ~1000 closed, ~5900 open). `D008` = window direction (`04` down, `03` up). `4096` changes with the window drive command, not position. `D909` moves with every door event. `480C` read 33 when the car was at about 33 km/h (speed copy, once).
+- **Leads**: `D938` is a rolling log of window runs, newest first, 10-byte entries: start position, end position, a byte, timestamp (positions ~1000 closed, ~5900 open). `D008` = window direction (`04` down, `03` up; in the catalogue as `window_direction`, P). `4096` changes with the window drive command, not position. `D909` moves with every door event. `480C` read 33 when the car was at about 33 km/h (speed copy, once).
 
 ## 1A13 Passenger door (left front)
 

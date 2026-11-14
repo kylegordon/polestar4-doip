@@ -13,3 +13,5 @@ external/
 __pycache__/
 .pytest_cache/
 NEXT.md
+.coverage
+htmlcov/

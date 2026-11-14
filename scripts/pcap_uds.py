@@ -1,6 +1,8 @@
 """Offline: decode DoIP/UDS from pcap files (classic pcap, Ethernet). Read-only analysis.
 Usage: pcap_uds.py out.tsv file1.pcap [file2.pcap ...]"""
-import struct, sys, collections
+import collections
+import struct
+import sys
 
 SVC = {0x10: "DiagSessionControl", 0x11: "ECUReset", 0x14: "ClearDTC", 0x19: "ReadDTC",
        0x22: "ReadDID", 0x23: "ReadMemory", 0x27: "SecurityAccess", 0x28: "CommControl",

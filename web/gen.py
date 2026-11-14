@@ -7,13 +7,23 @@ import html
 import json
 import os
 import re
+import sys
 import time
 
 import yaml
 
-W = "/w"
-OUT = "/srv"
-SCANLOG = "/status/mapall.out"
+# Mount points for the container, overridable so the generator can run on a laptop too.
+W = os.environ.get("P4_WEB_W", "/w")
+OUT = os.environ.get("P4_WEB_OUT", "/srv")
+SCANLOG = os.environ.get("P4_WEB_SCANLOG", "/status/mapall.out")
+
+# One masking implementation for CLI and web (tool/p4doip/privacy.py), from the repo or the mount.
+_REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+for _p in (os.path.join(_REPO, "tool"), os.path.join(W, "tool")):
+    if os.path.isdir(os.path.join(_p, "p4doip")):
+        sys.path.insert(0, _p)
+        break
+from p4doip.privacy import MASKED_DIDS, text_of  # noqa: E402
 CSS = """
 :root{--bg:#fff;--fg:#1d2329;--mut:#66707a;--line:#dde2e6;--acc:#0b6bcb;--ok:#2e7d32;--warn:#b26a00;--card:#f6f8fa}
 @media (prefers-color-scheme: dark){:root{--bg:#14181c;--fg:#e4e8ec;--mut:#98a2ad;--line:#2c333a;--acc:#5aa9ff;--ok:#7bc47f;--warn:#f0b35a;--card:#1b2026}}
@@ -41,29 +51,6 @@ def page(name, title, body, refresh=30):
 
 def e(s):
     return html.escape(str(s))
-
-
-VIN = re.compile(r"(?:YSM|LPS|LRW|YV1)[A-HJ-NPR-Z0-9]{14}")  # Polestar/Volvo WMIs
-
-
-def text_of(hexdata):
-    """Printable ASCII in a DID value (padding 00/ff/20 stripped), or '' if it isn't mostly text."""
-    try:
-        raw = bytes.fromhex(hexdata)
-    except ValueError:
-        return ""
-    raw = raw.strip(b"\x00\xff\x20")
-    if len(raw) < 4:
-        return ""
-    printable = sum(1 for c in raw if 32 <= c < 127)
-    if printable / len(raw) < 0.9:
-        return ""
-    s = "".join(chr(c) if 32 <= c < 127 else "." for c in raw)
-    if not re.search(r"[A-Za-z0-9]{3}", s):
-        return ""
-    s = re.sub(r"89\d{16,18}", lambda m: m.group()[:6] + "… [SIM ICCID hidden]", s)
-    s = re.sub(r"(?<!\d)\d{15,16}(?!\d)", "[15-16 digit id (IMEI?) hidden]", s)
-    return VIN.sub(lambda m: "[VIN hidden]" if len(re.findall(r"[G-HJ-NPR-Z]", m.group())) >= 2 else m.group(), s)
 
 
 def read_jsonl(path):
@@ -106,7 +93,7 @@ def watch_last():
         except OSError:
             continue
         for ln in lines:
-            m = re.match(r"(\d\d:\d\d:\d\d) ([0-9A-F]{4}:[0-9A-F]{4}) (.*)", ln)
+            m = re.match(r"(?:\d{4}-\d\d-\d\dT)?(\d\d:\d\d:\d\d)(?:[+-]\d\d:\d\d)? ([0-9A-F]{4}:[0-9A-F]{4}) (.*)", ln)
             if not m:
                 continue
             t, k, rest = m.groups()
@@ -143,7 +130,19 @@ def scan_status(catalogue=()):
 
 
 def latest_scan_results(n=4):
-    """Automatic: the last few scan slots that found new DIDs, from the newest unattended.log (no manual upkeep)."""
+    """Automatic: the last few scan slots that found new DIDs, from the newest sweep.log (or the older
+    unattended.log on a machine that still has one)."""
+    sweep_logs = sorted(glob.glob(W + "/runs/*/sweep.log"), key=os.path.getmtime)
+    if sweep_logs:
+        hits = []
+        for line in open(sweep_logs[-1], errors="replace"):
+            m = re.match(r"^(\d\d:\d\d:\d\d) scan (\S+): (\d+) new OK$", line.strip())
+            if m and int(m.group(3)) > 0:
+                hits.append("%s %s: %s new DIDs" % (m.group(1), m.group(2), m.group(3)))
+        if not hits:
+            return ""
+        return "<p class=mut>Latest scan results (automatic):</p><ul>%s</ul>" % "".join(
+            "<li>%s</li>" % e(h) for h in hits[-n:][::-1])
     logs = sorted(glob.glob(W + "/runs/*/unattended.log"))
     if not logs:
         return ""
@@ -171,10 +170,10 @@ def status_lines():
     """The first three lines of local/web-status.txt (latest status or discoveries), shown at the top of the overview."""
     try:
         with open(W + "/local/web-status.txt", errors="replace") as f:
-            lines = [l.strip() for l in f if l.strip()][:3]
+            lines = [line.strip() for line in f if line.strip()][:3]
     except OSError:
         return ""
-    return "<ul class=status>%s</ul>" % "".join("<li>%s</li>" % e(l) for l in lines) if lines else ""
+    return "<ul class=status>%s</ul>" % "".join("<li>%s</li>" % e(line) for line in lines) if lines else ""
 
 
 def research():
@@ -193,7 +192,8 @@ def research():
         if not os.path.exists(out):
             items.append((os.path.getmtime(b), "", "Investigating " + os.path.basename(b)[6:-4], "running"))
     items.sort(reverse=True)
-    fmt = lambda t: time.strftime("%m-%d %H:%M", time.localtime(t))
+    def fmt(t):
+        return time.strftime("%m-%d %H:%M", time.localtime(t))
     rows = "".join('<tr><td class=mono>%s</td><td>%s</td><td>%s</td></tr>' % (
         fmt(t), ('<a href="%s">%s</a>' % (n, e(ti))) if n else e(ti), e(st)) for t, n, ti, st in items)
     top = "".join('<li>%s %s (%s)</li>' % (fmt(t), ('<a href="%s">%s</a>' % (n, e(ti))) if n else e(ti), e(st)) for t, n, ti, st in items[:3])
@@ -222,8 +222,10 @@ def slot_secs(slot, watch):
 
 
 def progress():
-    """Current task, overall progress and rough ETAs from the unattended script's progress file."""
-    files = sorted(glob.glob(W + "/runs/*/unattended.progress.json"))
+    """Current task, overall progress and rough ETAs from the sweep's progress file (the older
+    unattended.progress.json is still read if that is all a machine has)."""
+    files = sorted(glob.glob(W + "/runs/*/sweep.progress.json") + glob.glob(W + "/runs/*/unattended.progress.json"),
+                   key=os.path.getmtime)
     if not files:
         return ""
     try:
@@ -248,7 +250,9 @@ def progress():
         if m not in mods:
             order.append(m)
         mods[m] = (t, m in gated)
-    hm = lambda secs: "%dh %02dm" % (secs // 3600, secs % 3600 // 60) if secs >= 3600 else "%d min" % max(1, round(secs / 60))
+    def hm(secs):
+        return ("%dh %02dm" % (secs // 3600, secs % 3600 // 60) if secs >= 3600
+                else "%d min" % max(1, round(secs / 60)))
     age = now - p.get("since", now)
     out = '<div class=card><b>Now:</b> %s <span class=mut>(for %s)</span><br>' % (e(p.get("current", "")), hm(age))
     out += '<b>Scan queue:</b> %d of %d slots done (%d%%), %d left; roughly %s of car time to finish%s.</div>' % (
@@ -304,7 +308,7 @@ def main():
         r = []
         for did in sorted(d):
             st, data, t = d[did]
-            if st != "ok" or did == "F190":
+            if st != "ok" or did in MASKED_DIDS:
                 continue
             k = "%s:%s" % (a, did)
             w = wl.get(k)

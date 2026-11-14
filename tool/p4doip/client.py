@@ -9,18 +9,48 @@ import socket
 import struct
 import time
 from dataclasses import dataclass
+from typing import NoReturn
+
+from .hazards import BUILTIN_BLOCKED as BLOCKED_READS  # noqa: F401  (re-exported for docs/back-compat)
+from .hazards import blocked_reason as _hazard_blocked
+from .hazards import caution_reason as _hazard_caution
 
 ALLOWED_SIDS = {0x22: "ReadDataByIdentifier", 0x19: "ReadDTCInformation", 0x3E: "TesterPresent"}
+
+# UDS negative response codes (ISO 14229-1) by name, for readable output. Stored records keep the raw code.
+NRC_NAMES = {0x10: "generalReject", 0x11: "serviceNotSupported", 0x12: "subFunctionNotSupported",
+             0x13: "incorrectMessageLengthOrInvalidFormat", 0x14: "responseTooLong",
+             0x21: "busyRepeatRequest", 0x22: "conditionsNotCorrect", 0x24: "requestSequenceError",
+             0x25: "noResponseFromSubnetComponent", 0x31: "requestOutOfRange", 0x33: "securityAccessDenied",
+             0x35: "invalidKey", 0x36: "excessiveNumberOfAttempts", 0x37: "requiredTimeDelayNotExpired",
+             0x70: "uploadDownloadNotAccepted", 0x71: "transferDataSuspended", 0x72: "generalProgrammingFailure",
+             0x73: "wrongBlockSequenceCounter", 0x78: "requestCorrectlyReceived-ResponsePending",
+             0x7E: "subFunctionNotSupportedInActiveSession", 0x7F: "serviceNotSupportedInActiveSession"}
+
+
+def nrc_name(code: int) -> str:
+    return NRC_NAMES.get(code, "unlisted")
+
+# A test module that keeps saying "response pending" must not hold the tool forever: cap the replies
+# per request and turn the cap into an ordinary timeout (the DID stays retryable for the next run).
+MAX_PENDING = 8
+
+# NRCs that mean "ask again", not "this DID does not exist": busyRepeatRequest and requestSequenceError
+# (the latter after a dropped reply). They must never become a permanent answer in runs/.
+TRANSIENT_NRCS = {0x21: "busyRepeatRequest", 0x24: "requestSequenceError"}
+
+
+def is_transient(code: int | None) -> bool:
+    return code is not None and code in TRANSIENT_NRCS
+
+
 PORT = 13400
 NACK_UNKNOWN_TARGET = 0x03
 
-# Reads that are harmless in UDS terms but upset a module on this car. Keyed on (module, DID): the same
-# DID can be a normal signal on another module (1635:EE13 is the HV discharge counter). Functional
-# targets reach every module, so a blocked DID is refused there too.
-BLOCKED_READS = {
-    (0x1301, 0xEE13): "knocks the Mobileye driver assistance ECU (1301) off the network for about a minute "
-                      "(seen twice, parked, 2026-11-11)",
-}
+# Reads that are harmless in UDS terms but upset a module on this car live in catalogue/hazards.yaml plus
+# one built-in block (see hazards.py). Keyed on (module, DID): the same DID can be a normal signal on
+# another module (1635:EE13 is the HV discharge counter). Functional targets reach every module, so a
+# blocked or caution DID is refused there too.
 FUNCTIONAL_TARGETS = {0x1FFF, 0xE400}  # seen on this car (1FFF works, E400 is rejected)
 
 
@@ -35,22 +65,43 @@ class ReadOnlyViolation(Exception):
 
 
 class BlockedRead(ReadOnlyViolation):
-    """Raised before anything is sent if a read is on BLOCKED_READS."""
+    """Raised before anything is sent if a read is blocked in catalogue/hazards.yaml."""
+
+
+class CautionedRead(ReadOnlyViolation):
+    """Raised before anything is sent if a read is a caution and --allow-caution was not given."""
 
 
 def blocked_reason(target: int, did: int) -> str | None:
     """Why reading `did` from `target` is refused, or None if it is allowed."""
-    for (module, bad), why in BLOCKED_READS.items():
-        if did == bad and (target == module or is_functional(target)):
-            return "%04X:%04X %s" % (module, bad, why)
-    return None
+    return _hazard_blocked(target, did, is_functional(target))
+
+
+def caution_reason(target: int, did: int) -> str | None:
+    """Why reading `did` from `target` is only allowed with --allow-caution, or None."""
+    return _hazard_caution(target, did, is_functional(target))
+
+
+def read_dids(uds: bytes) -> list[int]:
+    """The DIDs in a 0x22 request (one or many). Empty for any other service."""
+    if uds[:1] != b"\x22":
+        return []
+    return [struct.unpack(">H", uds[i:i + 2])[0] for i in range(1, len(uds) - 1, 2)]
 
 
 def check_not_blocked(target: int, uds: bytes) -> None:
-    if uds[:1] == b"\x22" and len(uds) == 3:
-        why = blocked_reason(target, struct.unpack(">H", uds[1:3])[0])
+    for did in read_dids(uds):
+        why = blocked_reason(target, did)
         if why:
-            raise BlockedRead("refusing to read %04X:%s: %s" % (target, uds[1:3].hex().upper(), why))
+            raise BlockedRead("refusing to read %04X:%04X: %s" % (target, did, why))
+
+
+def check_not_cautioned(target: int, uds: bytes) -> None:
+    for did in read_dids(uds):
+        why = caution_reason(target, did)
+        if why:
+            raise CautionedRead("refusing caution read %04X:%04X without --allow-caution: %s"
+                                % (target, did, why))
 
 
 class ConnectionLost(Exception):
@@ -66,6 +117,7 @@ class Result:
     status: str          # ok | nrc | nack | timeout
     data: bytes = b""    # full positive UDS response (status ok)
     code: int | None = None  # NRC (status nrc) or DoIP NACK code (status nack)
+    note: str = ""       # why a timeout happened (e.g. the pending cap), for the log
 
     @property
     def payload(self) -> bytes:
@@ -76,18 +128,21 @@ class Result:
         if self.status == "ok":
             return "OK " + self.payload.hex()
         if self.status == "nrc":
-            return "NRC %02X" % self.code
+            return "NRC %02X" % (self.code or 0)
         if self.status == "nack":
-            return "NACK %02X" % self.code
+            return "NACK %02X" % (self.code or 0)
         return "no response"
 
 
-def check_read_only(uds: bytes) -> None:
+def check_read_only(uds: bytes, allow_multi: bool = False) -> None:
     if not uds or uds[0] not in ALLOWED_SIDS:
         raise ReadOnlyViolation(
             "UDS service 0x%s is not a read; refusing to send" % (uds[:1].hex() or "??"))
-    if uds[0] == 0x22 and len(uds) != 3:
-        raise ReadOnlyViolation("0x22 must carry exactly one DID, got %s" % uds.hex())
+    if uds[0] == 0x22:
+        if allow_multi and (len(uds) < 3 or (len(uds) - 1) % 2):
+            raise ReadOnlyViolation("0x22 needs whole DIDs, got %s" % uds.hex())
+        if not allow_multi and len(uds) != 3:
+            raise ReadOnlyViolation("0x22 must carry exactly one DID, got %s" % uds.hex())
     if uds[0] == 0x19 and len(uds) < 2:
         raise ReadOnlyViolation("0x19 needs a sub-function")
 
@@ -97,9 +152,11 @@ def frame(ptype: int, payload: bytes) -> bytes:
 
 
 class DoIP:
-    def __init__(self, host: str, port: int = PORT, tester: int = 0x0E80, connect_timeout: float = 5.0):
+    def __init__(self, host: str, port: int = PORT, tester: int = 0x0E80, connect_timeout: float = 5.0,
+                 allow_caution: bool = False):
         self.host, self.port, self.tester, self.connect_timeout = host, port, tester, connect_timeout
-        self.sock = None
+        self.allow_caution = allow_caution
+        self.sock: socket.socket | None = None
         self.buf = b""
         self.gateway = None
         self._desync = False  # a request timed out: its answer may still arrive
@@ -140,7 +197,7 @@ class DoIP:
     def __exit__(self, *exc):
         self.close()
 
-    def _lost(self, why: str, cause: Exception | None = None):
+    def _lost(self, why: str, cause: Exception | None = None) -> NoReturn:
         self.close()  # never hold the gateway's single tester slot with a dead session
         raise ConnectionLost(why) from cause
 
@@ -169,6 +226,8 @@ class DoIP:
             left = deadline - time.monotonic()
             if left <= 0:
                 return None
+            if self.sock is None:
+                self._lost("not connected")
             try:
                 self.sock.settimeout(left)
                 chunk = self.sock.recv(65536)
@@ -187,9 +246,11 @@ class DoIP:
             pass
         self._desync = False
 
-    def _send_diag(self, target: int, uds: bytes) -> None:
-        check_read_only(uds)
+    def _send_diag(self, target: int, uds: bytes, multi: bool = False) -> None:
+        check_read_only(uds, allow_multi=multi)
         check_not_blocked(target, uds)
+        if not self.allow_caution:
+            check_not_cautioned(target, uds)
         if self.sock is None:
             raise ConnectionLost("not connected")
         if self._desync:
@@ -214,10 +275,11 @@ class DoIP:
         return "ok"
 
     # -- requests ---------------------------------------------------------
-    def request(self, target: int, uds: bytes, timeout: float = 1.0) -> Result:
-        """Physical request: one answer expected from `target`."""
-        self._send_diag(target, uds)
+    def request(self, target: int, uds: bytes, timeout: float = 1.0, multi: bool = False) -> Result:
+        """Physical request: one answer expected from `target`. `multi` allows a 0x22 with several DIDs."""
+        self._send_diag(target, uds, multi)
         deadline = time.monotonic() + timeout
+        pending = 0
         while True:
             got = self._recv(deadline)
             if got is None:
@@ -231,6 +293,10 @@ class DoIP:
             if ptype == 0x8001:
                 kind = self._matches(uds, p[4:])
                 if kind == "pending":
+                    pending += 1
+                    if pending > MAX_PENDING:
+                        self._desync = True
+                        return Result("timeout", note="%d response-pending replies (limit %d)" % (pending - 1, MAX_PENDING))
                     deadline = time.monotonic() + 5.0
                 elif kind == "nrc":
                     return Result("nrc", code=p[6])
@@ -243,6 +309,7 @@ class DoIP:
         self._send_diag(target, uds)
         out: dict[int, Result] = {}
         deadline = time.monotonic() + window
+        pending = 0
         while True:
             got = self._recv(deadline)
             if got is None:
@@ -257,6 +324,10 @@ class DoIP:
             elif ptype == 0x8001:
                 kind = self._matches(uds, p[4:])
                 if kind == "pending":
+                    pending += 1
+                    if pending > MAX_PENDING:
+                        self._desync = True
+                        return out
                     deadline = max(deadline, time.monotonic() + 5.0)
                 elif kind == "nrc":
                     out.setdefault(src, Result("nrc", code=p[6]))
@@ -265,6 +336,14 @@ class DoIP:
 
     def read_did(self, target: int, did: int, timeout: float = 1.0) -> Result:
         return self.request(target, b"\x22" + struct.pack(">H", did), timeout)
+
+    def read_dids(self, target: int, dids: list[int], timeout: float = 1.0) -> Result:
+        """Experimental: one 0x22 carrying several DIDs. The answer is a 62 + (DID + value) sequence whose
+        boundaries need the DID lengths from docs/did-map.csv; callers must not assume a split."""
+        if not dids:
+            raise ReadOnlyViolation("read_dids needs at least one DID")
+        uds = b"\x22" + b"".join(struct.pack(">H", d) for d in dids)
+        return self.request(target, uds, timeout, multi=True)
 
     def tester_present(self, target: int, timeout: float = 0.5) -> Result:
         return self.request(target, b"\x3e\x00", timeout)

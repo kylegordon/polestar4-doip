@@ -7,10 +7,12 @@ import threading
 import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
-W = "/w"
-SRV = "/srv"
+W = os.environ.get("P4_WEB_W", "/w")
+SRV = os.environ.get("P4_WEB_OUT", "/srv")
+HOST = os.environ.get("P4_WEB_HOST", "127.0.0.1")  # localhost by default: the pages hold car data
+PORT = int(os.environ.get("P4_WEB_PORT", "8088"))
 HIST = 600  # points kept per DID
-LINE = re.compile(r"(\d\d:\d\d:\d\d) ([0-9A-F]{4}:[0-9A-F]{4}) (.*)")
+LINE = re.compile(r"(?:\d{4}-\d\d-\d\dT)?(\d\d:\d\d:\d\d)(?:[+-]\d\d:\d\d)? ([0-9A-F]{4}:[0-9A-F]{4}) (.*)")
 EXTRA = re.compile(r"\[([^\]=]+)=([^\]]*)\]")
 NUM = re.compile(r"-?\d+(?:\.\d+)?")
 
@@ -94,4 +96,9 @@ class H(SimpleHTTPRequestHandler):
         super().do_GET()
 
 
-ThreadingHTTPServer(("", 8088), H).serve_forever()
+def serve(host: str = HOST, port: int = PORT) -> None:
+    ThreadingHTTPServer((host, port), H).serve_forever()
+
+
+if __name__ == "__main__":
+    serve()

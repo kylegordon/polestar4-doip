@@ -1,0 +1,5 @@
+# Known diagnostic trouble codes: DTC (3-byte hex) -> human label, optional module/source.
+# Values come from observations on this car (docs/findings.md, DISCOVERIES.md) or a published source.
+# An empty or missing file is fine: `p4 dtc` still prints the code and the UDS status bits.
+#
+# - {dtc: "D12345", name: "example", module: "1601", source: "DISCOVERIES.md 2026-11-13"}

@@ -1,0 +1,30 @@
+[project]
+name = "p4doip"
+version = "2026.11.14"
+description = "Read-only DoIP/UDS discovery tools for a Polestar 4"
+requires-python = ">=3.10"
+dependencies = ["PyYAML>=6.0"]
+
+[project.scripts]
+p4 = "p4doip.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "tool" }
+packages = ["p4doip"]
+
+[tool.pytest.ini_options]
+testpaths = ["tool/tests"]
+pythonpath = ["tool"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "W"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = true

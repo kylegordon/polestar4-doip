@@ -49,5 +49,24 @@ if [ -n "$(git rev-list -n1 --all)" ]; then
   fi
 fi
 
+# docs/did-map.csv freshness: only meaningful where runs/ exists (the capture machine); skipped elsewhere.
+# Exit 1 from didmap --check = stale map; any other failure (no python3/yaml) is a note, not a gate.
+have_scans=""
+for f in runs/*/scan-*.jsonl; do
+  if [ -e "$f" ]; then have_scans=1; break; fi
+done
+if [ -n "$have_scans" ] && [ -d tool ] && command -v python3 >/dev/null; then
+  didmap_root=$(pwd)
+  rc=0
+  # The `|| rc=$?` keeps `set -e` from aborting the whole check with a status (2 under dash) when the
+  # helper cannot run; a missing tool/ or did-map is reported as a note, not as this script's error.
+  (cd tool && P4_ROOT="$didmap_root" python3 -B -c "from p4doip.cli import main; main(['didmap', '--check'])") 2>/dev/null || rc=$?
+  if [ "$rc" -eq 1 ]; then
+    echo "FAIL: docs/did-map.csv is stale; run ./p4 didmap and commit the result"; fail=1
+  elif [ "$rc" -ne 0 ]; then
+    echo "NOTE: did-map freshness check did not run (exit $rc)"
+  fi
+fi
+
 [ "$fail" = 0 ] && echo "prepublish-check: OK"
 exit "$fail"

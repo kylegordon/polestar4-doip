@@ -1,0 +1,29 @@
+# Reads that upset a module on this car. The tool loads this file before every car-facing command.
+#
+# action: block   = refused on the module and on any functional address (1FFF / E000-EFFF). Permanent.
+#         caution = refused by default, allowed with --allow-caution or a paced scan.
+# why and evidence are required/recommended: they are what stops a future session repeating the test.
+# The built-in block on 1301:EE13 cannot be downgraded here; remove it from code only with a new observation.
+
+- {module: "1301", did: "EE13", action: block, severity: critical,
+   why: "knocks the Mobileye driver assistance ECU off the network for about a minute (seen twice, parked)",
+   evidence: "DISCOVERIES.md 2026.11.11; docs/findings.md 1301"}
+
+# 1601: reading these was followed by the module failing to answer TesterPresent, 3 s after the car woke.
+# The 2026-11-13 audit corrected the set from D927-D92B to D928-D92C and judged start-up the likely cause,
+# so these are caution, not block: paced mode may test them; ordinary scans skip them.
+- {module: "1601", did: "D928", action: caution, severity: high,
+   why: "module stopped answering after this read 3 s after wake; start-up race likely",
+   evidence: "DISCOVERIES.md 2026.11.13 correction"}
+- {module: "1601", did: "D929", action: caution, severity: high,
+   why: "module stopped answering after this read 3 s after wake; start-up race likely",
+   evidence: "DISCOVERIES.md 2026.11.13 correction"}
+- {module: "1601", did: "D92A", action: caution, severity: high,
+   why: "module stopped answering after this read 3 s after wake; start-up race likely",
+   evidence: "DISCOVERIES.md 2026.11.13 correction"}
+- {module: "1601", did: "D92B", action: caution, severity: high,
+   why: "module stopped answering after this read 3 s after wake; start-up race likely",
+   evidence: "DISCOVERIES.md 2026.11.13 correction"}
+- {module: "1601", did: "D92C", action: caution, severity: high,
+   why: "module stopped answering after this read 3 s after wake; start-up race likely",
+   evidence: "DISCOVERIES.md 2026.11.13 correction"}
