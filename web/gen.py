@@ -23,9 +23,10 @@ table{border-collapse:collapse;width:100%;font-size:13px}th,td{border-bottom:1px
 th{color:var(--mut);font-weight:600}code,pre,.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
 pre{background:var(--card);padding:10px;overflow-x:auto;white-space:pre-wrap;word-break:break-all}
 .card{background:var(--card);padding:10px 12px;border-radius:6px;margin:8px 0}.mut{color:var(--mut)}
-.cells{display:grid;grid-template-columns:repeat(auto-fill,minmax(34px,1fr));gap:3px}
-.cell{position:relative;height:56px;background:var(--card);border-radius:3px;overflow:hidden;font-size:10px;text-align:center}
-.cell i{position:absolute;left:0;right:0;bottom:0;height:var(--h);background:var(--acc);opacity:.35}.cell span{position:relative;top:20px}
+.cells{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:3px}
+.cell{position:relative;height:60px;background:var(--card);border-radius:3px;overflow:hidden;font-size:11px;text-align:center;display:flex;flex-direction:column;justify-content:center}
+.cell i{position:absolute;left:0;right:0;bottom:0;height:var(--h);background:var(--acc);opacity:.35}
+.cell b,.cell span,.cell small{position:relative}.cell b{font-size:9px;font-weight:400;color:var(--mut)}.cell small{font-size:9px;color:var(--mut)}
 .temps{display:flex;flex-wrap:wrap;gap:4px}.temps span{background:var(--card);padding:2px 6px;border-radius:3px;font-size:12px}
 .unknown{color:var(--warn);font-weight:600}.confirmed{color:var(--ok);font-weight:600}td.v{word-break:break-all;max-width:420px}
 """
@@ -336,9 +337,9 @@ def battery(wl):
     if age is None or age > 10:
         head = "<p class=unknown>Old reading: these cells were read %s, not live.</p>" % (
             "at an unknown time" if age is None else "%s ago" % ("%.0f min" % age if age < 120 else "%.1f h" % (age / 60) if age < 2880 else "%.0f days" % (age / 1440))) + head
-    grid = "".join('<div class=cell title="cell %d: %d mV" style="--h:%d%%"><i></i><span>%d</span></div>' % (
-        n, mv, 15 + 85 * (mv - lo) // span, mv - lo) for n, mv in cells)
-    body = head + "<h2>Cell groups (mV above the lowest)</h2><div class=cells>%s</div>" % grid
+    grid = "".join('<div class=cell title="cell %d: %d mV" style="--h:%d%%"><i></i><b>%d</b><span>%d</span><small>+%d</small></div>' % (
+        n, mv, 15 + 85 * (mv - lo) // span, n, mv, mv - lo) for n, mv in cells)
+    body = head + "<h2>Cell groups</h2><p class=mut>Each box: group number, voltage in mV, and mV above the lowest group. Bar height shows the same difference.</p><div class=cells>%s</div>" % grid
     if "1635:EE83" in v:
         traw, twhen, tsrc = v["1635:EE83"]
         temps = [x * 0.01 - 50 for x in u16s(traw) if x != 0xFFFF]
