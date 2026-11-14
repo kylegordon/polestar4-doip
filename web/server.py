@@ -19,6 +19,15 @@ state = {"file": None, "pos": 0, "keys": {}, "events": []}
 MATRIX = re.compile(r"^(\d\d:\d\d:\d\d) (1BB[34]):7022 (.*)$")
 MATRIX_HEX = re.compile(r"[0-9a-f]{64}")
 NO_DATA = "ff" * 32  # drawn grey: the lamp did not answer (NRC, timeout) on that read
+SPEED = re.compile(r"^(\d\d:\d\d:\d\d) (1631:D003|1601:E36E) (.*)$")
+SPEED_SCALE = {"1631:D003": 0.0140625, "1601:E36E": 1 / 256}  # km/h per count (catalogue vehicle_speed, vddm_speed)
+
+
+def speed_value(key, rest):
+    """km/h from a watch line's new value, or None if the read failed."""
+    new = rest.rsplit("-> ", 1)[1] if "-> " in rest else rest
+    m = re.match(r"[0-9a-f]{4}\b", new)
+    return round(int(m.group(), 16) * SPEED_SCALE[key], 1) if m else None
 matrix_lock = threading.Lock()
 matrix_cache = {}  # path -> ((mtime, size), frames)
 
@@ -31,24 +40,31 @@ def matrix_value(rest):
 
 
 def matrix_logs():
-    """Every watch log with headlamp matrix readings: [{name, frames: [[HH:MM:SS, lamp, 32-byte hex]]}], oldest first."""
+    """Every watch log with headlamp matrix readings: [{name, frames: [[HH:MM:SS, lamp, 32-byte hex]], speed: [[HH:MM:SS, km/h]]}].
+
+    Speed comes from 1631:D003, or 1601:E36E in logs that do not have D003. Oldest log first."""
     out = []
     for p in sorted(glob.glob(W + "/runs/*/watch-*.log")):
         try:
             st = os.stat(p)
             mt = (st.st_mtime, st.st_size)
             if p not in matrix_cache or matrix_cache[p][0] != mt:
-                frames = []
+                frames, speeds = [], {"1631:D003": [], "1601:E36E": []}
                 with open(p, errors="replace") as f:
                     for ln in f:
-                        m = MATRIX.match(ln.rstrip("\n"))
+                        ln = ln.rstrip("\n")
+                        m = MATRIX.match(ln)
                         if m:
                             frames.append([m.group(1), m.group(2), matrix_value(m.group(3))])
-                matrix_cache[p] = (mt, frames)
+                            continue
+                        m = SPEED.match(ln)
+                        if m:
+                            speeds[m.group(2)].append([m.group(1), speed_value(m.group(2), m.group(3))])
+                matrix_cache[p] = (mt, frames, speeds["1631:D003"] or speeds["1601:E36E"])
         except OSError:
             continue
         if matrix_cache[p][1]:
-            out.append({"name": "%s/%s" % (p.split("/")[-2], os.path.basename(p)), "frames": matrix_cache[p][1]})
+            out.append({"name": "%s/%s" % (p.split("/")[-2], os.path.basename(p)), "frames": matrix_cache[p][1], "speed": matrix_cache[p][2]})
     return out
 
 

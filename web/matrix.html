@@ -35,8 +35,9 @@ select,button,input{font:inherit}
   <label>Speed <select id="speed"><option>1</option><option>2</option><option selected>4</option><option>8</option><option>16</option><option>60</option></select>x</label>
   <label><input type="checkbox" id="flipL"> flip left</label>
   <label><input type="checkbox" id="flipR"> flip right</label>
+  <label><input type="checkbox" id="flipV"> upside down</label>
 </div>
-<div class="card controls"><span class="clock" id="clock">--:--:--</span><input type="range" id="scrub" min="0" max="0" value="0" disabled><span class="mut" id="status"></span></div>
+<div class="card controls"><span class="clock" id="clock">--:--:--</span><span class="clock" id="mph">-- mph</span><span class="mut" id="kmh"></span><input type="range" id="scrub" min="0" max="0" value="0" disabled><span class="mut" id="status"></span></div>
 
 <div class="lamps">
   <div class="lamp"><h2>Left lamp (1BB3)</h2><div class="grid" id="L"></div></div>
@@ -54,6 +55,12 @@ for (const lamp of ["L", "R"]) {
 }
 const state = {"1BB3": null, "1BB4": null};
 let mode = "live";
+let speedKmh = null;
+
+function drawSpeed() {
+  $("mph").textContent = speedKmh == null ? "-- mph" : `${Math.round(speedKmh / 1.609344)} mph`;
+  $("kmh").textContent = speedKmh == null ? "" : `${speedKmh.toFixed(1)} km/h`;
+}
 
 function bytesOf(hex) {
   const out = [];
@@ -65,9 +72,10 @@ function draw() {
   for (const [lamp, key, flip] of [["L", "1BB3", $("flipL").checked], ["R", "1BB4", $("flipR").checked]]) {
     const hex = state[key];
     const vals = hex ? bytesOf(hex) : null;
+    const upside = $("flipV").checked;
     for (let row = 0; row < 2; row++) for (let col = 0; col < 16; col++) {
       const d = segs[lamp][row * 16 + col];
-      const src = row * 16 + (flip ? 15 - col : col);
+      const src = (upside ? 1 - row : row) * 16 + (flip ? 15 - col : col);
       const v = vals ? vals[src] : undefined;
       if (v === undefined || v === 0xff) { d.className = "seg nd"; d.style.backgroundColor = ""; d.title = "no data"; continue; }
       d.className = "seg";
@@ -94,6 +102,10 @@ async function pollLive() {
       if (k && (k.t > t || t === "--:--:--")) t = k.t;
     }
     $("clock").textContent = t;
+    const sp = j.keys["1631:D003"] || j.keys["1601:E36E"];
+    const scale = j.keys["1631:D003"] ? 0.0140625 : 1 / 256;
+    speedKmh = sp && /^[0-9a-f]{4}$/.test(sp.value || "") ? parseInt(sp.value, 16) * scale : null;
+    drawSpeed();
     const age = j.age == null ? null : Math.round(j.age);
     const fresh = ["1BB3", "1BB4"].some(k => j.keys[k + ":7022"]);
     $("status").textContent = !fresh ? `newest watch log (${j.file || "none"}) has no matrix readings: replay a drive instead`
@@ -102,13 +114,13 @@ async function pollLive() {
     draw();
   } catch (e) {
     if (mode !== "live") return;
-    state["1BB3"] = state["1BB4"] = null; draw();  // do not leave the last frame up as if it were live
+    state["1BB3"] = state["1BB4"] = null; speedKmh = null; draw(); drawSpeed();  // do not leave the last frame up as if it were live
     $("status").textContent = "live fetch failed: " + e;
   }
 }
 
 // ---- replay: /matrix.json frames from every watch log ----
-let logs = [], frames = [], idx = 0, playing = false, timer = null;
+let logs = [], frames = [], speeds = [], idx = 0, playing = false, timer = null;
 const secs = t => { const [h, m, s] = t.split(":").map(Number); return h * 3600 + m * 60 + s; };
 
 async function loadLogs() {
@@ -129,7 +141,15 @@ async function loadLogs() {
   pick(0);
 }
 
+function speedAt(t) {
+  // the last speed reading at or before time t (watch passes interleave speed and lamp reads)
+  let v = null;
+  for (const [st, kmh] of speeds) { if (st > t) break; v = kmh; }
+  return v;
+}
+
 function pick(i) {
+  speeds = logs[i].speed || [];
   frames = logs[i].frames; idx = 0; state["1BB3"] = state["1BB4"] = null;
   $("scrub").max = frames.length - 1; $("scrub").value = 0;
   show(0);
@@ -140,6 +160,7 @@ function show(i) {
   state["1BB3"] = state["1BB4"] = null;
   for (let k = 0; k <= i; k++) state[frames[k][1]] = frames[k][2];
   idx = i; $("scrub").value = i; $("clock").textContent = frames[i][0];
+  speedKmh = speedAt(frames[i][0]); drawSpeed();
   $("status").textContent = `frame ${i + 1} of ${frames.length}`;
   draw();
 }
@@ -149,6 +170,7 @@ function step() {
   if (idx >= frames.length - 1) { stop(); return; }
   state[frames[idx + 1][1]] = frames[idx + 1][2];
   idx++; $("scrub").value = idx; $("clock").textContent = frames[idx][0];
+  speedKmh = speedAt(frames[idx][0]); drawSpeed();
   $("status").textContent = `frame ${idx + 1} of ${frames.length}`;
   draw();
   const next = idx < frames.length - 1 ? Math.max(0, secs(frames[idx + 1][0]) - secs(frames[idx][0])) : 0;
@@ -164,14 +186,14 @@ $("play").onclick = () => {
 };
 $("scrub").oninput = () => { stop(); show(Number($("scrub").value)); };
 $("log").onchange = () => { stop(); pick(Number($("log").value)); };
-$("flipL").onchange = $("flipR").onchange = draw;
+$("flipL").onchange = $("flipR").onchange = $("flipV").onchange = draw;
 
 function setMode(m) {
   mode = m;
   stop(); clearInterval(liveTimer);
   const replay = mode === "replay";
   for (const id of ["log", "play", "scrub"]) $(id).disabled = !replay;
-  state["1BB3"] = state["1BB4"] = null; draw();
+  state["1BB3"] = state["1BB4"] = null; speedKmh = null; draw(); drawSpeed();
   if (replay) loadLogs(); else { pollLive(); liveTimer = setInterval(pollLive, 1000); }
 }
 document.querySelectorAll("input[name=mode]").forEach(r => r.onchange = () => setMode(r.value));
