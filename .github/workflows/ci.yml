@@ -9,7 +9,7 @@ jobs:
       PYTHONPATH: tool
       P4_ROOT: ${{ github.workspace }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Nothing identifying is tracked
