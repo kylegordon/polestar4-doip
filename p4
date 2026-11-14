@@ -28,11 +28,12 @@ done
 # --init: Ctrl-C, a closed terminal or `docker stop` ends the run at once and frees the gateway.
 # /etc/localtime: run dates and timestamps match the laptop clock and the pcap file names.
 set -- --rm --init --user "$(id -u):$(id -g)" --network host -e P4_HOST -e P4_PORT \
+  -e P4_COMMIT="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || true)" \
   -v /etc/localtime:/etc/localtime:ro -v "$ROOT":/w "$IMG" "$@"
 # One tester at a time: commands that talk to the car share a container name, so a second one fails fast.
 # Listed the other way round (offline commands are exempt) so anything unrecognised takes the lock.
 case "$SUB" in
-  ""|diff|mark|known|signals|strings|correlate|import-legacy) ;;  # "" = no subcommand (--help)
+  ""|diff|mark|known|signals|strings|correlate|import-legacy|didmap|similar|scandiff|dtcdiff|ranges|hazards|did|runs|tree|export|report) ;;  # "" = no subcommand (--help)
   *) set -- --name p4-live "$@" ;;
 esac
 exec docker run "$@"

@@ -7,19 +7,21 @@ import threading
 import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
-W = "/w"
-SRV = "/srv"
+W = os.environ.get("P4_WEB_W", "/w")
+SRV = os.environ.get("P4_WEB_OUT", "/srv")
+HOST = os.environ.get("P4_WEB_HOST", "127.0.0.1")  # localhost by default: the pages hold car data
+PORT = int(os.environ.get("P4_WEB_PORT", "8088"))
 HIST = 600  # points kept per DID
-LINE = re.compile(r"(\d\d:\d\d:\d\d) ([0-9A-F]{4}:[0-9A-F]{4}) (.*)")
+LINE = re.compile(r"(?:\d{4}-\d\d-\d\dT)?(\d\d:\d\d:\d\d)(?:[+-]\d\d:\d\d)? ([0-9A-F]{4}:[0-9A-F]{4}) (.*)")
 EXTRA = re.compile(r"\[([^\]=]+)=([^\]]*)\]")
 NUM = re.compile(r"-?\d+(?:\.\d+)?")
 
 lock = threading.Lock()
 state = {"file": None, "pos": 0, "keys": {}, "events": []}
-MATRIX = re.compile(r"^(\d\d:\d\d:\d\d) (1BB[34]):7022 (.*)$")
+MATRIX = re.compile(r"^(?:\d{4}-\d\d-\d\dT)?(\d\d:\d\d:\d\d)(?:[+-]\d\d:\d\d)? (1BB[34]):7022 (.*)$")
 MATRIX_HEX = re.compile(r"[0-9a-f]{64}")
 NO_DATA = "ff" * 32  # drawn grey: the lamp did not answer (NRC, timeout) on that read
-SPEED = re.compile(r"^(\d\d:\d\d:\d\d) (1631:D003|1601:E36E) (.*)$")
+SPEED = re.compile(r"^(?:\d{4}-\d\d-\d\dT)?(\d\d:\d\d:\d\d)(?:[+-]\d\d:\d\d)? (1631:D003|1601:E36E) (.*)$")
 SPEED_SCALE = {"1631:D003": 0.0140625, "1601:E36E": 1 / 256}  # km/h per count (catalogue vehicle_speed, vddm_speed)
 
 
@@ -163,5 +165,9 @@ class H(SimpleHTTPRequestHandler):
         super().do_GET()
 
 
-if __name__ == "__main__":  # run as python /w/web/server.py in the p4-web container
-    ThreadingHTTPServer(("", 8088), H).serve_forever()
+def serve(host: str = HOST, port: int = PORT) -> None:
+    ThreadingHTTPServer((host, port), H).serve_forever()
+
+
+if __name__ == "__main__":  # p4-web runs python /w/web/server.py; set P4_WEB_HOST=0.0.0.0 to reach it from other devices
+    serve()

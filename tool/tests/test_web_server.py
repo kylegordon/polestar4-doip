@@ -25,13 +25,15 @@ def test_matrix_logs_reads_new_values_and_skips_other_dids(tmp_path, monkeypatch
         "10:00:07 1BB4:7022 MUTED after %s -> %s (6 changes in 10s)" % (B, A),
         "10:00:02 1631:D003 0d44  [vehicle_speed=47.75625 km/h]",
         "10:00:09 1631:D003 CHANGE 0d44 -> no response",
+        "2026-11-14T10:00:10+00:00 1BB3:7022 %s" % A,  # watch logs now carry an ISO date and offset
     ]) + "\n")
     (day / "watch-empty.log").write_text("10:00:00 1601:E36E 0000\n")
     got = server.matrix_logs()
     assert [g["name"] for g in got] == ["2026-11-14/watch-x.log"]
     assert got[0]["frames"] == [["10:00:00", "1BB3", "11" * 32], ["10:00:01", "1BB4", "22" * 32],
-                                ["10:00:05", "1BB3", "22" * 32], ["10:00:06", "1BB4", "ff" * 32], ["10:00:07", "1BB4", "11" * 32]]
+                                ["10:00:05", "1BB3", "22" * 32], ["10:00:06", "1BB4", "ff" * 32], ["10:00:07", "1BB4", "11" * 32],
+                                ["10:00:10", "1BB3", "11" * 32]]
     assert got[0]["speed"] == [["10:00:02", 47.8], ["10:00:09", None]]
     with open(log, "a") as f:
-        f.write("10:00:08 1BB3:7022 %s\n" % B)
-    assert server.matrix_logs()[0]["frames"][-1] == ["10:00:08", "1BB3", "22" * 32]
+        f.write("10:00:11 1BB3:7022 %s\n" % B)
+    assert server.matrix_logs()[0]["frames"][-1] == ["10:00:11", "1BB3", "22" * 32]

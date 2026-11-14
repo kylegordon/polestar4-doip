@@ -23,6 +23,10 @@ class SimGateway:
                         for t, dids in modules.items()}
         self.gateway = gateway
         self.pending: set[tuple[int, int]] = set()   # answer 7F 22 78 first
+        self.pending_count: dict[tuple[int, int], int] = {}  # ... this many times (default 1)
+        self.nrc_script: dict[tuple[int, int], list[int]] = {}  # negative responses served in order
+        self.supported: dict[int, list[bytes]] = {}  # 19 0A: 4-byte DTC records per module (default NRC 12)
+        self.freeze: dict[tuple[int, int], bytes] = {}  # (module, DTC) -> 19 04 extra bytes
         self.stale: set[tuple[int, int]] = set()     # send an unrelated positive reply first
         self.delay: dict[tuple[int, int], float] = {}  # final answer arrives this many seconds late
         self.ignore: set[tuple[int, int]] = set()    # DIDs a live module never answers
@@ -157,7 +161,8 @@ class SimGateway:
         if key in self.stale:
             out.append((0, frame(0x8001, struct.pack(">HH", target, tester) + b"\x62\xff\xff\xaa")))
         if key in self.pending:
-            out.append((0, frame(0x8001, struct.pack(">HH", target, tester) + b"\x7f\x22\x78")))
+            for _ in range(self.pending_count.get(key, 1)):
+                out.append((0, frame(0x8001, struct.pack(">HH", target, tester) + b"\x7f\x22\x78")))
         out.append((self.delay.get(key, 0), frame(0x8001, struct.pack(">HH", target, tester) + self._uds(target, uds))))
         return out
 
@@ -165,8 +170,23 @@ class SimGateway:
         sid = uds[0]
         if sid == 0x3E:
             return b"\x7e\x00"
+        if sid == 0x22 and len(uds) > 3:
+            out = b"\x62"
+            for i in range(1, len(uds) - 1, 2):
+                did = struct.unpack(">H", uds[i:i + 2])[0]
+                val = self.modules[addr].get(did)
+                if val is None:
+                    return b"\x7f\x22\x31"  # one unknown DID fails the whole request
+                out += uds[i:i + 2] + val
+            return out
         if sid == 0x22 and len(uds) >= 3:
             did = struct.unpack(">H", uds[1:3])[0]
+            nrcs = self.nrc_script.get((addr, did))
+            if nrcs:
+                code = nrcs.pop(0)
+                if not nrcs:
+                    del self.nrc_script[(addr, did)]
+                return b"\x7f\x22" + bytes([code])
             val = self.modules[addr].get(did)
             seq = self.script.get((addr, did))
             if seq:
@@ -174,6 +194,17 @@ class SimGateway:
             return b"\x62" + uds[1:3] + val if val is not None else b"\x7f\x22\x31"
         if sid == 0x19 and uds[1:2] == b"\x02":
             return b"\x59\x02\xff" + bytes.fromhex("d1234508")  # one stored DTC
+        if sid == 0x19 and uds[1:2] == b"\x0a":
+            recs = self.supported.get(addr)
+            if recs is not None:
+                return b"\x59\x0a\xff" + b"".join(recs)
+            return b"\x7f\x19\x12"
+        if sid == 0x19 and uds[1:2] == b"\x04" and len(uds) >= 5:
+            dtc = int.from_bytes(uds[2:5], "big")
+            extra = self.freeze.get((addr, dtc))
+            if extra is not None:
+                return b"\x59\x04" + uds[2:5] + b"\x08\x01\x01" + extra
+            return b"\x7f\x19\x31"
         if sid == 0x19:
             return b"\x7f\x19\x12"
         return bytes([0x7F, sid, 0x11])

@@ -209,3 +209,21 @@ def test_multi_did_read_including_a_blocked_did_is_refused(sim, c):
 def test_blocked_did_is_refused_on_any_functional_address(target):
     assert client.blocked_reason(target, 0xEE13)
     assert client.blocked_reason(0xF000, 0xEE13) is None
+
+
+def test_pending_cap_turns_a_stuck_ecu_into_a_timeout(sim, c):
+    sim.pending.add((0x1601, 0xE37B))
+    sim.pending_count[(0x1601, 0xE37B)] = 50
+    start = time.monotonic()
+    r = c.read_did(0x1601, 0xE37B, timeout=0.2)
+    assert r.status == "timeout" and "response-pending" in r.note
+    assert time.monotonic() - start < 2.0
+
+
+def test_multi_did_read_is_one_request_and_needs_the_flag(sim, c):
+    r = c.read_dids(0x1601, [0xE37B, 0x2B15])
+    assert r.status == "ok" and r.data[1:3] == b"\xe3\x7b"
+    sent = [uds for tgt, uds in sim.seen if tgt == 0x1601 and uds[:1] == b"\x22"]
+    assert sent == [b"\x22\xe3\x7b\x2b\x15"]
+    with pytest.raises(ReadOnlyViolation):
+        c.request(0x1601, b"\x22\xe3\x7b\x2b\x15")  # multi is opt-in, not implicit

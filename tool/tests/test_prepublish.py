@@ -97,3 +97,11 @@ def test_binary_in_history_fails_after_deletion(repo):
     run(repo, "git", "rm", "-q", "pic.gif")
     run(repo, "git", "commit", "-qm", "remove")
     assert check(repo) == 1
+
+
+def test_scripts_are_posix_sh():
+    """The shebang is /bin/sh; bash-only builtins silently skip checks under dash (CI/capture Linux)."""
+    import glob
+    for path in glob.glob(os.path.join(REPO, "scripts", "*.sh")):
+        text = open(path).read()
+        assert "compgen" not in text and "[[" not in text, path
