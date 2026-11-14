@@ -86,3 +86,29 @@ def test_git_ls_files_excludes_untracked_and_ignored(tree):
     git("add", ".gitignore", "docs/a.md")
     files = tracked_files(str(tree))
     assert files == frozenset({".gitignore", "docs/a.md"})
+
+
+def test_refuses_a_tracked_symlink_into_a_private_dir(tree):
+    os.symlink(os.path.join("..", "local", "x.txt"), tree / "docs" / "findings.md")
+    inp = Inputs(str(tree), frozenset({"docs/findings.md"}))
+    with pytest.raises(InputError, match="symlink"):
+        inp.read_input("docs/findings.md")
+    assert inp.read_paths == []
+
+
+def test_refuses_a_path_through_a_symlinked_directory(tree):
+    os.symlink("runs", tree / "data")
+    inp = Inputs(str(tree), frozenset({"data/x.txt"}))
+    with pytest.raises(InputError, match="symlink"):
+        inp.read_input("data/x.txt")
+
+
+def test_tracked_but_missing_file_is_an_error(tree):
+    inp = Inputs(str(tree), frozenset({"catalogue/hazards.yaml"}))
+    with pytest.raises(InputError, match="missing"):
+        inp.input_path("catalogue/hazards.yaml")
+
+
+def test_nul_separated_manifest(tree):
+    (tree / "manifest").write_text("docs/a.md\0docs/b c.md\0")
+    assert tracked_files(str(tree), str(tree / "manifest")) == frozenset({"docs/a.md", "docs/b c.md"})

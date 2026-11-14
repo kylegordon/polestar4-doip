@@ -22,8 +22,10 @@ def tracked_files(root: str, manifest: str | None = None) -> frozenset[str]:
     """Paths tracked in git, relative to root with / separators. Fails closed: no list, no build."""
     if manifest is not None:
         try:
-            with open(manifest) as f:
-                names = [line.rstrip("\n") for line in f]
+            with open(manifest, encoding="utf-8") as f:
+                text = f.read()
+            # NUL-separated (git ls-tree -z) or one path per line.
+            names = text.split("\0") if "\0" in text else text.split("\n")
         except OSError as e:
             raise InputError("cannot read manifest %s: %s" % (manifest, e)) from e
     else:
@@ -58,6 +60,11 @@ class Inputs:
         full = os.path.realpath(os.path.join(self.root, norm))
         if os.path.commonpath([full, self.root]) != self.root:
             raise InputError("%s: resolves outside the repository" % rel)
+        # No symlinks anywhere on the path: a tracked link could point into local/ or runs/.
+        if os.path.relpath(full, self.root).replace(os.sep, "/") != norm:
+            raise InputError("%s: is or passes through a symlink; the public site reads plain files only" % rel)
+        if not os.path.isfile(full):
+            raise InputError("%s: tracked but missing from the tree" % rel)
         self.read_paths.append(norm)
         return full
 

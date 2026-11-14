@@ -42,6 +42,12 @@ def test_missing_patterns_file_is_an_error(repo):
     assert check(repo) == 2
 
 
+def test_crlf_patterns_file_is_an_error(repo):
+    path = repo / "scripts" / "patterns.txt"
+    path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+    assert check(repo) == 2
+
+
 def test_vin_in_index_fails_even_if_removed_from_working_tree(repo):
     (repo / "x.txt").write_text("vin %s\n" % FAKE_VIN)
     run(repo, "git", "add", "x.txt")
@@ -141,3 +147,25 @@ def test_the_excused_line_in_the_index_fails(repo):
     (repo / "x.yaml").write_text(EXCUSED + "\n")
     run(repo, "git", "add", "x.yaml")
     assert check(repo) == 1
+
+
+# One sample per line of scripts/patterns.txt, in order (split so this file never matches itself).
+PATTERN_SAMPLES = ["H" + "anterill", "en" + "x001122334455", FAKE_VIN, "59534d" + "34" * 14, "8988" + "23900000" + "00000000",
+                   "imei 3512345" + "67890123", "+44 20" + " 0000 0000", "/ho" + "me/someone", "/Use" + "rs/x",
+                   "/ro" + "ot/x", "55.8" + "642, -4.2518"]
+
+
+def test_shell_and_site_scan_agree_on_every_pattern(repo):
+    """prepublish-check.sh and the public site's scan read the same file; each pattern must work in both."""
+    import sys
+    sys.path.insert(0, os.path.join(REPO, "tool"))
+    from p4doip.site import gate
+    with open(os.path.join(REPO, "scripts", "patterns.txt")) as f:
+        pats = gate.load_patterns(f.read())
+    assert len(pats) == len(PATTERN_SAMPLES), "add a sample for each new pattern"
+    for i, (pat, sample) in enumerate(zip(pats, PATTERN_SAMPLES), 1):
+        assert pat.search(sample), "pattern %d (Python) misses its sample" % i
+        (repo / "x.txt").write_text(sample + "\n")
+        run(repo, "git", "add", "x.txt")
+        assert check(repo) == 1, "pattern %d (prepublish-check.sh) misses its sample" % i
+        run(repo, "git", "rm", "-q", "--cached", "x.txt")

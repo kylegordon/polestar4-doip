@@ -94,6 +94,14 @@ class Site:
         self.signals = decode.load(inputs.input_path("catalogue/signals.yaml"))
         hazards.clear_cache()
         self.hazards = hazards.load(inputs.input_path("catalogue/hazards.yaml"))
+        known = set(self.modules)
+        for sig in self.signals:
+            for addr in sig["module"].split(","):
+                if addr.strip().upper() not in known:
+                    raise ValueError("signal %s: module %s is not in catalogue/modules.yaml" % (sig["id"], addr))
+        for h in self.hazards:
+            if "%04X" % h.module not in known:
+                raise ValueError("hazard %04X:%04X: module is not in catalogue/modules.yaml" % (h.module, h.did))
 
     def _modules(self) -> dict[str, dict]:
         doc = yaml.safe_load(self.inputs.read_input("catalogue/modules.yaml")) or []
@@ -272,7 +280,7 @@ r.hidden=!ok;if(ok)n++;});out.textContent=n+" of "+rows.length+" signals shown";
         """Relative links in a rendered document point at the file on GitHub."""
         def fix(m: re.Match) -> str:
             href = m.group(1)
-            if re.match(r"[a-z]+:|#", href):
+            if re.match(r"[a-z][a-z0-9+.-]*:|#|/", href, re.I):
                 return m.group(0)
             path = os.path.normpath(os.path.join(base, href)).replace(os.sep, "/")
             return 'href="%s%s"' % (SOURCE_URL, path)
@@ -284,9 +292,11 @@ r.hidden=!ok;if(ok)n++;});out.textContent=n+" of "+rows.length+" signals shown";
         md = markdown.Markdown(extensions=["tables", "toc", "sane_lists"], extension_configs={"toc": {"toc_depth": "2"}})
         html_text = md.convert(src)
         html_text = self._github_links(html_text, "docs")
-        html_text = re.sub(r"<li>(\s*<p>)?\s*<strong>(Leads?\b)",
-                           lambda m: '<li class="lead">%s%s <strong>%s' % (m.group(1) or "", unconfirmed(), m.group(2)),
-                           html_text)
+        def mark_lead(m: re.Match[str]) -> str:
+            return '<li class="lead">%s%s <strong>%s' % (m.group(1) or "", unconfirmed(), m.group(2))
+        html_text, leads = re.subn(r"<li>(\s*<p>)?\s*<strong>(Leads?\b)", mark_lead, html_text)
+        if not leads:  # the page promises leads are marked; a format change must not drop the badges silently
+            raise ValueError("docs/findings.md: no '**Leads**' list items found to mark as Unconfirmed")
         body = ('<p>What has been learned, module by module, in the project\'s own words. Paragraphs marked %s are '
                 'leads: seen once or only plausible. Signal names in <code>code</code> are catalogue ids '
                 '(<a href="signals.html">Signals</a>). Session dates are shown as month and year.</p>'

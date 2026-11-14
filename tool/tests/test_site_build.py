@@ -4,6 +4,7 @@ import re
 import shutil
 
 import pytest
+import yaml
 
 pytest.importorskip("markdown", reason="markdown not installed: rebuild the image (./p4 build) or install tool/requirements.txt")
 
@@ -55,7 +56,9 @@ def test_every_hazard_is_on_the_hazards_page(site):
 
 def test_signal_count_matches_the_catalogue(site):
     text = page(site, "signals.html")
-    n = len(decode.load(os.path.join(REPO, "catalogue", "signals.yaml")))
+    with open(os.path.join(REPO, "catalogue", "signals.yaml")) as f:
+        n = len(yaml.safe_load(f))  # the raw file, not the loader the build uses
+    assert n == len(decode.load(os.path.join(REPO, "catalogue", "signals.yaml")))
     assert text.count("<tr data-mod=") == n
     assert "Every decoded signal in the catalogue: %d in all." % n in text
     assert "Confirmed" in text and "Provisional" in text and 'class="badge u">Unconfirmed' in text
@@ -153,3 +156,35 @@ def test_cli_missing_input_is_an_error(tmp_path, capsys):
     manifest.write_text("catalogue/signals.yaml\n")  # patterns.txt not tracked: refused
     assert main(["build", "--root", REPO, "--manifest", str(manifest), "--out", str(tmp_path / "o")]) == 2
     assert "not tracked" in capsys.readouterr().err
+
+
+def test_built_in_blocks_show_even_when_the_catalogue_omits_them(tmp_path):
+    root = tmp_path / "repo"
+    for rel in INPUTS:
+        (root / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(os.path.join(REPO, rel), root / rel)
+    with open(root / "catalogue" / "hazards.yaml") as f:
+        doc = yaml.safe_load(f)
+    kept = [h for h in doc if h["module"] != "1301"]
+    assert kept and len(kept) < len(doc)
+    (root / "catalogue" / "hazards.yaml").write_text(yaml.safe_dump(kept))
+    out = tmp_path / "out"
+    site_build.build(Inputs(str(root), frozenset(INPUTS)), str(out))
+    text = (out / "hazards.html").read_text()
+    for module, did in hazards.BUILTIN_BLOCKED:
+        row = re.search(r"<tr><td[^>]*><code>%04X:%04X</code>.*?</tr>" % (module, did), text)
+        assert row and "tool code" in row.group(0) and "Never read" in row.group(0)
+    for h in kept:
+        assert "%s:%s" % (h["module"], h["did"]) in text
+
+
+def test_unknown_module_fails_the_build(tmp_path):
+    root = tmp_path / "repo"
+    for rel in INPUTS:
+        (root / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(os.path.join(REPO, rel), root / rel)
+    with open(root / "catalogue" / "modules.yaml") as f:
+        mods = [m for m in yaml.safe_load(f) if m["addr"] != "1635"]
+    (root / "catalogue" / "modules.yaml").write_text(yaml.safe_dump(mods))
+    with pytest.raises(ValueError, match="1635"):
+        site_build.build(Inputs(str(root), frozenset(INPUTS)), str(tmp_path / "out"))

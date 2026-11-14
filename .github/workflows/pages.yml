@@ -35,11 +35,12 @@ jobs:
       - name: Tests
         run: pytest -p no:cacheprovider tool/tests
       - name: Build from the committed tree only
+        shell: bash  # -eo pipefail: a failed git archive cannot hide behind tar
         run: |
           src="$RUNNER_TEMP/src"
           mkdir -p "$src"
           git archive HEAD | tar -x -C "$src"
-          git -c core.quotepath=off ls-tree -r --name-only HEAD > "$RUNNER_TEMP/manifest"
+          git ls-tree -r -z --name-only HEAD > "$RUNNER_TEMP/manifest"
           PYTHONPATH="$src/tool" python -m p4doip.site build --root "$src" --manifest "$RUNNER_TEMP/manifest" \
             --out "$RUNNER_TEMP/_site" --commit "$GITHUB_SHA"
       - name: Output scan
@@ -49,6 +50,7 @@ jobs:
           path: ${{ runner.temp }}/_site
   deploy:
     needs: build
+    if: github.ref == 'refs/heads/main'  # a manual run on another branch builds and scans but never deploys
     runs-on: ubuntu-latest
     permissions:
       pages: write
