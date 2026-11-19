@@ -265,7 +265,8 @@
 # Brake: E3C7 - 0x4000 = 7.2 x 1701 FE08 ch1 + 40 (r 0.998, 2026-11-13 morning drive); raw 0x4000 with the brake released, higher when held at a stop.
 - {id: brake_pressure_vddm, module: "1601", did: "E3C7", name: "Brake pressure? (counts, 0 = none)", type: u, add: -16384, confidence: P,
    examples: [{raw: "4000", value: 0}, {raw: "48aa", value: 2218}]}
-- {id: brake_pedal_switch, module: "1701", did: "2B00", name: Brake pedal switch, values: {"00": released, "42": pressed}, confidence: P,
+# 2B00: C since 2026-11-19 (three noted press/release rounds parked, six more presses on a drive, both directions).
+- {id: brake_pedal_switch, module: "1701", did: "2B00", name: Brake pedal switch, values: {"00": released, "42": pressed}, confidence: C,
    examples: [{raw: "42", value: pressed}, {raw: "00", value: released}]}
 # Wipers (2026-11-13 18:40, washer cycle): 420A and 41E9 toggle out of phase once per wipe.
 - {id: wiper_420a, module: "1A01", did: "420A", name: "Wiper state A (toggles once per wipe)", values: {"40": "a", "80": "b"}, confidence: P,
@@ -406,3 +407,12 @@
    examples: [{raw: "090400", value: 9}]}
 - {id: yaw_rate_sum, module: "1614", did: "D92D", name: "Yaw rate (+ = turning left)", offset: 2, len: 1, type: s, unit: " deg/s", confidence: P,
    examples: [{raw: "08fce8", value: -24}, {raw: "08000d", value: 13}]}
+
+# -- added 2026-11-19 (narrated brake and audio tests parked, then a 10-minute drive; evidence in local/references.md) ----
+# 1A01 42F6 follows 1701 2B00 within one pass in 3 noted rounds parked and 6 presses on the drive; it stayed 00 through 21 regen
+# stop-lamp episodes (4223 on, pedal released), so it is the pedal, not the lamps. 19 snapshots that hold both agree.
+- {id: brake_pedal_cem, module: "1A01", did: "42F6", name: "Brake pedal pressed (not lit by regen, unlike the stop lamps)", values: {"00": released, "01": pressed}, confidence: C,
+   examples: [{raw: "01", value: pressed}, {raw: "00", value: released}]}
+# 1212 DD02: 1,180 readings paired with 1635 4947: 0x38 at 13.91-14.12 V, 0x39 at 14.12-14.34 V; three at 0x3c (15.0 V) came with 14.81-14.87 V on 4947, so 1212 reads about 0.15 V high there.
+- {id: supply_v_1212, module: "1212", did: "DD02", name: 12 V supply (0.25 V steps), type: u, scale: 0.25, unit: " V", confidence: P,
+   examples: [{raw: "39", value: 14.25}]}

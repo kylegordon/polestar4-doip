@@ -3,6 +3,12 @@
 Owned by the project; newest first. This file records tool, catalogue and documentation changes —
 observations about the car belong in docs/findings.md and DISCOVERIES.md, not here.
 
+## 2026-11-19 — brake pedal and 1675 signals
+
+- `catalogue/signals.yaml`: `brake_pedal_switch` to C; new `brake_pedal_cem` (C) and `supply_v_1212` (P). `1675` `D941`/`FE08` stay leads until the decoder can mark `ffff`/`7fff` as not available.
+- `docs/findings.md`: `1212`, `1675`, `1701`, `1A01` sections to match.
+- `docs/did-map.csv`, `docs/coverage.csv`: regenerated from all runs (`1202` sweep, `1202:20D0`, updated `1202` and `1BB3` tried counts).
+
 ## 2026-11-16 — reanalysis corrections
 
 - `catalogue/modules.yaml`: roles/notes for `1316` (software differs, `D237` heartbeat), `1670` (`3019` mapping), `1675` (second brake unit?), `1676` (placeholder-serial point dropped).

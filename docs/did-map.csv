@@ -714,6 +714,7 @@ module,did,status,length_bytes,nrc
 1201,FEFC,ok,20,
 1201,FEFE,ok,4,
 1201,FEFF,ok,80,
+1202,20D0,ok,1,
 1202,ED20,ok,95,
 1202,EDA0,ok,85,
 1202,F120,ok,7,
