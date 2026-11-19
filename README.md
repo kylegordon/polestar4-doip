@@ -13,6 +13,7 @@ Read-only mapping of a Polestar 4's diagnostic data over DoIP (ISO 13400) throug
 - [`docs/did-map.csv`](docs/did-map.csv): every DID that answered on each module (or exists but refused), with status and response length; most are not decoded yet
 - [`docs/modules.md`](docs/modules.md): what each module is and the evidence
 - [`docs/findings.md`](docs/findings.md): everything learned so far, module by module, including unconfirmed leads and open questions
+- [`docs/siblings.md`](docs/siblings.md): other Geely-group cars that share parts with the Polestar 4 (Zeekr, smart, Lotus, Volvo EX30), and the radio filings for this car's parts
 - [`docs/did.md`](docs/did.md): DID-decoding work: state, method, candidate index (with the ledger, sessions, entries and leads)
 - [`DISCOVERIES.md`](DISCOVERIES.md): what each release (a batch of sessions at the car) found
 - [`CHANGELOG.md`](CHANGELOG.md): tool, catalogue and documentation changes
@@ -35,6 +36,7 @@ Read-only mapping of a Polestar 4's diagnostic data over DoIP (ISO 13400) throug
 | `catalogue/dids.yaml` | DID registry: names, families, which values are per-car (masked) |
 | `catalogue/dtc.yaml` | DTC code to name mappings (empty until established) |
 | `docs/modules.md` | Module map: what each module is and the evidence |
+| `docs/siblings.md` | Sibling cars and shared parts, FCC filings, help wanted from their owners |
 | `docs/coverage.csv` | Per module: DIDs tried, answering, refused. Counts only, feeds the public site's Modules page. Written by `./p4 didmap` |
 | `docs/did-map.csv` | Every DID that answered, per module, with its response length (no values). Regenerate with `./p4 didmap` (or `scripts/export-did-map.sh`, a wrapper) |
 | `docs/did.md` | Entry point for the DID-decoding backlog (ledger, sessions, entry drafts, leads) |

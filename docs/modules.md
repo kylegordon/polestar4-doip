@@ -8,7 +8,7 @@ All 43 modules that answer on this car, with the answering DIDs listed in `did-m
 | `1011` | Telematics | SIM and modem IDs, assistance phone numbers in DIDs |
 | `1012` | Driver monitoring | guess |
 | `1015` | Wireless access / digital key (UWB, BLE, NFC)? | software names (`PAS_VE`, `…CCA…`, `…CCR…`) |
-| `1023` | Key system control module (BNCM), Marquardt | reports `BNCM` and `MARQUARDT`, matching the manual's key system certification (BNCM model GE1); the phone charger is a separate Changzhou Tenglong part |
+| `1023` | Key system control module (BNCM), Marquardt | reports `BNCM` and `MARQUARDT`, matching the manual's key system certification (BNCM model GE1; the FCC label drawing is headed Lotus, see [siblings](siblings.md)); the phone charger is a separate Changzhou Tenglong part |
 | `1201` | Infotainment | park signal `D938` |
 | `1202` | Camera / vision | guess; a second address on the infotainment unit (same core part and serial as `1201`) |
 | `1212` | Audio amplifier | guess |
@@ -16,7 +16,7 @@ All 43 modules that answer on this car, with the answering DIDs listed in `did-m
 | `1251` | Head-up display | guess; answers physical addressing only, not `1FFF` |
 | `1301` | Mobileye SuperVision ECU | firmware string names `P417_EU` and `GAS52`; 7 camera entries (`D921`–`D927`) with 4 type codes |
 | `1314` | Dash camera | guess |
-| `1316` / `1317` | Unknown left/right pair | same hardware and delivery parts, different software parts, serials 7 apart, same DID set, very few live values (`D237` is a heartbeat log); corner sensors? (the manual certifies only one radar, so probably not radars) |
+| `1316` / `1317` | Unknown left/right pair | same hardware and delivery parts, different software parts, serials 7 apart, same DID set, very few live values (`D237` is a heartbeat log); corner sensors? (the manual certifies only one radar, so probably not radars). A used part with the same part numbers is a Polestar-branded box with a wire antenna ([siblings](siblings.md)) |
 | `1344` | Front radar | label guess; the manual certifies one radar, the F5CP12 front-centre unit (FCC grantee NF3 = Bosch) |
 | `1601` | Vehicle dynamics / parking brake | EPB signals |
 | `1614` | Suspension | chassis mode `D90F` |
@@ -29,7 +29,7 @@ All 43 modules that answer on this car, with the answering DIDs listed in `did-m
 | `1656` | Unknown, HV/12 V power path | `4947`/`D110` read 14.0–14.2 V (12 V rail, as on `1635`); hardware `HX1100`; DC-DC converter? |
 | `1670` | Power steering | steering angle `3019` (= `0x3853` - 0.5614 x `1672:3019`: 0.1 °/count, right positive?) |
 | `1672` | Steering angle sensor? | `3019` (also answers on `1670`/`1676`); a US owner reads F80A `CHCM` (chassis controller): unverified here; one unit with the gear stalk `1633` (same core part and serial) |
-| `1675` | Second brake unit? | config string `GE60_P03_M10_…`; OBD speed `F40D` tracks `D003`; `FE08` is a pair of close words like `1701:FE08` channels 1-2 (weak, 2026-11-16) |
+| `1675` | Bosch chassis sensor? | its part number is sold used as a Bosch sensor from a Polestar 4 and a Zeekr 001 ([siblings](siblings.md)); config string `GE60_P03_M10_…`; OBD speed `F40D` tracks `D003`; `FE08` follows `1701:FE08` channel 1 (brake pressure), so it looks like a received signal |
 | `1676` | Second (redundant) steering controller? | same 44 DIDs as `1670`, sibling (not identical) part numbers; `3019` and `D900` read the same angle as `1670` within 1 LSB in 11 snapshots |
 | `1701` | Brake system (BSCM) | `F80A` reads `BSCM-BrakeSystem` (2026-11-12); config `BRP417EA`; shares 29 DIDs with `1631`; brake pressure/pedal candidates `FE08`, `D905`/`D906` |
 | `1A01` | Body / central electronics | lamps, doors |

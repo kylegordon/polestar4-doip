@@ -15,7 +15,7 @@
 - {addr: "1301", label: ADCU3, role: Mobileye SuperVision driver assistance (never read EE13 or EE14), status: unverified}
 - {addr: "1314", label: DVR 12V, role: dash camera recorder, status: unverified}
 - {addr: "1316", label: "?", role: "?", status: unknown, note: "pair with 1317 (same HW 6608445312 and delivery part, different software parts, serials 7 apart); radar guess weakened: the manual certifies only one radar; D237 is a heartbeat log"}
-- {addr: "1317", label: "?", role: "?", status: unknown, note: pair with 1316}
+- {addr: "1317", label: "?", role: "?", status: unknown, note: "pair with 1316; the part is a Polestar-branded unit with a wire antenna (docs/siblings.md)"}
 - {addr: "1344", label: FLR4, role: "front radar; the manual certifies one radar, the F5CP12 front-centre unit (FCC grantee NF3 = Bosch)", status: unverified}
 - {addr: "1601", label: VDDM, role: vehicle dynamics / parking brake, status: confirmed}
 - {addr: "1614", label: SUM, role: suspension (chassis mode D90F), status: confirmed}
@@ -28,7 +28,7 @@
 - {addr: "1656", label: "?", role: "?", status: unknown}
 - {addr: "1670", label: PSCM, role: "power steering (3019 = 0x3853 - 0.5614 x 1672:3019, opposite sign)", status: unverified}
 - {addr: "1672", label: SAS, role: "steering angle (3019 also on 1670/1676; a US owner reads F80A CHCM, chassis controller)", status: confirmed, note: "same physical unit as 1633 (same core part and serial)"}
-- {addr: "1675", label: "?", role: "second brake unit? (weak: FE08 pair like 1701:FE08 ch1-2; F40D speed)", status: unknown}
+- {addr: "1675", label: "?", role: "Bosch chassis sensor? (its D901 part is sold used as a Bosch sensor, see docs/siblings.md; FE08 and D941 look like received brake pressure and speed)", status: unknown}
 - {addr: "1676", label: "?", role: "second steering channel? 3019/D900 read the same angle as 1670 within 1 LSB (11 snapshots)", status: unknown, note: "sibling part numbers to 1670 (F1AE 6608507905-07 vs 6608507908-10), same F1AB delivery part"}
 - {addr: "1701", label: BSCM, role: "brake system (F80A reads BSCM-BrakeSystem, 2026-11-12)", status: confirmed}
 - {addr: "1A01", label: CEM, role: central electronics / body, status: confirmed}

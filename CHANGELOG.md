@@ -3,6 +3,13 @@
 Owned by the project; newest first. This file records tool, catalogue and documentation changes —
 observations about the car belong in docs/findings.md and DISCOVERIES.md, not here.
 
+## 2026-11-19 — sibling cars and radio filings
+
+- `docs/siblings.md`: new page, sibling cars on the SEA platform, shared parts with the strength of each link, the FCC filings for this car's radio parts, help wanted from owners of those cars. Linked from `README.md`.
+- `catalogue/modules.yaml`: `1675` role now "Bosch chassis sensor?"; `1317` note on the sold part.
+- `catalogue/hardware.yaml`: new component "Chassis sensor 1675"; rear motor, front radar, corner units and key-system details from the listings and FCC filings.
+- `docs/findings.md` (`1023`, `1316`, `1675`; the `1675` heading changes) and `docs/modules.md` to match.
+
 ## 2026-11-19 — brake pedal and 1675 signals
 
 - `catalogue/signals.yaml`: `brake_pedal_switch` to C; new `brake_pedal_cem` (C) and `supply_v_1212` (P). `vehicle_speed_1675` (`D941`) and `brake_pressure_1675_a`/`_b` (`FE08`) (P).
