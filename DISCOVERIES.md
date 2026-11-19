@@ -11,7 +11,7 @@ Confidence follows `catalogue/signals.yaml`: **C** = the same change seen at lea
 Offline: dismantler listings, FCC filings and Geely-group sources, checked against the recorded runs. A new page, [`docs/siblings.md`](docs/siblings.md), lists the cars that share parts with the Polestar 4 and asks their owners to compare notes.
 
 **New**
-- Sibling cars on the same SEA platform: Zeekr 001/007/X, smart #1/#3, Lotus Eletre/Emeya, Volvo EX30. Same part so far: the rear motor (Zeekr 001, smart #1) and the `1675` part (Zeekr 001).
+- Sibling cars on the same SEA platform: Zeekr 001/007/X, smart #1/#3, Lotus Eletre/Emeya, Volvo EX30. Same part so far: the rear motor (Zeekr 001; the same motor family on the smart #1) and the `1675` part (Zeekr 001).
 - `1675` is probably a Bosch chassis sensor, not a brake unit (inference): the part number it reports in `D901` is sold used from a Polestar 4 and a Zeekr 001 as a Bosch sensor, called an acceleration or speed sensor. Its `FE08` follows brake pressure (r 0.988), not deceleration (r -0.26), so `FE08` and `D941` look like signals it receives.
 - `1316`/`1317`: a used part with the same part numbers is a Polestar-branded box with a wire antenna and CE, RCM and FCC marks but no FCC ID. A dismantler calls it a tailgate control unit; what it does is still open.
 - Key system (FCC filings): the GE1 module in `1023` is Bluetooth LE and its label drawing is headed Lotus; the NFC reader is filed as "Lotus NFC Reader"; the car has six UWB anchors on CAN. The front radar is Bosch's "Front Radar Gen5 Car Plus".

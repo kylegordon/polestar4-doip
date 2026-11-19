@@ -60,7 +60,7 @@ modules:
 # components: physical parts known from reads, behaviour and published sources.
 #   conf: C/P as in signals.yaml for what was seen on this car; "doc" = from a published source only; "owner" = told by the owner.
 components:
-  - {name: "Rear drive motor", detail: "TZ220XSA02, permanent-magnet synchronous, 200 kW, 343 Nm; the same motor code as the Zeekr 001 RWD and the smart #1 (docs/siblings.md)", conf: doc, source: "Polestar 4 UK owner's manual"}
+  - {name: "Rear drive motor", detail: "TZ220XSA02, permanent-magnet synchronous, 200 kW, 343 Nm; the same motor code as the Zeekr 001 RWD; the smart #1 uses the same family, TZ220XSA01/02 (docs/siblings.md)", conf: doc, source: "Polestar 4 UK owner's manual"}
   - {name: "Front drive motor", detail: "Dual-motor car; disconnects and stops about 9 s after selecting Range, turns all the time in Performance (1601:E3E8)", conf: C, source: "2026-11-15 drive"}
   - {name: "Motor speed limit", detail: "16,500 rpm for TZ220XSA02 in the Smart #1 manual; this car reaches about 82.8 rpm per km/h, so about 11.6-11.9:1 overall", conf: P, source: "Smart #1 manual; 2026-11-15 drive"}
   - {name: "Front motor controller", detail: "1631 (probable): vehicle speed, active only when the front motor drives", conf: P, source: "docs/findings.md"}

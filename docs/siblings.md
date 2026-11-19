@@ -5,7 +5,7 @@ Geely-group cars use the same parts. Their parts listings, manuals, radio filing
 help name or check modules on this car, and our findings may help their owners in turn. This page lists the
 sibling cars and every shared part found so far, with how strong each link is.
 
-**Same part** means a matching part number. **Hint** means a weaker link, such as a shared manual page or a
+**Same part** means a matching part number. **Hint** means a weaker link, such as a matching part family or a
 supplier filing for another brand; it is a lead to check, not a finding. Nothing here changes a module's
 status in [`catalogue/modules.yaml`](../catalogue/modules.yaml) on its own.
 
@@ -31,7 +31,6 @@ so treat those labels as unchecked.
 | Key system control module `1023`, Marquardt GE1 | Lotus | hint | the GE1 FCC label drawing is headed "Lotus" and names it "communication module - BLE and NFC key" ([FCC ID IYZGE1](https://fccid.io/IYZGE1)) |
 | NFC reader, Marquardt GR3 | Lotus | hint | filed with the FCC as "Lotus NFC Reader" ([IYZGR3](https://fccid.io/IYZGR3)) |
 | UWB anchors, Marquardt GU1 | Geely | hint | filed as "Geely UWB module" ([IYZGU1](https://fccid.io/IYZGU1)) |
-| Key system as a whole | Volvo EX30 | hint | the EX30 manual's key-system certification page has the same article ID as the Polestar 4 one (`0a500a085a173960c0a8b09771bff25e-f19ebb76fc2e9629ac1b7acc5528389d`); its content was not readable, so the parts it lists are unchecked |
 
 ### `1675`: a Bosch sensor part
 
@@ -78,7 +77,7 @@ and Bluetooth).
   show which of our modules you share. Open an issue; leave out your VIN and serials.
 - Dismantler listings or labels for any part number in [`catalogue/hardware.yaml`](../catalogue/hardware.yaml),
   from any of these cars.
-- Manual pages from the sibling cars that share article IDs with the Polestar 4 manual.
+- The key-system certification pages of the sibling cars (the parts and suppliers they list). Manual article IDs are no guide: Volvo and Polestar reuse one ID for this page across their cars (Polestar 3 and 4, EX30, EC40, ES90, XC60, XC90, V60 among those found), and the [Polestar 3 page](https://www.polestar.com/us/manual/polestar-3/2025/article/0a500a085a173960c0a8b09771bff25e-f19ebb76fc2e9629ac1b7acc5528389d-8664b2fa77a7e089c0a8296870d1a409) under the same ID lists a DENSO key system.
 
 Sources: the links above; [Lotus Connect](https://www.lotuscars.com/en-GB/lotus-connect) (Eletre phone key);
 [Electrek on the Emeya car key](https://electrek.co/2024/02/05/lotus-confirms-2024-emeya-car-key-support-control-from-iphone-apple-watch/);
