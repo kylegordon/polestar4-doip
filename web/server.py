@@ -167,7 +167,10 @@ def charge_sessions():
 
 def numeric(val, extra):
     if extra:
-        m = NUM.search(extra)
+        first = extra.split(";", 1)[0].strip()  # the first signal's value only, not the next signal's id
+        if first.startswith("not available"):
+            return None
+        m = NUM.search(first)
         if m:
             return float(m.group())
     if re.fullmatch(r"[0-9a-f]{1,8}", val or ""):

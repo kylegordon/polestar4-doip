@@ -11,6 +11,9 @@ Integers/bits read big-endian unless `endian: little` is set. A signal with
 `repeat: {count: N | count_from: {did: "EE19", offset: 0, len: 2, max: N}, len: bytes per element, ...}`
 reads N back-to-back fixed-size elements by the rules above and returns a list; `count_from` reads the
 valid-element count from a sibling DID in the same module, so `decode()` gets a context of sibling payloads.
+
+`unavailable: ["ffff", ...]` lists raw byte patterns (hex of the selected bytes) that the module sends when it
+has no value; those decode to NOT_AVAILABLE instead of a number. It is per signal: no pattern is assumed globally.
 """
 import os
 import re
@@ -21,6 +24,8 @@ import yaml
 from . import store
 
 REQUIRED = {"id", "module", "did", "name", "confidence"}
+NOT_AVAILABLE = "not available"
+_HEX = re.compile(r"^(?:[0-9a-f]{2})+$")
 
 
 def load(path: str | None = None) -> list[dict]:
@@ -36,6 +41,16 @@ def load(path: str | None = None) -> list[dict]:
                 raise ValueError("signal %s: %s must be a quoted hex string" % (s["id"], key))
         if s["confidence"] not in ("C", "P"):
             raise ValueError("signal %s: confidence must be C or P" % s["id"])
+        if "unavailable" in s.get("repeat", {}):
+            raise ValueError("signal %s: unavailable is not supported inside repeat" % s["id"])
+        if "unavailable" in s:
+            if "len" not in s:
+                raise ValueError("signal %s: unavailable needs len, so the pattern length can be checked" % s["id"])
+            u = s["unavailable"]
+            if not isinstance(u, list) or not u or not all(isinstance(x, str) and _HEX.match(x) for x in u):
+                raise ValueError("signal %s: unavailable must be a list of quoted lowercase hex strings" % s["id"])
+            if any(len(x) != 2 * s["len"] for x in u):
+                raise ValueError("signal %s: each unavailable pattern must be %d bytes" % (s["id"], s["len"]))
     return sigs
 
 
@@ -108,6 +123,8 @@ def decode(sig: dict, data: bytes, context: dict | None = None):
     part = data[off:off + sig["len"]] if "len" in sig else data[off:]
     if "len" in sig and len(part) < sig["len"]:
         raise ValueError("signal %s needs %d bytes at offset %d, got %s" % (sig["id"], sig["len"], off, data.hex()))
+    if part.hex() in sig.get("unavailable", ()):
+        return NOT_AVAILABLE
     if "repeat" in sig:
         r = sig["repeat"]
         count = r.get("count")
@@ -150,5 +167,5 @@ def describe(sigs_for_did: list[dict], data: bytes, context: dict | None = None)
             v = decode(s, data, context)
         except ValueError as e:
             v = "decode error: %s" % e
-        parts.append("%s=%s%s" % (s["id"], v, s.get("unit", "")))
+        parts.append("%s=%s%s" % (s["id"], v, "" if v == NOT_AVAILABLE else s.get("unit", "")))
     return "; ".join(parts)

@@ -4,6 +4,7 @@
 #   values: {"hex": label}   bits: {"hexmask": label}   type: u|s with scale and add (value = raw * scale + add)
 #   encoding: ascii-hex (the bytes are ASCII hex digits, e.g. the release in 1001 D0D0; hex-decode them, then read as text)
 #   or raw (a hex string, e.g. log entries with no per-field decode yet).
+# unavailable: ["ffff"] lists raw patterns (of the selected bytes) the module sends when it has no value; they decode to "not available".
 # An array: repeat: {count: N, len: bytes per element, plus any value keys above} decodes N fixed elements and returns a list.
 # confidence: C = same change seen at least twice, in both directions, action noted in session-log.md. P = anything less.
 # A C signal's module must be status: confirmed in modules.yaml (the tests check).
@@ -413,6 +414,15 @@
 # stop-lamp episodes (4223 on, pedal released), so it is the pedal, not the lamps. 19 snapshots that hold both agree.
 - {id: brake_pedal_cem, module: "1A01", did: "42F6", name: "Brake pedal pressed (not lit by regen, unlike the stop lamps)", values: {"00": released, "01": pressed}, confidence: C,
    examples: [{raw: "01", value: pressed}, {raw: "00", value: released}]}
+# 1675 D941: 256 counts per m/s against 1601 E36E on two drives (r 0.9995 over 989 changes; r 0.966 over 136), the same scale as 1631 D003.
+# In 1675's second state (docs/findings.md) it reads ffff.
+- {id: vehicle_speed_1675, module: "1675", did: "D941", name: Vehicle speed, len: 2, type: u, scale: 0.0140625, unit: " km/h", unavailable: ["ffff"], confidence: P,
+   examples: [{raw: "0f7a", value: 55.715625}, {raw: "0000", value: 0}, {raw: "ffff", value: "not available"}]}
+# 1675 FE08: both words track 1701 FE08 channel 1 on a drive (r 0.988 each, ratio 0.97 above 50 counts, 1,101 changes); 7fff in the second state.
+- {id: brake_pressure_1675_a, module: "1675", did: "FE08", offset: 0, len: 2, name: "Brake pressure? word A (tracks 1701 FE08 channel 1)", type: s, unavailable: ["7fff"], confidence: P,
+   examples: [{raw: "fff3fffc", value: -13}, {raw: "015d0165", value: 349}, {raw: "7fff7fff", value: "not available"}]}
+- {id: brake_pressure_1675_b, module: "1675", did: "FE08", offset: 2, len: 2, name: "Brake pressure? word B (tracks 1701 FE08 channel 1)", type: s, unavailable: ["7fff"], confidence: P,
+   examples: [{raw: "fff3fffc", value: -4}, {raw: "015d0165", value: 357}, {raw: "7fff7fff", value: "not available"}]}
 # 1212 DD02: 1,180 readings paired with 1635 4947: 0x38 at 13.91-14.12 V, 0x39 at 14.12-14.34 V; three at 0x3c (15.0 V) came with 14.81-14.87 V on 4947, so 1212 reads about 0.15 V high there.
 - {id: supply_v_1212, module: "1212", did: "DD02", name: 12 V supply (0.25 V steps), type: u, scale: 0.25, unit: " V", confidence: P,
    examples: [{raw: "39", value: 14.25}]}

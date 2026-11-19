@@ -67,6 +67,42 @@ def test_unknown_enum_value_is_reported_not_guessed():
     assert decode.decode(sig, bytes.fromhex("07")) == "unknown(07)"
 
 
+def test_unavailable_pattern_is_not_shown_as_a_value():
+    sig = next(s for s in SIGNALS if s["id"] == "vehicle_speed_1675")
+    assert decode.decode(sig, bytes.fromhex("ffff")) == decode.NOT_AVAILABLE
+    assert decode.decode(sig, bytes.fromhex("fffe")) == pytest.approx(65534 * 0.0140625)
+    assert decode.describe([sig], bytes.fromhex("ffff")) == "vehicle_speed_1675=not available"
+
+
+def test_unavailable_pattern_applies_to_the_selected_bytes_only():
+    sig = {"id": "w", "offset": 2, "len": 2, "type": "s", "unavailable": ["7fff"]}
+    assert decode.decode(sig, bytes.fromhex("7fff0001")) == 1
+    assert decode.decode(sig, bytes.fromhex("00017fff")) == decode.NOT_AVAILABLE
+
+
+@pytest.mark.parametrize("bad", ["[1234]", '["FFFF"]', '["fff"]', "[]", '["ff"]', '"ffff"'])
+def test_bad_unavailable_list_is_rejected(tmp_path, bad):
+    p = tmp_path / "signals.yaml"
+    p.write_text('- {id: x, module: "1675", did: "D941", name: X, len: 2, type: u, unavailable: %s, confidence: P}\n' % bad)
+    with pytest.raises(ValueError):
+        decode.load(str(p))
+
+
+def test_unavailable_needs_len_and_is_not_allowed_in_repeat(tmp_path):
+    p = tmp_path / "signals.yaml"
+    p.write_text('- {id: x, module: "1675", did: "D941", name: X, type: u, unavailable: ["ffff"], confidence: P}\n')
+    with pytest.raises(ValueError):
+        decode.load(str(p))
+    p.write_text('- {id: x, module: "1675", did: "D941", name: X, repeat: {count: 2, len: 2, unavailable: ["ffff"]}, confidence: P}\n')
+    with pytest.raises(ValueError):
+        decode.load(str(p))
+
+
+def test_signal_without_unavailable_still_decodes_ffff_as_a_number():
+    sig = next(s for s in SIGNALS if s["id"] == "vddm_speed")
+    assert decode.decode(sig, bytes.fromhex("ffff")) == pytest.approx(65535 * 0.00390625)
+
+
 def test_ascii_hex_encoding_decodes_the_software_release():
     # 1001 D0D0 holds "4.2.11" as ASCII hex digits written in ASCII (DISCOVERIES.md, docs/findings.md).
     sig = {"id": "release", "encoding": "ascii-hex"}

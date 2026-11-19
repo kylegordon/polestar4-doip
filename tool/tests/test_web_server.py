@@ -104,3 +104,12 @@ def test_charge_sessions_drops_failed_reads_and_other_logs(tmp_path, monkeypatch
     assert [p["t"][-2:] for p in pts] == ["02", "03", "04", "05"]  # nothing from the discharge/chargelid logs at :10
     assert [p.get("volts") for p in pts] == [393.7, None, None, None]  # a failed read clears its DID at once
     assert all("limit" not in p for p in pts) and pts[-1]["amps"] == -394.0
+
+
+def test_numeric_skips_not_available_and_reads_only_the_first_signal():
+    assert server.numeric("ffff", "not available") is None
+    assert server.numeric("7fff7fff", "not available; brake_pressure_1675_b=not available") is None
+    assert server.numeric("7fff0165", "not available; brake_pressure_1675_b=357") is None
+    assert server.numeric("015d7fff", "349; brake_pressure_1675_b=not available") == 349.0
+    assert server.numeric("0f7a", "55.715625 km/h") == 55.715625
+    assert server.numeric("42", "pressed") == 66.0

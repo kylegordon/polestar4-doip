@@ -13,7 +13,7 @@ Parked: three noted brake press/release rounds and an audio test. Then a 10-minu
 **New**
 - `1A01:42F6` is the brake pedal (C): `01` while pressed, in step with `1701:2B00` in all three rounds and six presses on the drive. The stop lamps `4223` lit 21 more times on regen with the pedal released; `42F6` stayed `00` every time.
 - `1701:2B00` brake pedal switch: now C.
-- `1675:D941` is vehicle speed (P, lead; not in the catalogue until its `ffff` state can be shown as not available), 256 counts per m/s like `1631:D003`. Both `1675:FE08` words track `1701:FE08` channel 1 while braking (r 0.988, P): more support for `1675` being a second brake unit.
+- `1675:D941` is vehicle speed (P), 256 counts per m/s like `1631:D003`. Both `1675:FE08` words track `1701:FE08` channel 1 while braking (r 0.988, P): more support for `1675` being a second brake unit.
 - `1212:DD02` is a 12 V supply reading in 0.25 V steps (P).
 - The stop lamps stay on about 2 s after the pedal is released while the car is slowing.
 

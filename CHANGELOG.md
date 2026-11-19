@@ -5,7 +5,9 @@ observations about the car belong in docs/findings.md and DISCOVERIES.md, not he
 
 ## 2026-11-19 — brake pedal and 1675 signals
 
-- `catalogue/signals.yaml`: `brake_pedal_switch` to C; new `brake_pedal_cem` (C) and `supply_v_1212` (P). `1675` `D941`/`FE08` stay leads until the decoder can mark `ffff`/`7fff` as not available.
+- `catalogue/signals.yaml`: `brake_pedal_switch` to C; new `brake_pedal_cem` (C) and `supply_v_1212` (P). `vehicle_speed_1675` (`D941`) and `brake_pressure_1675_a`/`_b` (`FE08`) (P).
+- `tool/p4doip/decode.py`: per-signal `unavailable` patterns decode to "not available" (no unit), validated on load (needs `len`; not inside `repeat`); tests in `test_catalogue.py`.
+- `web/server.py`: the live chart skips "not available" and reads only the first signal of a decoded line (it could pick up digits from the next signal's id).
 - `docs/findings.md`: `1212`, `1675`, `1701`, `1A01` sections to match.
 - `docs/did-map.csv`, `docs/coverage.csv`: regenerated from all runs (`1202` sweep, `1202:20D0`, updated `1202` and `1BB3` tried counts).
 
