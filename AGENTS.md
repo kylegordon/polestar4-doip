@@ -48,3 +48,7 @@ Read `README.md` (tool, hazards, commands), `docs/did.md` (DID backlog) and `CHA
   when it last ran and what it found; a test that found nothing is a retest, not new. One simple step at a
   time; if the car cuts a test short (auto-P, sleep), offer to redo it at once. When a candidate is one or
   two passes from C, go straight into the extra passes. Never suggest ending the session.
+- Scan before testing: before a hands-on test for a feature, check that every candidate module has had its
+  full 0000-FFFF scan (`docs/coverage.csv`) and look the feature up in the name catalogues under `local/`.
+  If a module's full scan is missing, scan it first (P only for gated modules). The 2026-11-20 airbag module
+  scan found per-seat belt readings in 5000-5FFF after three belt tests had watched only its default ranges.
