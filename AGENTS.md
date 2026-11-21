@@ -15,7 +15,11 @@ Read `README.md` (tool, hazards, commands), `docs/did.md` (DID backlog) and `CHA
   drafts. Check its claims against the raw `runs/` records before anything lands in `catalogue/`.
 - Evidence: `runs/` is the source of truth; `docs/did-map.csv` and `docs/coverage.csv` are generated with `./p4 didmap`. Do not
   hand-edit either. A C signal needs the same change twice, both directions, with the action in
-  `local/session-log.md`; one pass is P.
+  `local/session-log.md`; one pass is P. Names from third-party tools, catalogues or other modules are
+  leads only: test them on this car before any name is published, and catalogue the test result (C or
+  P) with its own evidence, named in our own words for only what the test showed, never the borrowed label.
+  Untested borrowed names stay in `local/`: never in any tracked file (e.g. `catalogue/`, findings leads,
+  `docs/did-leads.md`, `DISCOVERIES.md`), commit message, PR or issue, not even as Unconfirmed.
 - DISCOVERIES.md is the project's purpose: any commit that adds or changes what we know about the car
   (catalogue signals or confidence, hazards, findings, corrections) adds or updates the matching
   DISCOVERIES.md entry in the same commit. One entry per session or release; update today's entry
@@ -49,6 +53,6 @@ Read `README.md` (tool, hazards, commands), `docs/did.md` (DID backlog) and `CHA
   time; if the car cuts a test short (auto-P, sleep), offer to redo it at once. When a candidate is one or
   two passes from C, go straight into the extra passes. Never suggest ending the session.
 - Scan before testing: before a hands-on test for a feature, check that every candidate module has had its
-  full 0000-FFFF scan (`docs/coverage.csv`) and look the feature up in the name catalogues under `local/`.
-  If a module's full scan is missing, scan it first (P only for gated modules). The 2026-11-20 airbag module
+  full 0000-FFFF scan (`docs/coverage.csv`) and look the feature up in the name catalogues under `local/`
+  (if present; leads only, see Evidence). If a module's full scan is missing, scan it first (gated modules in Park only). The 2026-11-20 airbag module
   scan found per-seat belt readings in 5000-5FFF after three belt tests had watched only its default ranges.
