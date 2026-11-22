@@ -18,6 +18,7 @@ What has been learned about one car, module by module, including leads that are 
 - **What it is**: the DoIP entity (logical address `1001`); tester `0E80`, functional address `1FFF`. 88 DIDs. Gateway firmware build string dated December 2025.
 - **Leads**: `D0D0` holds the customer software release "4.2.11", stored as ASCII hex digits written in ASCII (P; the decoder supports `encoding: ascii-hex`, but no full-payload raw is quoted here yet, so it is not catalogued). The same release appears as text in a telematics update record (`1011`).
 - **Not found**: no range or distance-to-empty value; values that happened to match the displayed range were configuration or hash bytes.
+- **Name (2026-11-22)**: Polestar's own bulletins call the Polestar 4 gateway VGM, Vehicle Gateway Module (TJ 37280, replaced for key-fob and NFC unlock faults), and on the Polestar 2/3 use VCM for a Vehicle Connectivity Module (TJ 36628). So the VCM label on this address may be wrong; no bulletin says which address the VGM uses. Links in [modules](modules.md#label-sources-manufacturer-bulletins).
 
 ## 1011 Telematics
 
@@ -35,6 +36,7 @@ What has been learned about one car, module by module, including leads that are 
 - **What it is**: most likely the surround-view (360) camera and park assist module (from its own strings; not yet tested with the camera view). Its label, WAM (the short name related cars use for this address), is Volvo's abbreviation for Wide Angle vision Module, the unit behind the 360 side cameras in a Volvo technical bulletin ([NHTSA copy](https://static.nhtsa.gov/odi/tsbs/2019/MC-10170176-9999.pdf)). On this car: `E30D`-`E310` hold four camera entries (`CAM000061`, `194OF`, then an OmniVision `OX03C10` sensor string; the [OX03C10](https://www.ovt.com/sensors/OX03C10) is a 2.5 MP sensor for surround-view and rear-view cameras; 194 is probably the fisheye field of view in degrees), the parking sensor distances are here (below), and its software is `PAS_V2.8.2` (`F199`) and `PAS_VE_V1.00` (`D104`): park assist. 162 DIDs. **Correction**: earlier versions called this module wireless access / digital key, reading PAS_VE as passive entry and the `…CCA…`/`…CCR…` names as digital-key parts. Nothing on 1015 has ever followed the key; the key system is `1023`.
 
 - **Signals (2026-11-14)**: the parking sensor distances live here, `B112`-`B121`, in cm (511 = nothing seen), matching the screen to within about 3 cm. Even DIDs are left, odd are right: rear corners `B112`/`B113`, rear inner `B114`/`B115`, front corners `B116`/`B117`, front inner `B118`/`B119`; `B120`/`B121` are the two extra rear sensors (the car has 4 front, 6 rear) and have not triggered yet. Active only in R or D (P).
+- **Bulletins (2026-11-22)**: Polestar 4 TJ 37493 (WAM software download) and TJ 37940 ("Software Download Fails due to WAM") file the WAM under driver support / parking assistance and say a WAM fault can make a full software update fail until the WAM gets its own fix. Whether that explains the download timeouts this car logged on `1011` (`FD4D`-`FD4F`) is not known.
 
 ## 1023 Key system control module (BNCM)
 
@@ -166,6 +168,7 @@ What has been learned about one car, module by module, including leads that are 
 - **Signals**: `inlet_leds` (`EE32`, C: `01010100` lid open, `00010000` pulses every ~3 s while charging, off after a timeout), `ac_plug_status` (`EE24`, P; charge state only: it does not change when the cable goes in), `charge_cable_present` (`EE31`, `01` cable in, P, 2026-11-14), `charge_energy_counter` (`EE71`, lifetime AC energy in 0.1 kWh, 4.5 MWh; P), `last_charge_avg_power` (`EE72`), `last_charge_energy` (`EE74`) (P).
 - **Leads**: `EE71` rose one count every ~55 s on a 7 kW AC charge (about 6.5 kW). `EE72`/`EE74` do not form a consistent pair across two reads, so their meaning is weak. `EEE1` went up by one during a charge (a counter). DC charging not yet observed. `EE12` reads 235-238 while a cable is in (`ffff` without): mains voltage or the plug's proximity resistance (220 ohm = 32 A cable), not settled on 2026-11-14; the 2026-11-22 charge points to supply voltage (see below).
 - **Leads (2026-11-22)**: `EE12` read 232-237 through an overnight 7 kW AC charge while the app reported 225-233 V (r 0.74, about 6 V higher): the AC supply voltage in volts (`ac_supply_voltage`, P). `ffff` with no cable.
+- **Name (2026-11-22)**: CDD = Charger and DCDC Module (Polestar 4 TJ 37772; EX30 TJ 37436, which also traces charge-inlet faults under it): per TJ 37772 the Polestar 4 CDD includes the DC-DC converter; `1650` carries the CDD label (a guess from related cars, though its charge signals fit).
 
 ## 1656 Unknown, 12 V power path
 
@@ -218,6 +221,7 @@ What has been learned about one car, module by module, including leads that are 
   - `42ED`, `42EE` answer only while driving (NRC 22 parked, sometimes moving) and sit at about 4985 ± 30 all day with no rise as the tyres warm (2026-11-15, 09:00-18:00): not tyre pressure. `45B2`, `45C9` refused all day.
 - **Not found here**: lock state is on the door modules (`4054`/`4056`, 2026-11-14), not the CEM; brake pedal position (`42D9`, `42FC` do not move); the wiper in the 40 DIDs known before the full scan; tyre pressures in any of the 332 DIDs (searched for 2.3 bar in common encodings).
 - **Signals (2026-11-22)**: `welcome_lamp` (`4222`) drives the welcome lights: on two walk-ups on 2026-11-20 the owner saw the front badge light the first time and the rear lights the second, each in step with `4222` for ~30 s (C). `wiper_420a`/`wiper_41e9` renamed to washer request: one ~1 s pulse per washer press, none on plain wipes, one pulse even when the pump sprayed twice (C). `key_card_log` (`D214`, same list in `D218`): one `04`+`05` pair per key card placement on the pad and per removal, newest first, stamped with the `DD00` clock (C; on or off is not encoded).
+- **Bulletins (2026-11-22)**: CEM = Central Electronic Module (Polestar 4 TJ 37431): after a failed over-the-air update it can stay in "OTA mode" and the car will not start.
 
 ## 1A11 Climate
 

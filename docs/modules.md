@@ -26,7 +26,7 @@ All 43 modules that answer on this car, with the answering DIDs listed in `did-m
 | `1635` | HV battery | SOC, pack V/I, cells |
 | `1637` | Rear inverter / e-machine | drive engaged `E307`, torque direction `E319`; `EEC4` rose 0x3A → 0x3E on a drive (temperature?) |
 | `1650` | Charger / inlet | charge signals |
-| `1656` | Unknown, 12 V power path? | `4947`/`D110` read 14.0–14.2 V (12 V rail, as on `1635`); hardware `HX1100`; DC-DC converter? |
+| `1656` | Unknown, 12 V power path? (the bulletins put the DC-DC converter in the CDD, see `1650`) | `4947`/`D110` read 14.0–14.2 V (12 V rail, as on `1635`); hardware `HX1100`; DC-DC converter? |
 | `1670` | Power steering, first channel | steering angle `3019` (= `0x3853` - 0.5614 x `1672:3019`: 0.1 °/count, right positive?) |
 | `1672` | Steering angle sensor? | `3019` (also answers on `1670`/`1676`); a US owner reads F80A `CHCM` (chassis controller): unverified here; one unit with the gear stalk `1633` (same core part and serial) |
 | `1675` | Bosch chassis sensor? | its part number is sold used as a Bosch sensor from a Polestar 4 and a Zeekr 001 ([siblings](siblings.md)); config string `GE60_P03_M10_…`; OBD speed `F40D` tracks `D003`; `FE08` follows `1701:FE08` channel 1 (brake pressure), so it looks like a received signal |
@@ -46,3 +46,27 @@ Other notes:
 - `D904` on several modules moves 0x96/0x97 with load: probably supply voltage in 0.1 V steps.
 - `1635` `49F6` + `49F7` always add up to the same total (~4460): an energy used/remaining pair.
 - On this UK car the telematics unit holds a configured GB/T 32960 (Chinese EV remote-monitoring standard) server address pointing at a test host. Whether it ever sends anything isn't known.
+
+## Label sources (manufacturer bulletins)
+
+The short names in the table above are the usual Volvo/Geely labels for these addresses on related cars. These manufacturer technical journals (service bulletins), published by NHTSA, spell out what the labels mean. They describe related cars as well as the Polestar 4; nothing here was tested on this car beyond what the module sections say.
+
+| Label | Meaning (per the bulletin) | Bulletin | Link |
+|---|---|---|---|
+| VGM | Vehicle Gateway Module (the Polestar 4 gateway; the bulletin gives no address, so our `1001` label VCM may be wrong) | Polestar TJ 37280, Polestar 4 | [NHTSA](https://static.nhtsa.gov/odi/tsbs/2025/MC-11021908-0001.pdf) |
+| VCM | Vehicle Connectivity Module (connectivity certificates) | Polestar TJ 36628, Polestar 2/3 | [NHTSA](https://static.nhtsa.gov/odi/tsbs/2026/MC-11031084-0001.pdf) |
+| WAM | Wide-Angle Vision Module (driver support, parking assistance) (`1015`) | Polestar TJ 37493, Polestar 4 | [NHTSA](https://static.nhtsa.gov/odi/tsbs/2026/MC-11029161-0001.pdf) |
+| WAM | a WAM fault can make a full software download fail; it gets its own fix first | Polestar TJ 37940, Polestar 4 | [NHTSA](https://static.nhtsa.gov/odi/tsbs/2026/MC-11037952-0001.pdf) |
+| CDD | Charger and DCDC Module (`1650`) | Polestar TJ 37772, Polestar 4 | [NHTSA](https://static.nhtsa.gov/odi/tsbs/2026/MC-11032615-0001.pdf) |
+| CDD | Charger and DC-DC Module; charge-inlet faults traced under it | Volvo TJ 37436, EX30 | [NHTSA](https://static.nhtsa.gov/odi/tsbs/2026/MC-11037960-0001.pdf) |
+| CEM | Central Electronic Module (`1A01`); can stay in "OTA mode" after a failed update (no start) | Polestar TJ 37431, Polestar 4 | [NHTSA](https://static.nhtsa.gov/odi/tsbs/2025/MC-11023525-0001.pdf) |
+| BECM | Battery Energy Control Module (`1635`) | Polestar TJ 37385, Polestar 2 | [NHTSA](https://static.nhtsa.gov/odi/tsbs/2025/MC-11020562-0001.pdf) |
+| AUD | Audio Unit Device (`1212`) | Polestar TJ 36569, Polestar 2 | [NHTSA](https://static.nhtsa.gov/odi/tsbs/2026/MC-11035014-0001.pdf) |
+| IEM | Inverter Electric(al) Rear Axle Drive (Module) (`1637`) | Polestar TJs 37102 and 37523, Polestar 2 | [NHTSA](https://static.nhtsa.gov/odi/tsbs/2025/MC-11025983-0001.pdf) |
+| HUD | Heads up display (`1251`) | Polestar TJ 37455, Polestar 3 | [NHTSA](https://static.nhtsa.gov/odi/tsbs/2025/MC-11022802-0001.pdf) |
+| TEM | Telematics Electronic Module (`1011`) | Volvo TJ 31938 | [NHTSA](https://static.nhtsa.gov/odi/tsbs/2016/MC-10167812-9999.pdf) |
+| SUM | suspension module (`1614`) | Volvo TJ 31236 | [NHTSA](https://static.nhtsa.gov/odi/tsbs/2016/MC-10110152-9999.pdf) |
+| POT | Power Operated Tailgate (`1A15`) | Volvo TJ 37159, EX90 | [NHTSA](https://static.nhtsa.gov/odi/tsbs/2025/MC-11016903-0001.pdf) |
+| DDM, PDM | Driver Door Module, Passenger Door Module (`1A12`, `1A13`) | Volvo TJ 37294, EX30 | [NHTSA](https://static.nhtsa.gov/odi/tsbs/2025/MC-11016910-0001.pdf) |
+| HCML, HCMR | Headlamp Control Module Left/Right (`1BB3`, `1BB4`) | Volvo TJ 37571, EX90 | [NHTSA](https://static.nhtsa.gov/odi/tsbs/2026/MC-11028393-0001.pdf) |
+| SRS | Supplement Restraint System (`1C01`) | Volvo TJ 36048 | [NHTSA](https://static.nhtsa.gov/odi/tsbs/2025/MC-11016886-0001.pdf) |

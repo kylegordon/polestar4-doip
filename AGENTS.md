@@ -21,7 +21,7 @@ Read `README.md` (tool, hazards, commands), `docs/did.md` (DID backlog) and `CHA
   Other owners' cars: a signal counts as confirmed on another car only when the same test is repeated there (matching
   bytes are not enough); differences between cars on the same software release are variant notes, not software
   changes. Car software over time is in `catalogue/software.yaml`; contributed scans keep no DID values (`--no-data`).
-  Manufacturer documentation (Volvo/Polestar technical bulletins, manuals, certification pages) is not a borrowed
+  Manufacturer documentation (Volvo/Polestar technical bulletins, including the copies NHTSA publishes, manuals, certification pages) is not a borrowed
   name: it may be quoted with a link to say what a module label or part is, worded as "per <source>" (owner 2026-11-22).
   Untested borrowed names stay in `local/`: never in any tracked file (e.g. `catalogue/`, findings leads,
   `docs/did-leads.md`, `DISCOVERIES.md`), commit message, PR or issue, not even as Unconfirmed.

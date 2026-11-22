@@ -3,6 +3,14 @@
 Owned by the project; newest first. This file records tool, catalogue and documentation changes —
 observations about the car belong in docs/findings.md and DISCOVERIES.md, not here.
 
+## 2026-11-22 (6) — manufacturer bulletin sources
+
+- `docs/modules.md`: new "Label sources" table: what the module labels mean per Polestar/Volvo technical journals published by NHTSA (17 bulletins, links checked).
+- `docs/findings.md`: `1001` (Polestar calls the gateway VGM; VCM label probably wrong), `1015` (WAM bulletins, update failures), `1650` (includes DC-DC), `1A01` (OTA mode).
+- `catalogue/modules.yaml`: `1001` and `1650` roles with the bulletin references.
+- `DISCOVERIES.md` 2026.11.22.2 entry: bulletin notes added (release notes updated to match).
+- `AGENTS.md`: NHTSA-published manufacturer bulletins count as manufacturer documentation.
+
 ## 2026-11-22 (5) — export header, site banner from the timeline
 
 - `p4 export`: JSON is now an object (`export_schema` 1, `release` from a stored `1001:D0D0` read or null, `tool`, `commit`, `rows`); new `--no-data` leaves out every DID value. CSV columns unchanged.

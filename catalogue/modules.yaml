@@ -2,7 +2,7 @@
 # label: the usual Volvo/Geely short name for a module at that address on related cars (a guess, not read from this car).
 # role: usual meaning of that label.
 # status: confirmed = behaviour checked on this car; unverified = label only; unknown = no label anywhere.
-- {addr: "1001", label: VCM, role: vehicle control module / gateway address, status: unverified}
+- {addr: "1001", label: VCM, role: "gateway address (Polestar bulletins call the P4 gateway VGM, Vehicle Gateway Module, TJ 37280, and on the Polestar 2/3 use VCM for the Vehicle Connectivity Module, TJ 36628: the VCM label may be wrong here; no bulletin gives the VGM's address)", status: unverified}
 - {addr: "1011", label: TEM, role: telematics, status: unverified}
 - {addr: "1012", label: DMM, role: driver monitoring, status: unverified}
 - {addr: "1015", label: WAM, role: "360 camera / park assist, most likely (label WAM = Wide Angle vision Module per a Volvo technical bulletin; four surround-view camera entries, parking sensor distances, PAS software)", status: unverified}
@@ -24,7 +24,7 @@
 - {addr: "1633", label: EGSM, role: gear selector, status: unverified}
 - {addr: "1635", label: BECM, role: HV battery, status: confirmed}
 - {addr: "1637", label: IEM, role: rear inverter / e-machine (drive engaged E307, torque direction E319), status: confirmed}
-- {addr: "1650", label: CDD, role: charger and charge inlet, status: confirmed}
+- {addr: "1650", label: CDD, role: "charger and charge inlet; per Polestar TJ 37772 the CDD (Charger and DCDC Module) also holds the DC-DC converter", status: confirmed}
 - {addr: "1656", label: "?", role: "12 V power path? (4947 reads the 12 V rail in mV; D110 follows HV pack current; HX1100 hardware string)", status: unknown}
 - {addr: "1670", label: PSCM, role: "power steering, first channel (3019 = 0x3853 - 0.5614 x 1672:3019, opposite sign; D901 assist load peaks at full lock)", status: confirmed}
 - {addr: "1672", label: SAS, role: "steering angle (3019 also on 1670/1676; a US owner reads F80A CHCM, chassis controller)", status: confirmed, note: "same physical unit as 1633 (same core part and serial)"}

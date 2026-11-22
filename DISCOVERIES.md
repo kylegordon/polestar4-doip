@@ -22,6 +22,11 @@ Unattended in park: climate and seat heat driven from the Polestar app (through 
 **Corrections**
 - `1015` was described as wireless access / digital key (2026.11.11 onwards). Its own strings point to the 360 camera / park assist module; "PAS" most likely means park assist, not passive entry.
 
+**Also from manufacturer bulletins (published by NHTSA, linked in [modules](docs/modules.md#label-sources-manufacturer-bulletins))**
+- Polestar's own bulletins call the Polestar 4 gateway VGM, so the VCM label on `1001` may be wrong (correction to the label, not to any signal).
+- The CDD label on `1650` means Charger and DCDC Module: per the bulletin it also holds the DC-DC converter.
+- A WAM (`1015`) fault can make a full software update fail until the WAM gets its own fix (Polestar 4 TJ 37940).
+
 **Looked for, not found**
 - The climate setpoint itself in any `1A11` DID (only its effect on the flaps).
 - Steering wheel heat requested from the app: no change on `1A01:EE71` in two attempts.
