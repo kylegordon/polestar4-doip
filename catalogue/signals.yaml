@@ -269,11 +269,12 @@
 # 2B00: C since 2026-11-19 (three noted press/release rounds parked, six more presses on a drive, both directions).
 - {id: brake_pedal_switch, module: "1701", did: "2B00", name: Brake pedal switch, values: {"00": released, "42": pressed}, confidence: C,
    examples: [{raw: "42", value: pressed}, {raw: "00", value: released}]}
-# Wipers (2026-11-13 18:40, washer cycle): 420A and 41E9 toggle out of phase once per wipe.
-- {id: wiper_420a, module: "1A01", did: "420A", name: "Wiper state A (toggles once per wipe)", values: {"40": "a", "80": "b"}, confidence: P,
-   examples: [{raw: "40", value: "a"}, {raw: "80", value: "b"}]}
-- {id: wiper_41e9, module: "1A01", did: "41E9", name: "Wiper state B (toggles once per wipe)", values: {"00": "a", "40": "b"}, confidence: P,
-   examples: [{raw: "40", value: "b"}, {raw: "00", value: "a"}]}
+# Washer request (2026-11-20 18:08-18:09): 420A 40->80 and 41E9 00->40 for ~1 s once per washer press (2 presses), not on 2 plain
+# wipes (only 4218 blipped) and not per pump spray (2nd press sprayed twice, one pulse). Was "wiper state" (2026-11-13). ids kept.
+- {id: wiper_420a, module: "1A01", did: "420A", name: "Washer request A (80 for ~1 s per washer press)", values: {"40": "idle", "80": "washer"}, confidence: C,
+   examples: [{raw: "40", value: "idle"}, {raw: "80", value: "washer"}]}
+- {id: wiper_41e9, module: "1A01", did: "41E9", name: "Washer request B (40 for ~1 s per washer press)", values: {"00": "idle", "40": "washer"}, confidence: C,
+   examples: [{raw: "40", value: "washer"}, {raw: "00", value: "idle"}]}
 # Driver seat occupancy: 00 seated, 80 empty in 11 snapshots on 2026-11-13 (standby and car on).
 - {id: driver_occupied, module: "1A01", did: "20A8", name: Driver seat occupied, values: {"00": occupied, "80": empty}, confidence: P,
    examples: [{raw: "00", value: occupied}, {raw: "80", value: empty}]}
@@ -287,8 +288,9 @@
 # Byte 0 alone is decoded by headlamp_status above; the other bytes are part of the scene state.
 - {id: headlamp_scene, module: "1BB3,1BB4", did: "4368", name: Headlamp scene (home-safe / approach), values: {"11000000": home_safe, "00000020": approach}, confidence: P,
    examples: [{raw: "11000000", value: home_safe}, {raw: "00000020", value: approach}]}
-# Welcome/approach lamp: 000000 -> ffff01 on walking up with the key, off a minute later (findings.md 1A01 leads).
-- {id: welcome_lamp, module: "1A01", did: "4222", name: Welcome/approach lamp, values: {"000000": "off", "ffff01": on}, confidence: P,
+# Welcome lights: 000000 -> ffff01 on walking up with the key (2026-11-20 walk-ups: 18:41 the owner saw the front badge light, 18:47 the
+# rear lights, on and off in step with 4222, ~30 s each); also on ~90 s after locking and at unlock.
+- {id: welcome_lamp, module: "1A01", did: "4222", name: Welcome lights (front badge and rear lamps), values: {"000000": "off", "ffff01": on}, confidence: C,
    examples: [{raw: "000000", value: "off"}, {raw: "ffff01", value: on}]}
 # Ambient light sensor (findings.md 1A01 leads): byte 0 = state, bytes 1-2 = a 16-bit level (about 2,800-10,000 in daylight).
 - {id: ambient_light_state, module: "1A01", did: "410B", offset: 0, len: 1, name: Ambient light sensor state, values: {"01": dark, "02": daylight}, confidence: P,
@@ -426,3 +428,21 @@
 # 1212 DD02: 1,180 readings paired with 1635 4947: 0x38 at 13.91-14.12 V, 0x39 at 14.12-14.34 V; three at 0x3c (15.0 V) came with 14.81-14.87 V on 4947, so 1212 reads about 0.15 V high there.
 - {id: supply_v_1212, module: "1212", did: "DD02", name: 12 V supply (0.25 V steps), type: u, scale: 0.25, unit: " V", confidence: P,
    examples: [{raw: "39", value: 14.25}]}
+
+# -- added 2026-11-22 ----------------------------------------------------------------------------------------------------
+# Key card reader log (2026-11-20 18:29-18:32): each card placement on the phone pad AND each removal adds one 04+05 pair
+# (04 then 05 ~1 s later, each with a 0.1 s DD00 stamp) at the front of the list; 2 placements + 2 removals, nothing on a
+# no-touch control. Direction is not encoded: C covers "an event is logged", not on vs off. D218 holds the same list.
+# 5-byte entries: type byte (04/05), then a 4-byte DD00-style 0.1 s stamp.
+- {id: key_card_log, module: "1A01", did: "D214", name: "Key card reader event log (one 04+05 pair per card on or off)", encoding: raw, confidence: C,
+   examples: [{raw: "051767e7b8041767e7ae", value: "051767e7b8041767e7ae"}]}
+# Displayed state of charge: E4A1 holds tenths (0226 = 55.0); /10 matches the Polestar app's battery level (logged by Home Assistant; 45 readings, 34 values, 2026-11-11..20, r 0.9994).
+- {id: displayed_soc, module: "1601", did: "E4A1", name: Displayed state of charge (1 % steps), type: u, scale: 0.1, unit: "%", confidence: P,
+   examples: [{raw: "0226", value: 55.0}]}
+# E37A follows the same displayed SoC in finer steps (moves while E4A1 holds; 50 readings vs the app, r 0.9993). Scale from that fit.
+- {id: displayed_soc_fine, module: "1601", did: "E37A", name: Displayed state of charge (fine steps), type: u, scale: 0.0513, add: 0.48, unit: "%", confidence: P,
+   examples: [{raw: "0427", value: 55.0119}]}
+# AC supply voltage while charging (2026-11-21/22 overnight AC charge): 232-237 vs the app's charging voltage 225-233 (r 0.74, ~6 V
+# higher); ffff with no cable (2026-11-14).
+- {id: ac_supply_voltage, module: "1650", did: "EE12", len: 2, name: AC supply voltage while charging, type: u, unit: " V", unavailable: ["ffff"], confidence: P,
+   examples: [{raw: "00e8", value: 232}, {raw: "ffff", value: "not available"}]}

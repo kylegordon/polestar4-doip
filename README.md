@@ -172,6 +172,7 @@ A release is a discovery log entry, not a software build: no assets, just notes.
 1. Add an entry at the top of `DISCOVERIES.md`, headed `## YYYY.MM.DD - <title>`, covering new signals (with C/P), modules identified, hazards, corrections and what was looked for but not found. Update `catalogue/` and `docs/` in the same change; add any new hazard to `catalogue/hazards.yaml` and regenerate the DID list with `./p4 didmap`.
 2. Merge it to `main` with CI passing.
 3. Run `scripts/release.sh YYYY.MM.DD` on an up-to-date, clean `main`. It runs the pre-publish check, tags the version and creates a GitHub release whose notes are that entry. A second release on the same day uses `YYYY.MM.DD.2`.
+4. Check the public site: the Pages workflow for that `main` commit must succeed, and the live site must show the release's new and changed signals and findings. If a new kind of data does not appear, update the site builder (`tool/p4doip/site/`) in the same release.
 
 ## Licence
 

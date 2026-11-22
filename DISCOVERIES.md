@@ -6,6 +6,34 @@ Confidence follows `catalogue/signals.yaml`: **C** = the same change seen at lea
 
 <!-- New entries go directly below this line, newest first. The heading must be "## <version> - <title>". -->
 
+## 2026.11.22 - Full scans finished, washer and key card, and the app's battery level
+
+Parked sessions on 2026-11-20 and 2026-11-21, one short drive, an unattended overnight scan with an AC charge, and a comparison against ten days of the Polestar app's own readings (battery level, charging, tyres).
+
+**New**
+- Every answering module has now been read across its whole `0000`-`FFFF` range (`16A1` never answers), including the driver-assistance computer `1301`, read slowly while parked with no drop-outs (132 DIDs; 5 skipped as possible hazards). Its `EF11` names the boot software for an Infineon AURIX TC39x chip in that unit (`GAS52EVO_BOOT_P417`, August 2025).
+- `1A01:420A`/`41E9` are the washer request, not a wiper state (C): one ~1 s pulse per washer press, none on plain wipes.
+- `1A01:4222` drives the welcome lights (C): the front badge on one walk-up with the key, the rear lights on the other, about 30 s each, in step with it.
+- `1A01:D214` (and `D218`) is a key card reader log (C): one entry pair each time the card is put on the phone pad or taken off.
+- `1601:E4A1` / 10 is the battery level the app shows (P, 45 readings, r 0.9994); `1601:E37A` shows the same in finer steps (P).
+- `1650:EE12` is the AC supply voltage while charging, in volts (P).
+- Over the overnight charge (62-80% shown) the app's battery level was a straight line of the battery pack's own state of charge (`1635:4801`), about 1.16 shown points per pack point (lead; one charge, so the ends of the scale are not known).
+- Both steering controllers (`1670`, `1676`) show the assist load (`D901`) peak at full lock: both share the work. `1675:FE08` again followed brake pressure on a drive (r 0.95).
+- `1A15:2000`/`2100` hold a small fault-snapshot-style header (clock, odometer, power mode).
+
+**Corrections**
+- `1A01:420A`/`41E9`: "wiper state" (2026.11.13) was the washer request.
+
+**Looked for, not found**
+- Belts and seat occupancy on `1C01`: its full range is now read (114 DIDs, twice as many), but not yet tested against buckling up.
+- Tyre pressures: nothing read so far follows the app's four pressures (229-261 kPa over ten days). Candidates go into the next drive.
+- Steering Feel Firm (two rounds each way, 2026-11-20), Hill Descent Control (2026-11-14, partly repeated 2026-11-20) and One Pedal levels (2026-11-14): no DID changed for them in the modules watched.
+- Brake pedal position on the CEM (`42D9`, `42FC`): no change with light or firm presses.
+- A key distance or UWB range reading: none found on a walk round the car.
+
+**Also seen**
+- The car shifted itself to P after about 10 minutes standing in D, in the 2026-11-14 and 2026-11-20 parked sessions.
+
 ## 2026.11.19.2 - Sibling cars, radio filings and two module leads
 
 Offline: dismantler listings, FCC filings and Geely-group sources, checked against the recorded runs. A new page, [`docs/siblings.md`](docs/siblings.md), lists the cars that share parts with the Polestar 4 and asks their owners to compare notes.

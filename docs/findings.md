@@ -36,7 +36,7 @@ What has been learned about one car, module by module, including leads that are 
 - **Signals (2026-11-14)**: the parking sensor distances live here, `B112`-`B121`, in cm (511 = nothing seen), matching the screen to within about 3 cm. Even DIDs are left, odd are right: rear corners `B112`/`B113`, rear inner `B114`/`B115`, front corners `B116`/`B117`, front inner `B118`/`B119`; `B120`/`B121` are the two extra rear sensors (the car has 4 front, 6 rear) and have not triggered yet. Active only in R or D (P).
 ## 1023 Key system control module (BNCM)
 
-- **What it is**: the key system's BNCM, made by Marquardt. It reports `F197` = `BNCM` and `F18A` = `MARQUARDT`, and the owner's manual's [key system certification](https://www.polestar.com/uk/manual/polestar-4/2026/article/0a500a085a173960c0a8b09771bff25e-f19ebb76fc2e9629ac1b7acc5528389d-8664b2fa77a7e089c0a8296870d1a409/) lists a Marquardt BNCM (model GE1, FCC ID IYZGE1) with a UWB anchor (GU1), NFC reader (GR3) and key fob (GK2). 142 DIDs. The phone charger is a separate part: the manual's [wireless charger and NFC approval](https://www.polestar.com/uk/manual/polestar-4/2026/article/d8eb41f1d4b91c11c0a8cc3748b783e2-dfdd3d233eb7acaec0a8b0c176da1984-8664b2fa77a7e089c0a8296870d1a409/) names Changzhou Tenglong Auto Parts as its maker. `F1BB` lists part `6608017285`, which a parts shop sells as "control unit for wireless charging", perhaps the charger pad as a sub-unit (inference). This replaces the earlier "wireless phone charger" reading (2026-11-15). The FCC filings add detail ([siblings](siblings.md)): GE1 is a Bluetooth LE module whose label drawing is headed Lotus ("communication module - BLE and NFC key"), the GR3 reader is filed as "Lotus NFC Reader", and the car has six GU1 UWB anchors on CAN, daisy-chained to the body controller.
+- **What it is**: the key system's BNCM, made by Marquardt. It reports `F197` = `BNCM` and `F18A` = `MARQUARDT`, and the owner's manual's [key system certification](https://www.polestar.com/uk/manual/polestar-4/2026/article/0a500a085a173960c0a8b09771bff25e-f19ebb76fc2e9629ac1b7acc5528389d-8664b2fa77a7e089c0a8296870d1a409/) lists a Marquardt BNCM (model GE1, FCC ID IYZGE1) with a UWB anchor (GU1), NFC reader (GR3) and key fob (GK2). 181 DIDs. The phone charger is a separate part: the manual's [wireless charger and NFC approval](https://www.polestar.com/uk/manual/polestar-4/2026/article/d8eb41f1d4b91c11c0a8cc3748b783e2-dfdd3d233eb7acaec0a8b0c176da1984-8664b2fa77a7e089c0a8296870d1a409/) names Changzhou Tenglong Auto Parts as its maker. `F1BB` lists part `6608017285`, which a parts shop sells as "control unit for wireless charging", perhaps the charger pad as a sub-unit (inference). This replaces the earlier "wireless phone charger" reading (2026-11-15). The FCC filings add detail ([siblings](siblings.md)): GE1 is a Bluetooth LE module whose label drawing is headed Lotus ("communication module - BLE and NFC key"), the GR3 reader is filed as "Lotus NFC Reader", and the car has six GU1 UWB anchors on CAN, daisy-chained to the body controller.
 - **Leads**: none yet. Not yet watched: a key fob or phone key approaching, and a phone on/off the charging pad (in case the pad is its sub-unit).
 
 ## 1201 Infotainment
@@ -47,7 +47,7 @@ What has been learned about one car, module by module, including leads that are 
 
 ## 1202 Camera / vision
 
-- **What it is**: label guess; not checked. 22 DIDs. A second diagnostic address on the infotainment unit (`1201`): same core and delivery part numbers and the same ECU serial, with its own seven-entry software list (2026-11-15, from the 2026-11-10/11 scans).
+- **What it is**: label guess; not checked. 25 DIDs. A second diagnostic address on the infotainment unit (`1201`): same core and delivery part numbers and the same ECU serial, with its own seven-entry software list (2026-11-15, from the 2026-11-10/11 scans).
 
 ## 1212 Audio amplifier
 
@@ -61,20 +61,21 @@ What has been learned about one car, module by module, including leads that are 
 
 ## 1251 Head-up display
 
-- **What it is**: label guess. 22 DIDs. Answers physical addressing only, not the `1FFF` broadcast.
+- **What it is**: label guess. 23 DIDs. Answers physical addressing only, not the `1FFF` broadcast.
 - **Hazards**: continuous polling of `D110`, `D904`, `D905`, `D992`, `D993`, `D995`-`D998` while driving makes the car show Pilot Assist as unavailable, again and again until the reads stop (2026-11-15, three passes; the owner judged it not unsafe). Single reads, five quick reads of `D110` and one pass of all nine did nothing; a 10-second continuous loop was enough. Not yet tried parked. The nine are **caution** in `catalogue/hazards.yaml`.
 - **Not found**: the speed limit shown in the car (40 and 50 mph called out during a watch): none of the nine follows it.
 
 ## 1301 Mobileye SuperVision ECU
 
-- **What it is**: driver-assistance computer. Firmware string names `P417_EU` (P417 = Polestar 4 model code) and `GAS52`, built January 2026. `D921`-`D927` hold seven camera entries, but only four distinct type codes (`CAM000022`-`25`), so they are variant codes rather than per-camera IDs. 111 DIDs; the scan stops before `EE13` on purpose.
+- **What it is**: driver-assistance computer. Firmware string names `P417_EU` (P417 = Polestar 4 model code, per [Wikipedia](https://en.wikipedia.org/wiki/Polestar_4)) and `GAS52`, built January 2026. `D921`-`D927` hold seven camera entries, but only four distinct type codes (`CAM000022`-`25`), so they are variant codes rather than per-camera IDs. 132 DIDs (full range, 2026-11-22).
 - **Hazards**: **never read `EE13` on `1301`.** Twice (once parked and unattended) it knocked this ECU off the network (gateway NACK), the second time for about a minute, with no dash warning. A `1FFF` broadcast or a range sweep through `EE13` reaches it too. The tool refuses the read. `1635:EE13` is a different module and is safe. `1301` is kept out of watches while driving.
 - **Leads (2026-11-14)**: `EE04` = uptime in ms (catalogued, P); the unit is unreachable for about 30 s after the car wakes while it boots. `EE00` (and `D018`, same values big-endian) looks like 45 supply rails in mV (14.0, 12.1, 5.0, 3.3, 1.8, 1.5, 1.1, 0.9, 0.85, 0.75 V); `EE01`/`D017` like 10 temperatures; `EE10` lists 11 slots, the same as SuperVision's 11 cameras; `EE11` names the release `SV52_P417_25.11.RC1`. `DB00`-`DBD2` answer "not supported".
 - **Hazards (2026-11-14)**: `EE14` does the same. A paced read of it (parked, the first DID after `EE13`) stopped `1301` answering; the passenger airbag lamp blinked off and on, and the gateway refused new diagnostic connections until the adaptor was unplugged and replugged. No dash warning; afterwards `1301` held two confirmed fault codes (there is no earlier fault read to compare with). `EE14` is blocked like `EE13`.
+- **Full scan (2026-11-22)**: the whole `0000`-`FFFF` range read paced while parked, with no drop-outs: 132 answer; 5 DIDs were skipped (below). `EF11` is a boot-image build record naming `GAS52EVO_BOOT_P417` (release 25.08, "FOTA1"), a TriCore compiler and `tc39x`: the unit carries an Infineon AURIX TC39x microcontroller with its own boot software. `EF02` holds a build date (August 2025). `D386`-`D391` are twelve 27-byte slots, all but two empty. Skipped: `EE13`/`EE14` (blocked hazards), and `DBD3`, `5368`, `53EE`, recorded as possible hazards when the module or the scan stopped right after them (likely false: the car was going to sleep, or the scan was stopped by hand); due for a supervised retest.
 
 ## 1314 Dash camera
 
-- **What it is**: label guess (DVR); not checked. 51 DIDs.
+- **What it is**: label guess (DVR); not checked. 52 DIDs.
 
 ## 1316 Unknown (left of a pair)
 
@@ -106,6 +107,7 @@ What has been learned about one car, module by module, including leads that are 
   - The long `EExx`/`EFxx` blocks change on almost every read while parked: rolling logs or history buffers (guess).
 - **Not found**: tyre pressures (`D282` holds several unequal words, about 455-560, when the app showed 2.3 bar on all four: ruled out; `D911`-`D913`: three values in steps of 5 around 2,600 that sometimes shift along and sometimes flicker: ruled out). The Polestar 2 wheel-speed DIDs `2B06`-`2B09` and other `2Bxx`/`20xx` dynamics DIDs return NRC 31 (not supported). `2B34` flips on its own when parked. Gear does not show here.
 - **Hazards**: possible, not repeated: one silence of about 10 s while reading `D928`-`D92C` (earlier releases said `D927`-`D92B`; `D927` answered normally), 3 s after the car had woken. Silences mid-scan have also happened on other modules with no special DID, so start-up is a likely cause. The tool records `D928`-`D92C` as **caution** in `catalogue/hazards.yaml`: ordinary scans skip them, and `--allow-caution` or a paced scan is needed to test one. `D92C` has since been read without trouble. On 2026-11-14 a paced read (one DID at a time, module checked after each, car awake in P) got NRC 31 (not supported) on `D928`-`D92B` with `1601` answering after every read: no repeat. They stay caution for now.
+- **Signals (2026-11-22)**: `displayed_soc` (`E4A1` / 10) matches the Polestar app's battery level (as logged by Home Assistant; 45 readings, 34 values over ten days, r 0.9994); `displayed_soc_fine` (`E37A`) follows it in finer steps, moving while `E4A1` holds (P, from the app history).
 
 ## 1614 Suspension
 
@@ -116,11 +118,11 @@ What has been learned about one car, module by module, including leads that are 
 
 ## 1615 Steering column lock
 
-- **What it is**: label guess (SCL); not checked. 25 DIDs. No wiper or washer DIDs answer here.
+- **What it is**: label guess (SCL); not checked. 28 DIDs. No wiper or washer DIDs answer here.
 
 ## 1631 Front drive motor controller (probable)
 
-- **What it is**: probably the front drive motor controller, as issue #2's `F80A` name says: `E307` goes `01` -> `02` only in short bursts when pulling away or accelerating (about 1.5-2.2 m/s²), `E303` then reads `0x4000` + front motor speed (same ~83 counts per km/h as `1601:E3E8`), and `E319` reads `00` in those bursts like `1637:E319`. Labelled brake control (BCM) before; brake pedal and parking-brake DIDs return NRC 31 and no steering DIDs answer. A US owner's `F80A` reads "drive motor controller 2" (issue #2); not readable here. 103 DIDs. Traceability string with a production date and the model code P417. Shares 29 DIDs with `1701`.
+- **What it is**: probably the front drive motor controller, as issue #2's `F80A` name says: `E307` goes `01` -> `02` only in short bursts when pulling away or accelerating (about 1.5-2.2 m/s²), `E303` then reads `0x4000` + front motor speed (same ~83 counts per km/h as `1601:E3E8`), and `E319` reads `00` in those bursts like `1637:E319`. Labelled brake control (BCM) before; brake pedal and parking-brake DIDs return NRC 31 and no steering DIDs answer. A US owner's `F80A` reads "drive motor controller 2" (issue #2); not readable here. 104 DIDs. Traceability string with a production date and the model code P417. Shares 29 DIDs with `1701`.
 - **Signals**: `vehicle_speed` (`D003`, km/h x 0.0140625; C). The dash reads about 5 % above it.
 - **Leads**: `E312` is speed with a `0x4000` offset (r 0.97-0.99 over two drives; P, not catalogued), about 70 counts per km/h: not the 83 counts per km/h of the motor speeds, so not simply the front motor speed. `E335`-`E338` are four near-equal values (~`0x332c` parked), per-wheel guess; weak correlation with braking.
 
@@ -159,35 +161,38 @@ What has been learned about one car, module by module, including leads that are 
 
 - **What it is**: on-board charger and inlet (CDD label; issue #2 reads a charger-controller name). 103 DIDs.
 - **Signals**: `inlet_leds` (`EE32`, C: `01010100` lid open, `00010000` pulses every ~3 s while charging, off after a timeout), `ac_plug_status` (`EE24`, P; charge state only: it does not change when the cable goes in), `charge_cable_present` (`EE31`, `01` cable in, P, 2026-11-14), `charge_energy_counter` (`EE71`, lifetime AC energy in 0.1 kWh, 4.5 MWh; P), `last_charge_avg_power` (`EE72`), `last_charge_energy` (`EE74`) (P).
-- **Leads**: `EE71` rose one count every ~55 s on a 7 kW AC charge (about 6.5 kW). `EE72`/`EE74` do not form a consistent pair across two reads, so their meaning is weak. `EEE1` went up by one during a charge (a counter). DC charging not yet observed. `EE12` reads 235-238 while a cable is in (`ffff` without): mains voltage or the plug's proximity resistance (220 ohm = 32 A cable), not settled (2026-11-14).
+- **Leads**: `EE71` rose one count every ~55 s on a 7 kW AC charge (about 6.5 kW). `EE72`/`EE74` do not form a consistent pair across two reads, so their meaning is weak. `EEE1` went up by one during a charge (a counter). DC charging not yet observed. `EE12` reads 235-238 while a cable is in (`ffff` without): mains voltage or the plug's proximity resistance (220 ohm = 32 A cable), not settled on 2026-11-14; the 2026-11-22 charge points to supply voltage (see below).
+- **Leads (2026-11-22)**: `EE12` read 232-237 through an overnight 7 kW AC charge while the app reported 225-233 V (r 0.74, about 6 V higher): the AC supply voltage in volts (`ac_supply_voltage`, P). `ffff` with no cable.
 
 ## 1656 Unknown, 12 V power path
 
-- **What it is**: unknown. Hardware string `HX1100` (`HX11` is the Smart #1 project code, so this part is probably shared with it). 27 DIDs. `4947` and `D110` read 14.0-14.2 V with the car awake: the 12 V rail in mV (another owner reports the same pair). Also answers `EE13`, `4AF5` and `EE30`, DIDs from the battery module's ranges. Guess: DC-DC converter. Issue #2's `F80A` reads a charger-controller name for this address; not readable here.
+- **What it is**: unknown. Hardware string `HX1100` (`HX11` is the Smart #1 project code, so this part is probably shared with it). 37 DIDs. `4947` and `D110` read 14.0-14.2 V with the car awake: the 12 V rail in mV (another owner reports the same pair). Also answers `EE13`, `4AF5` and `EE30`, DIDs from the battery module's ranges. Guess: DC-DC converter. Issue #2's `F80A` reads a charger-controller name for this address; not readable here.
 - **Leads**: `1635` also answers `4947`, so the 12 V reading alone does not single out this module.
 
 ## 1670 Power steering
 
-- **What it is**: PSCM label. 44 DIDs, the same set as `1676`. Answers `F804` (all zero).
+- **What it is**: PSCM label. 50 DIDs, the same set as `1676`. Answers `F804` (all zero).
 - **Leads**: `3019` tracks the steering angle while driving: `1670:3019` = `0x3853` - 0.5614 x `1672:3019` (r -0.997 on 0.5 s resampled reads; about 230 changes of `1670:3019` and 480 of `1672:3019` on the 2026-11-11 drives). The opposite sign and that ratio fit 0.1 ° per count with right positive (inference), which would make `1672`'s scale 0.0561 °/count, within 1.3 % of the 0.0554 estimated by eye. `D900` = `0x707F` - `3019` on both `1670` and `1676`.
 
 ## 1672 Steering angle
 
-- **What it is**: SAS label; a US owner's `F80A` reads "chassis controller" (issue #2). 41 DIDs. Same physical unit as the gear stalk module `1633`: same core and delivery part numbers and the same ECU serial, different software (2026-11-15, from the 2026-11-11 scans). So the steering angle sensor and the stalk probably share one column unit (inference: the SAS role rests on the label). The steering test does not single it out, since `1670` and `1676` also answer `3019`.
+- **What it is**: SAS label; a US owner's `F80A` reads "chassis controller" (issue #2). 42 DIDs. Same physical unit as the gear stalk module `1633`: same core and delivery part numbers and the same ECU serial, different software (2026-11-15, from the 2026-11-11 scans). So the steering angle sensor and the stalk probably share one column unit (inference: the SAS role rests on the label). The steering test does not single it out, since `1670` and `1676` also answer `3019`.
 - **Signals**: `steering_angle` (`3019`, signed, left positive, ~0.0554 °/unit by eye, locks about ±430 °, ~2.4 turns; P). `1670:3019` suggests 0.0561 °/unit (see `1670`). Against yaw on the 2026-11-15 turns watch: r 0.77, peak at zero lag.
 - **Leads**: `301A` moves while steering (meaning not established). `D112` is module supply voltage (x 0.08 V), as on `1C01`.
 
 ## 1675 Unknown chassis module (Bosch sensor?)
 
-- **What it is**: unknown, between the steering units. Configuration string `GE60_P03_M10_…`. 56 DIDs. Perhaps a second brake unit (inference, weak, 2026-11-16): like `1701` it answers OBD speed `F40D`, and its `FE08` is a pair of close words like `1701:FE08` channels 1-2. Whether it is a redundant brake unit or a booster is not known; the platform's brake layout is not published. Later (November 2026): the part number in `D901` is sold used, from a Polestar 4 and a Zeekr 001, as a Bosch sensor (the Bosch number on its label is in [siblings](siblings.md); Bosch uses that number range for chassis sensors such as yaw-rate and acceleration sensors), so `1675` is more likely Bosch's inertial sensor than a brake unit (inference; [siblings](siblings.md)). Its `FE08` follows brake pressure (r 0.988 with `1701:FE08` channel 1 on a drive) and not deceleration (r -0.26 with `1601:2B11`), and stays high while the car is held on the brake, so `FE08` and `D941` look like signals it receives rather than its own measurements; the "not available" values would then mean a missing input (inference). Not yet seen: any reading of its own that moves with yaw or acceleration.
+- **What it is**: unknown, between the steering units. Configuration string `GE60_P03_M10_…`. 58 DIDs. Perhaps a second brake unit (inference, weak, 2026-11-16): like `1701` it answers OBD speed `F40D`, and its `FE08` is a pair of close words like `1701:FE08` channels 1-2. Whether it is a redundant brake unit or a booster is not known; the platform's brake layout is not published. Later (November 2026): the part number in `D901` is sold used, from a Polestar 4 and a Zeekr 001, as a Bosch sensor (the Bosch number on its label is in [siblings](siblings.md); Bosch uses that number range for chassis sensors such as yaw-rate and acceleration sensors), so `1675` is more likely Bosch's inertial sensor than a brake unit (inference; [siblings](siblings.md)). Its `FE08` follows brake pressure (r 0.988 with `1701:FE08` channel 1 on a drive) and not deceleration (r -0.26 with `1601:2B11`), and stays high while the car is held on the brake, so `FE08` and `D941` look like signals it receives rather than its own measurements; the "not available" values would then mean a missing input (inference). Not yet seen: any reading of its own that moves with yaw or acceleration.
 - **Signals**: `obd_speed_1675` (`F40D`, km/h): it does move; r 0.999 with `1631:D003`, ratio 0.998 (1,178 changes, 2026-11-12 to 2026-11-15), the same as `1701:F40D` (P).
 - **Leads**: `FE08` holds two signed words 5-8 counts apart: about zero (`fff5`/`fffc`) parked with the brake off (2026-11-11), `0x113`-`0x1a9` while the car stood in R or D on 2026-11-14 (four snapshots; no brake reading in them), of similar size and spacing to `1701:FE08` channels 1-2 with the pedal held in other snapshots (`0x1c1`-`0x208`, 6-8 apart). The two modules were not read at the same moment before 2026-11-19. The 2026-11-14 session notes took them for parking distances; the distances did not follow (the parking sensors are on `1015`). At times `1675` switches to a second state: `FE08` `7fff`/`7fff`, `D941`-`D944` `ffff` (else `0000`), `D952` and `DD0C` change too; it stayed there from about 15:45 that day even in R on the brake. What sets it is not known. On a 2026-11-19 drive both `FE08` words tracked `1701:FE08` channel 1 while braking (r 0.988, ratio 0.97; P); first read as support for the brake-unit idea, now taken as a received brake-pressure signal (see What it is).
 - **Signals** (2026-11-19): `vehicle_speed_1675` (`D941`, 256 counts per m/s, the scale of `1631:D003`; r 0.9995 with `1601:E36E` on one drive, 0.966 on another; P), `brake_pressure_1675_a`/`_b` (`FE08`; P). In the second state they read `ffff` and `7fff`, shown as not available.
+- **Leads (2026-11-21 drive)**: both `FE08` words follow `1701:FE08` channels 1 and 2 under braking (r 0.95, 908 pairs, 0-79 km/h); with the stop lamps on both `1675` words and `1701` channel 1 averaged about 99 counts. Never `7fff` on that drive, including stops in D.
 
 ## 1676 Second steering controller
 
-- **What it is**: probably the second channel of a dual-channel power steering: same DID set (44) as `1670`, and part numbers one step apart from `1670`'s (e.g. software part numbers ending `05`-`07` vs `08`-`10`), so related but not identical.
+- **What it is**: probably the second channel of a dual-channel power steering: same DID set (50) as `1670`, and part numbers one step apart from `1670`'s (e.g. software part numbers ending `05`-`07` vs `08`-`10`), so related but not identical.
 - **Leads**: in 11 snapshots (2026-11-11 and 2026-11-14) `3019` and `D900` read within 1 count of `1670`'s across the wheel travel seen; on both modules `D900` + `3019` = `0x707F`, a second, mirrored angle track. Not yet watched lock to lock, or while driving.
+- **Leads (2026-11-20)**: `D901` peaks on both `1670` and `1676` at every full-lock hold (two rounds each way, parked): both channels carry the assist load. On the 2026-11-21 drive `3019` stayed within 0-2 counts of `1670`'s (up to 4 while turning), through wheel travel of about 400°.
 
 ## 1701 Brake system (BSCM)
 
@@ -207,7 +212,8 @@ What has been learned about one car, module by module, including leads that are 
   - `281F` holds the four TPMS sensor IDs (one per wheel), so TPMS lives here; no pressure found yet. Values are per-car identifiers and are not published.
   - `410B` looks like an ambient light sensor: byte 0 `02` with a 16-bit level (about 2,800-10,000) in daylight, `01 0000` in the evening (one day).
   - `42ED`, `42EE` answer only while driving (NRC 22 parked, sometimes moving) and sit at about 4985 ± 30 all day with no rise as the tyres warm (2026-11-15, 09:00-18:00): not tyre pressure. `45B2`, `45C9` refused all day.
-- **Not found here**: lock state is on the door modules (`4054`/`4056`, 2026-11-14), not the CEM; brake pedal position (`42D9`, `42FC` do not move); the wiper and washer in the 40 DIDs known before the full scan; tyre pressures in any of the 332 DIDs (searched for 2.3 bar in common encodings).
+- **Not found here**: lock state is on the door modules (`4054`/`4056`, 2026-11-14), not the CEM; brake pedal position (`42D9`, `42FC` do not move); the wiper in the 40 DIDs known before the full scan; tyre pressures in any of the 332 DIDs (searched for 2.3 bar in common encodings).
+- **Signals (2026-11-22)**: `welcome_lamp` (`4222`) drives the welcome lights: on two walk-ups on 2026-11-20 the owner saw the front badge light the first time and the rear lights the second, each in step with `4222` for ~30 s (C). `wiper_420a`/`wiper_41e9` renamed to washer request: one ~1 s pulse per washer press, none on plain wipes, one pulse even when the pump sprayed twice (C). `key_card_log` (`D214`, same list in `D218`): one `04`+`05` pair per key card placement on the pad and per removal, newest first, stamped with the `DD00` clock (C; on or off is not encoded).
 
 ## 1A11 Climate
 
@@ -218,21 +224,22 @@ What has been learned about one car, module by module, including leads that are 
 
 ## 1A12 Driver door (right front)
 
-- **What it is**: driver door module (DDM); right front on this right-hand-drive car. 200 DIDs.
+- **What it is**: driver door module (DDM); right front on this right-hand-drive car. 203 DIDs.
 - **Signals**: `front_window` (`4047`), `front_window_stops` (`42C5`, end-stop counter), `door_handle` (`D90C`, P: one lock/unlock cycle; `ff` after locking and `03` on later days on this door, unexplained), `mirror_fold_right` (`4053`), `mirror_fold_motor_right` (`4052`), `mirror_heat_right` (`4051`) (C); `mirror_fold_current_right` (`FE0D`, P).
 - **Leads**: `D938` is a rolling log of window runs, newest first, 10-byte entries: a byte, start position, end position, a byte, then the `DD00` clock big-endian in bytes 6-9 (positions ~1000 closed, ~5900 open). Decoded, the latest entries fall within six seconds of each other on 2026-11-14, inside the logged window-switch test, so each run can be dated. `D008` = window motor request (`00` stopped, `01` manual up, `02` manual down, `03` auto up, `04` auto down; `window_direction`, C since 2026-11-14). `4054` = lock (`02` unlocked, `01` locked; P). `4035` carries the driver-door window switches as bits (raw, P); the passenger-window switch on that panel does not show in it. Blind-spot lights: `1A13:4003` left and `1A12:4003` right (`00` off, `32` lit after dark, `64` in daylight; C, 2026-11-15, matched to cars alongside on each side). `1316`/`1317` (identity unknown; the manual certifies only one radar) show no target data in their known DIDs while cars pass (only clocks, counters and a history record change). `4096` changes with the window drive command, not position. `D909` moves with every door event. `480C` read 33 when the car was at about 33 km/h (speed copy, once).
 
 ## 1A13 Passenger door (left front)
 
-- **What it is**: passenger door module (PDM). 184 DIDs. Issue #2's `F80A` gives a gateway name for this address on the US car; the door behaviour here does not fit that.
+- **What it is**: passenger door module (PDM). 187 DIDs. Issue #2's `F80A` gives a gateway name for this address on the US car; the door behaviour here does not fit that.
 - **Signals**: `front_window`, `front_window_stops`, `door_handle` (P), `mirror_fold_left`, `mirror_fold_motor_left` (directions mirrored from the right side), `mirror_heat_left` (C).
 - **Leads**: as `1A12` (`D008`, `4096`, `D909`). `400E` `07` -> `08` while the window switch is held.
 
 ## 1A15 Tailgate
 
-- **What it is**: powered tailgate (POT). 45 DIDs.
+- **What it is**: powered tailgate (POT). 47 DIDs.
 - **Signals**: `tailgate_position` (`D906`, 0 closed, ~3198 open; P: one open/close cycle).
 - **Leads**: `D907` reads about `0x0877` while moving and near 0 at rest: it moves only while the tailgate moves.
+- **Leads (2026-11-21)**: `2000` and `2100` (20 bytes) each hold a small list of DID/value pairs: `DD00` (clock, still ticking between reads), `DD01` (odometer, km), `DD02`, `DD0A` (power mode), `DD0C`. The layout of a fault-snapshot header; no other module's recorded reads start this way.
 
 ## 1A21 Left rear door
 
@@ -286,17 +293,18 @@ What has been learned about one car, module by module, including leads that are 
 
 ## 1C01 Airbags
 
-- **What it is**: label guess (SRS). 57 DIDs. Issue #2's `F80A` gives a gateway name for this address on the US car; nothing here settles it.
+- **What it is**: label guess (SRS). 114 DIDs. Issue #2's `F80A` gives a gateway name for this address on the US car; nothing here settles it.
 - **Signals**: `srs_supply_v` (`D112`, x 0.08 V; tracks `1701:F442` at r 0.98-1.00 when the 12 V rail swings; P). **Correction**: 2026.11.12.2 published `D112` bit `02` as the driver belt. It is not: the low bits move with supply voltage several times a second with nothing touched.
 - **Not found**: belt buckle or seat occupancy, watched on 2026-11-13 with the car in standby and on (only `D910`, a counter, changed).
+- **Full scan (2026-11-21)**: whole `0000`-`FFFF` range read while parked: 114 DIDs (57 before). Not yet tested against belts or seat occupancy.
 
 ## Open questions
 
 - **Tyre pressure**: no DID found among those searched. The TPMS sensor IDs are on the CEM (`1A01:281F`); `2800`-`28FF` holds nothing else, and none of the 332 CEM values matches. `1A01` `42ED`/`42EE` answer while driving but stay flat at about 4985 all day (not pressure); `45B2`/`45C9` refuse even while driving (2026-11-15). Earlier: the app showed 2.3 bar on all four; the 2,856 DIDs read by 2026-11-11 and the first 269 of the 273 new CEM DIDs were searched for that value in common encodings (bar x10, x100, kPa gauge and absolute, kPa/2.5, kPa/4, psi, psi x10, mbar; four values in one DID or four nearby DIDs): no real match. `1601:D282` and `D911`-`D913` ruled out. The full-range scans of `1A01`, `1601`, `1011` and `1015` found nothing either. A deflate test (let 0.3 bar out of one tyre, diff) is planned but not done.
 - **Wheel speeds**: found and placed (`1601:E3E4`-`E3E7`: left front, right front, left rear, right rear; C, 2026-11-15).
 - **Yaw rate / lateral acceleration**: yaw rate found (`1614:D92D` byte 2, P, one drive). Lateral acceleration not found (`D92D` byte 1 did not follow anything). Longitudinal acceleration is `2B11` on `1601` and `1701` (P). `1601:EF06`, `EFA5`, `EFA6` are not rates; `EFA7`-`EFAA` untested.
-- **Wipers / rain sensor**: wipers found on the CEM (`420A`/`41E9`, `4218`). Rain sensor not found: one natural-rain snapshot was confounded (standby, seat occupancy changed); candidates `40E2`, `4104` unproven, and `402A` copies the module temperature.
-- **Seat occupancy and belts**: driver occupancy found (`1A01:20A8`, P). No passenger occupancy and no belt buckle found, with the car in standby or on. Rear occupancy and the rear left buckle were not found either (2026-11-14). The car does know: the dash shows which seats are unbuckled. The airbag module `1C01` is the likely home, but only its default ranges (about 8,700 of 65,536 DIDs) have been read; a full scan of it has not been done. The driver belt published earlier (`1C01:D112`) was wrong (see `1C01`).
+- **Wipers / rain sensor**: washer request found on the CEM (`420A`/`41E9`, C); `4218` blips on a plain wipe. Rain sensor not found: one natural-rain snapshot was confounded (standby, seat occupancy changed); candidates `40E2`, `4104` unproven, and `402A` copies the module temperature.
+- **Seat occupancy and belts**: driver occupancy found (`1A01:20A8`, P). No passenger occupancy and no belt buckle found, with the car in standby or on. Rear occupancy and the rear left buckle were not found either (2026-11-14). The car does know: the dash shows which seats are unbuckled. The airbag module `1C01` is the likely home: its full range is now read (114 DIDs, 2026-11-21); a belt and seat test against the new DIDs is still to do. The driver belt published earlier (`1C01:D112`) was wrong (see `1C01`).
 - **Surround-view objects**: the cluster draws cars around the car, so the data exists somewhere (radar or sensor fusion). Watching `1316`, `1317` and `1344` alongside marks has not shown anything yet; `1301` is kept out of driving watches.
 - **Charge port cover**: the lid state (`1A01:EFF5`) and inlet LEDs (`1650:EE32`) are known; both seen at least twice (C, 2026-11-14), from the screen and the door button. Cable insertion shows in `1650:EE31` (`01` cable in; P), not in `EE24`.
 - **Also not found**: one-pedal level, Steering Feel and Hill Descent (the test in D was cut short); the climate setpoint (front and rear); the displayed range. Drive mode (`1601:E450`) and door locks (`4054`/`4056`) were found on 2026-11-14.

@@ -48,6 +48,9 @@ Read `README.md` (tool, hazards, commands), `docs/did.md` (DID backlog) and `CHA
     (demo data needs a strict per-DID schema: fixed length, numeric range, bounded window, relative time);
   - the Pages workflow: build job `contents: read` (tests, prepublish, build, output scan, upload), deploy
     job alone has `pages: write`; every action SHA-pinned; Python deps pinned.
+  - every release updates the public site: after the push, confirm the Pages run for that commit succeeded
+    and the live site (signals, findings, modules pages) shows the release's new and changed entries before
+    calling the release done.
 - Hands-on car sessions: before proposing a test, check `local/session-log.md` and `runs/*/snap-*` and say
   when it last ran and what it found; a test that found nothing is a retest, not new. One simple step at a
   time; if the car cuts a test short (auto-P, sleep), offer to redo it at once. When a candidate is one or

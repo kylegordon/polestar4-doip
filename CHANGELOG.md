@@ -3,6 +3,13 @@
 Owned by the project; newest first. This file records tool, catalogue and documentation changes —
 observations about the car belong in docs/findings.md and DISCOVERIES.md, not here.
 
+## 2026-11-22 — washer, key card, displayed SoC, release steps
+
+- `catalogue/signals.yaml`: `wiper_420a`/`wiper_41e9` renamed to washer request (C, ids kept); `welcome_lamp` to C (welcome lights: front badge and rear lamps); new `key_card_log` (C), `displayed_soc`, `displayed_soc_fine`, `ac_supply_voltage` (P).
+- `docs/findings.md`: `1301` (full paced scan, boot build record), `1601`, `1650`, `1675`, `1676`, `1A01`, `1A15`, `1C01` (full scan); DID counts updated from the regenerated coverage; P417 source.
+- `docs/did-map.csv`, `docs/coverage.csv`: regenerated from all runs (full ranges done on every answering module; `1301` less the blocked `EE13`).
+- `README.md`, `AGENTS.md`: a release also checks that the Pages workflow deployed and the public site shows the new signals and findings.
+
 ## 2026-11-19 — sibling cars and radio filings
 
 - `docs/siblings.md`: new page, sibling cars on the SEA platform, shared parts with the strength of each link, the FCC filings for this car's radio parts, help wanted from owners of those cars. Linked from `README.md`.
