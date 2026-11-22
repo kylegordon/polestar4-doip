@@ -22,6 +22,7 @@ What has been learned about one car, module by module, including leads that are 
 ## 1011 Telematics
 
 - **What it is**: the car's mobile connection (TEM label, unverified). 119 DIDs. Holds SIM and modem identifiers, two assistance phone numbers, a current date-time, a release string (`P417_4.2.11_…`) and server names. Identifiers are masked by `./p4 strings` and not published.
+- **Leads (2026-11-22)**: `FD4A` names a downloaded, not yet installed update package (`P417_4.3.0_Market_EMEA_Customer_…`). `D9AE`-`D9B7` read like the update campaign log (`ASSIGNMENT-WITHDRAWN`, `DOWNLOAD-STARTED`, `DOWNLOAD-COMPLETED`, `CONFIGURATION-OK`, each with a time); `FD4D`-`FD4F` hold three download attempts that ended with a reason containing `TIMEOUT`.
 - **Leads**: `FD50` (10 bytes) holds the car's position: two signed 32-bit big-endian values in milliarcseconds (degrees x 3,600,000), longitude then latitude. One parked read matched where the car stood within about 100 m (P; values never published). A configured GB/T 32960 (Chinese national EV remote-monitoring standard) server entry, on a UK car. Whether it ever sends anything is not known. The phone app shows tyre pressures; none found here after a full-range scan.
 
 ## 1012 Driver monitoring
@@ -29,11 +30,12 @@ What has been learned about one car, module by module, including leads that are 
 - **What it is**: label guess (DMM) from related cars; not checked. 53 DIDs; a full `0000`-`FFFF` scan on 2026-11-15 found no more.
 - **Not found**: driver attention. A 10-minute watch of its 34 non-identity DIDs while driving (2026-11-15) saw no change at a yawn, hands off the wheel (the car warned), mirror checks, a head turn or an eye rub; only `D963`-`D966` and `DD02` flicker by one step all the time (temperatures or supplies, guess). The hands-off warning probably comes from steering torque, not this module.
 
-## 1015 Wireless access / digital key
+## 1015 360 camera / park assist (probable)
 
-- **What it is**: keyless entry and phone-as-key. 162 DIDs. Software names include `PAS_VE` (passive entry?) and `…CCA…`/`…CCR…` strings, perhaps Car Connectivity Consortium digital-key components (guess). Polestar documents UWB, BLE and NFC key-card for this car.
+- **What it is**: most likely the surround-view (360) camera and park assist module (from its own strings; not yet tested with the camera view). On this car: `E30D`-`E310` hold four camera entries (`CAM000061`, `194OF`, then an OmniVision `OX03C10` sensor string; the [OX03C10](https://www.ovt.com/sensors/OX03C10) is a 2.5 MP sensor for surround-view and rear-view cameras; 194 is probably the fisheye field of view in degrees), the parking sensor distances are here (below), and its software is `PAS_V2.8.2` (`F199`) and `PAS_VE_V1.00` (`D104`): park assist. 162 DIDs. **Correction**: earlier versions called this module wireless access / digital key, reading PAS_VE as passive entry and the `…CCA…`/`…CCR…` names as digital-key parts. Nothing on 1015 has ever followed the key; the key system is `1023`.
 
 - **Signals (2026-11-14)**: the parking sensor distances live here, `B112`-`B121`, in cm (511 = nothing seen), matching the screen to within about 3 cm. Even DIDs are left, odd are right: rear corners `B112`/`B113`, rear inner `B114`/`B115`, front corners `B116`/`B117`, front inner `B118`/`B119`; `B120`/`B121` are the two extra rear sensors (the car has 4 front, 6 rear) and have not triggered yet. Active only in R or D (P).
+
 ## 1023 Key system control module (BNCM)
 
 - **What it is**: the key system's BNCM, made by Marquardt. It reports `F197` = `BNCM` and `F18A` = `MARQUARDT`, and the owner's manual's [key system certification](https://www.polestar.com/uk/manual/polestar-4/2026/article/0a500a085a173960c0a8b09771bff25e-f19ebb76fc2e9629ac1b7acc5528389d-8664b2fa77a7e089c0a8296870d1a409/) lists a Marquardt BNCM (model GE1, FCC ID IYZGE1) with a UWB anchor (GU1), NFC reader (GR3) and key fob (GK2). 181 DIDs. The phone charger is a separate part: the manual's [wireless charger and NFC approval](https://www.polestar.com/uk/manual/polestar-4/2026/article/d8eb41f1d4b91c11c0a8cc3748b783e2-dfdd3d233eb7acaec0a8b0c176da1984-8664b2fa77a7e089c0a8296870d1a409/) names Changzhou Tenglong Auto Parts as its maker. `F1BB` lists part `6608017285`, which a parts shop sells as "control unit for wireless charging", perhaps the charger pad as a sub-unit (inference). This replaces the earlier "wireless phone charger" reading (2026-11-15). The FCC filings add detail ([siblings](siblings.md)): GE1 is a Bluetooth LE module whose label drawing is headed Lotus ("communication module - BLE and NFC key"), the GR3 reader is filed as "Lotus NFC Reader", and the car has six GU1 UWB anchors on CAN, daisy-chained to the body controller.
@@ -72,6 +74,7 @@ What has been learned about one car, module by module, including leads that are 
 - **Leads (2026-11-14)**: `EE04` = uptime in ms (catalogued, P); the unit is unreachable for about 30 s after the car wakes while it boots. `EE00` (and `D018`, same values big-endian) looks like 45 supply rails in mV (14.0, 12.1, 5.0, 3.3, 1.8, 1.5, 1.1, 0.9, 0.85, 0.75 V); `EE01`/`D017` like 10 temperatures; `EE10` lists 11 slots, the same as SuperVision's 11 cameras; `EE11` names the release `SV52_P417_25.11.RC1`. `DB00`-`DBD2` answer "not supported".
 - **Hazards (2026-11-14)**: `EE14` does the same. A paced read of it (parked, the first DID after `EE13`) stopped `1301` answering; the passenger airbag lamp blinked off and on, and the gateway refused new diagnostic connections until the adaptor was unplugged and replugged. No dash warning; afterwards `1301` held two confirmed fault codes (there is no earlier fault read to compare with). `EE14` is blocked like `EE13`.
 - **Full scan (2026-11-22)**: the whole `0000`-`FFFF` range read paced while parked, with no drop-outs: 132 answer; 5 DIDs were skipped (below). `EF11` is a boot-image build record naming `GAS52EVO_BOOT_P417` (release 25.08, "FOTA1"), a TriCore compiler and `tc39x`: the unit carries an Infineon AURIX TC39x microcontroller with its own boot software. `EF02` holds a build date (August 2025). `D386`-`D391` are twelve 27-byte slots, all but two empty. Skipped: `EE13`/`EE14` (blocked hazards), and `DBD3`, `5368`, `53EE`, recorded as possible hazards when the module or the scan stopped right after them (likely false: the car was going to sleep, or the scan was stopped by hand); due for a supervised retest.
+- **Version strings (2026-11-22)**: `D910` is the Mobileye software package name (`evo-s+P417_EU_V3.15R6.6_TC1_secured_GAS52_EVO_P417_EU…`, packaged January 2026); between 2026-11-20 and 11-22 it gained a `GAS52_231231_v25h` suffix while the car stayed on 4.2.11 (read daily from now on, to see whether it keeps changing, e.g. with map data). `D949`/`EE11` hold the main software build record `SV52_P417_25.11.RC1` (built November 2025); SV52 is Mobileye's name for its SuperVision system, deployed on Polestar ([Driving Vision News, CES 2025](https://www.drivingvisionnews.com/?p=153366)). `D912` reads `25.02.UDS.578g_releases_24.07_v15`, perhaps the release of its diagnostic layer.
 
 ## 1314 Dash camera
 
@@ -173,6 +176,7 @@ What has been learned about one car, module by module, including leads that are 
 
 - **What it is**: PSCM label. 50 DIDs, the same set as `1676`. Answers `F804` (all zero).
 - **Leads**: `3019` tracks the steering angle while driving: `1670:3019` = `0x3853` - 0.5614 x `1672:3019` (r -0.997 on 0.5 s resampled reads; about 230 changes of `1670:3019` and 480 of `1672:3019` on the 2026-11-11 drives). The opposite sign and that ratio fit 0.1 ° per count with right positive (inference), which would make `1672`'s scale 0.0561 °/count, within 1.3 % of the 0.0554 estimated by eye. `D900` = `0x707F` - `3019` on both `1670` and `1676`.
+- **Leads (2026-11-20)**: `D901` peaks at every full-lock hold, on this module and on `1676` (see there).
 
 ## 1672 Steering angle
 
@@ -188,10 +192,10 @@ What has been learned about one car, module by module, including leads that are 
 - **Signals** (2026-11-19): `vehicle_speed_1675` (`D941`, 256 counts per m/s, the scale of `1631:D003`; r 0.9995 with `1601:E36E` on one drive, 0.966 on another; P), `brake_pressure_1675_a`/`_b` (`FE08`; P). In the second state they read `ffff` and `7fff`, shown as not available.
 - **Leads (2026-11-21 drive)**: both `FE08` words follow `1701:FE08` channels 1 and 2 under braking (r 0.95, 908 pairs, 0-79 km/h); with the stop lamps on both `1675` words and `1701` channel 1 averaged about 99 counts. Never `7fff` on that drive, including stops in D.
 
-## 1676 Second steering controller
+## 1676 Power steering, second channel
 
-- **What it is**: probably the second channel of a dual-channel power steering: same DID set (50) as `1670`, and part numbers one step apart from `1670`'s (e.g. software part numbers ending `05`-`07` vs `08`-`10`), so related but not identical.
-- **Leads**: in 11 snapshots (2026-11-11 and 2026-11-14) `3019` and `D900` read within 1 count of `1670`'s across the wheel travel seen; on both modules `D900` + `3019` = `0x707F`, a second, mirrored angle track. Not yet watched lock to lock, or while driving.
+- **What it is**: the second channel of a dual-channel power steering: same DID set (50) as `1670`, and part numbers one step apart from `1670`'s (e.g. software part numbers ending `05`-`07` vs `08`-`10`), so related but not identical.
+- **Leads**: in 11 snapshots (2026-11-11 and 2026-11-14) `3019` and `D900` read within 1 count of `1670`'s across the wheel travel seen (0-2, up to 4 while turning, on the 2026-11-21 drive); on both modules `D900` + `3019` = `0x707F`, a second, mirrored angle track. Lock-to-lock holds and a drive followed on 2026-11-20/21 (below).
 - **Leads (2026-11-20)**: `D901` peaks on both `1670` and `1676` at every full-lock hold (two rounds each way, parked): both channels carry the assist load. On the 2026-11-21 drive `3019` stayed within 0-2 counts of `1670`'s (up to 4 while turning), through wheel travel of about 400°.
 
 ## 1701 Brake system (BSCM)
@@ -219,8 +223,11 @@ What has been learned about one car, module by module, including leads that are 
 
 - **What it is**: climate control (CCM). 138 DIDs.
 - **Signals**: `temp_flap_fl` (`D927`, passenger) and `temp_flap_fr` (`D929`, driver) (C since 2026-11-14: four setpoint changes each side). `980E`, earlier called the front-left flap target, did not move in eight front setpoint changes on 2026-11-14 and is no longer catalogued. Earlier note: a 2 °C setpoint drop stepped the target at once, then the flap positions crept cooler over ~15 s.
-- **Leads**: `D910` stepped down with the setpoint at the same moment. `9800`/`9801` and `9802`-`9804` drift at rest. The 29 DIDs added on 2026-11-12 are mostly zero-filled; `FDE1` is a 100-byte structured block.
+- **Leads**: `D910` stepped down with the setpoint at the same moment. `9800`/`9801` and `9802`/`9803` drift at rest (`9804` byte 3 is the climate-running flag, 2026-11-22). The 29 DIDs added on 2026-11-12 are mostly zero-filled; `FDE1` is a 100-byte structured block.
 - **Not found**: the setpoint itself (e.g. 20.0 °C); probably held elsewhere.
+- **Remote climate (2026-11-22, through the app, nobody in the car)**: `climate_running` (`9804` byte 3) follows climate on/off (two rounds, C; `980E` byte 3 does the same). `980E` byte 0 is 0 when off and 0x17-0x56 while on: perhaps the blower level (`blower_level`, P). `D214` is a log that gains a type-`05` entry at each climate start (P). The app's target temperature is applied only when climate starts: started at 28 °C both temperature flaps (`temp_flap_fl`/`_fr`) read 97 at once and hold; started at 16 °C they read about 2-17 at first and then climb as the cabin warms (two starts each, C). Changing the target while climate runs moved nothing. The setpoint itself was not found in a DID.
+- **Seat heat from the app (2026-11-22)**: also applied at climate start and dropped at climate stop. App front-left = `1A28` (passenger on this right-hand-drive car), front-right = `1A27` (driver), rear-left = `1A29` bits 5-6, rear-right = `1A29` bits 2-3 (two starts each, `983E`, `F1F4`, `FD03`). Once (first pass) the driver seat dropped back to off 12 s after the start by itself.
+- **Not found**: steering wheel heat requested from the app (two starts): `1A01:EE71` never changed for it; either the car does not apply it remotely or `EE71` is not it.
 
 ## 1A12 Driver door (right front)
 

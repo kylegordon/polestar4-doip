@@ -29,7 +29,7 @@ Checked by `tool/tests/test_catalogue.py`; run `./p4 test` after every paste.
    (`test_signal_modules_exist_in_module_catalogue`).
 5. A C signal's module list may only contain `status: confirmed` modules
    (`test_modules_with_confirmed_signals_are_marked_confirmed`). Blocked today: `discharge_counter` +
-   `1656` (unknown); and do not raise `steering_angle` to C while `1670`/`1676` are unverified.
+   `1656` (unknown); and `steering_angle` stays P until its own scale is checked (`1670`/`1676` are confirmed since 2026-11-22).
 6. A transfer lands only after its own test passes on that module; one pass is not confirmation; C needs
    the same change twice, both directions, action noted (the transfer method rules in `docs/did.md`,
    `catalogue/signals.yaml` header, `docs/findings.md:91`).

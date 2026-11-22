@@ -6,6 +6,26 @@ Confidence follows `catalogue/signals.yaml`: **C** = the same change seen at lea
 
 <!-- New entries go directly below this line, newest first. The heading must be "## <version> - <title>". -->
 
+## 2026.11.22.2 - 360 cameras on 1015, remote climate and seat heat, Mobileye versions
+
+Unattended in park: climate and seat heat driven from the Polestar app (through Home Assistant) with nobody in the car, a sweep of every readable string the modules return, and a comparison of two whole-car snapshots taken two days apart on the same software (4.2.11).
+
+**New**
+- `1015` is most likely the 360 camera and park assist module (from its own strings; not yet tested with the camera view): it lists four surround-view cameras (OmniVision `OX03C10` sensors), holds the parking sensor distances, and runs park-assist software (`PAS_V2.8.2`).
+- Remote climate: `1A11:9804` byte 3 shows climate running (C); `1A11:D214` is a log that gains an entry at each climate start (P); `980E` byte 0 may be the blower level (P).
+- The app's target temperature is applied only when climate starts (C): started at 28 °C both temperature flaps go straight to full hot, at 16 °C they start near cold. Changing it while climate runs does nothing.
+- Seat heat from the app is also applied at climate start and dropped when it stops. The app's front-left seat is `1A28` (the passenger seat on this right-hand-drive car), front-right `1A27` (driver), rear-left and rear-right the two halves of `1A29` (twice each).
+- Reclassified from earlier sessions (2026-11-20 and 11-21): both steering controllers (`1670`, `1676`) are now catalogued as the two channels of the power steering (same steering angle, same assist load at full lock).
+- `1301` (Mobileye SuperVision) version strings: the software package name, the main build `SV52_P417` (SV52 = Mobileye SuperVision) and the boot build. The package name gained a suffix between two days with no car update; it is now read daily.
+- `1011` names the downloaded 4.3.0 update package and keeps an update campaign log.
+
+**Corrections**
+- `1015` was described as wireless access / digital key (2026.11.11 onwards). Its own strings point to the 360 camera / park assist module; "PAS" most likely means park assist, not passive entry.
+
+**Looked for, not found**
+- The climate setpoint itself in any `1A11` DID (only its effect on the flaps).
+- Steering wheel heat requested from the app: no change on `1A01:EE71` in two attempts.
+
 ## 2026.11.22 - Full scans finished, washer and key card, and the app's battery level
 
 Parked sessions on 2026-11-20 and 2026-11-21, one short drive, an unattended overnight scan with an AC charge, and a comparison against ten days of the Polestar app's own readings (battery level, charging, tyres).

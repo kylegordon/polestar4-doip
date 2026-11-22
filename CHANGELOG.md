@@ -3,6 +3,13 @@
 Owned by the project; newest first. This file records tool, catalogue and documentation changes —
 observations about the car belong in docs/findings.md and DISCOVERIES.md, not here.
 
+## 2026-11-22 (2) — 1015 role, remote climate, steering channels
+
+- `catalogue/modules.yaml`: `1015` role 360 camera / park assist (probable); `1670`/`1676` power-steering channels (confirmed); `1656` role 12 V power path?.
+- `catalogue/signals.yaml`: new `climate_running`, `climate_event_log` (C) and `blower_level` (P) on `1A11`.
+- `catalogue/hardware.yaml`: surround-view cameras on `1015` replace the keyless-entry component.
+- `docs/findings.md`, `docs/modules.md`: `1015` rewritten with a correction; `1011` update package and campaign log; `1301` version strings; `1A11` remote climate and seat heat.
+
 ## 2026-11-22 — washer, key card, displayed SoC, release steps
 
 - `catalogue/signals.yaml`: `wiper_420a`/`wiper_41e9` renamed to washer request (C, ids kept); `welcome_lamp` to C (welcome lights: front badge and rear lamps); new `key_card_log` (C), `displayed_soc`, `displayed_soc_fine`, `ac_supply_voltage` (P).

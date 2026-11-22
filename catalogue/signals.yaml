@@ -446,3 +446,14 @@
 # higher); ffff with no cable (2026-11-14).
 - {id: ac_supply_voltage, module: "1650", did: "EE12", len: 2, name: AC supply voltage while charging, type: u, unit: " V", unavailable: ["ffff"], confidence: P,
    examples: [{raw: "00e8", value: 232}, {raw: "ffff", value: "not available"}]}
+# Climate on/off via the app (2026-11-22 10:43-10:53, two on and two off, nobody in the car; later starts in the setpoint and seat tests agree): 9804 byte 3 and 980E byte 3 go
+# 00 -> 01 with climate on and back with off; 980E byte 0 (00 off, 0x17-0x56 while on) may be the blower level.
+- {id: climate_running, module: "1A11", did: "9804", offset: 3, len: 1, name: Climate running, values: {"00": "off", "01": "on"}, confidence: C,
+   examples: [{raw: "6b1400000000", value: "off"}, {raw: "6b0000010000", value: "on"}]}
+- {id: blower_level, module: "1A11", did: "980E", offset: 0, len: 1, name: "Blower level? (0 off)", type: u, confidence: P,
+   examples: [{raw: "3700000100", value: 55}]}
+# 1A11 D214 is a log of 5-byte entries (type byte, 4-byte DD00-style 0.1 s stamp), newest first, like the 1A01 key card log. A type-05
+# entry appears at climate start (the 2 on/off starts and the 4 setpoint starts, 2026-11-22); while climate is off 04/06 pairs are added every ~9 s (cause unknown,
+# possibly the watch's own reads). So P, and only the start entry is understood.
+- {id: climate_event_log, module: "1A11", did: "D214", name: "Climate module event log (type 05 entry at climate start)", encoding: raw, confidence: P,
+   examples: [{raw: "04177dfed406177d715104177d70fb06177d0e44040000000002177c74f207177c74f206177c70da04177c70c70617775892", value: "04177dfed406177d715104177d70fb06177d0e44040000000002177c74f207177c74f206177c70da04177c70c70617775892"}]}

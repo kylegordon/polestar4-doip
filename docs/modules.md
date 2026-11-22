@@ -7,7 +7,7 @@ All 43 modules that answer on this car, with the answering DIDs listed in `did-m
 | `1001` | Gateway (DoIP entity) | addressing |
 | `1011` | Telematics | SIM and modem IDs, assistance phone numbers in DIDs |
 | `1012` | Driver monitoring | guess |
-| `1015` | Wireless access / digital key (UWB, BLE, NFC)? | software names (`PAS_VE`, `…CCA…`, `…CCR…`) |
+| `1015` | 360 camera / park assist, most likely | four surround-view camera entries (`E30D`-`E310`, OmniVision `OX03C10`); parking sensor distances `B112`-`B121`; software `PAS_V2.8.2` |
 | `1023` | Key system control module (BNCM), Marquardt | reports `BNCM` and `MARQUARDT`, matching the manual's key system certification (BNCM model GE1; the FCC label drawing is headed Lotus, see [siblings](siblings.md)); the phone charger is a separate Changzhou Tenglong part |
 | `1201` | Infotainment | park signal `D938` |
 | `1202` | Camera / vision | guess; a second address on the infotainment unit (same core part and serial as `1201`) |
@@ -26,11 +26,11 @@ All 43 modules that answer on this car, with the answering DIDs listed in `did-m
 | `1635` | HV battery | SOC, pack V/I, cells |
 | `1637` | Rear inverter / e-machine | drive engaged `E307`, torque direction `E319`; `EEC4` rose 0x3A → 0x3E on a drive (temperature?) |
 | `1650` | Charger / inlet | charge signals |
-| `1656` | Unknown, HV/12 V power path | `4947`/`D110` read 14.0–14.2 V (12 V rail, as on `1635`); hardware `HX1100`; DC-DC converter? |
-| `1670` | Power steering | steering angle `3019` (= `0x3853` - 0.5614 x `1672:3019`: 0.1 °/count, right positive?) |
+| `1656` | Unknown, 12 V power path? | `4947`/`D110` read 14.0–14.2 V (12 V rail, as on `1635`); hardware `HX1100`; DC-DC converter? |
+| `1670` | Power steering, first channel | steering angle `3019` (= `0x3853` - 0.5614 x `1672:3019`: 0.1 °/count, right positive?) |
 | `1672` | Steering angle sensor? | `3019` (also answers on `1670`/`1676`); a US owner reads F80A `CHCM` (chassis controller): unverified here; one unit with the gear stalk `1633` (same core part and serial) |
 | `1675` | Bosch chassis sensor? | its part number is sold used as a Bosch sensor from a Polestar 4 and a Zeekr 001 ([siblings](siblings.md)); config string `GE60_P03_M10_…`; OBD speed `F40D` tracks `D003`; `FE08` follows `1701:FE08` channel 1 (brake pressure), so it looks like a received signal |
-| `1676` | Second (redundant) steering controller? | same 44 DIDs as `1670`, sibling (not identical) part numbers; `3019` and `D900` read the same angle as `1670` within 1 LSB in 11 snapshots |
+| `1676` | Power steering, second channel | same 50 DIDs as `1670`, sibling (not identical) part numbers; `3019`/`D900` read the same angle as `1670` within 0-2 counts (up to 4 while turning); `D901` assist load peaks at full lock on both |
 | `1701` | Brake system (BSCM) | `F80A` reads `BSCM-BrakeSystem` (2026-11-12); config `BRP417EA`; shares 29 DIDs with `1631`; brake pressure/pedal candidates `FE08`, `D905`/`D906` |
 | `1A01` | Body / central electronics | lamps, doors |
 | `1A11` | Climate | flap positions |
