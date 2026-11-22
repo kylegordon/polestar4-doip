@@ -29,6 +29,7 @@ body:
     id: software
     attributes:
       label: Car software version
+      description: The exact software version the car or the Polestar app shows, e.g. 4.2.11. Data from different versions is kept apart.
       placeholder: e.g. 4.2.11
     validations:
       required: true
@@ -43,7 +44,7 @@ body:
     id: scan
     attributes:
       label: Scan results
-      description: Attach my-scan.csv (module, DID, status, length) made with `./p4 export --format csv | cut -d, -f1-4 > my-scan.csv`.
+      description: Attach my-scan.csv (module, DID, status, length) made with `./p4 export --format csv --no-data | cut -d, -f1-4 > my-scan.csv`.
   - type: textarea
     id: notes
     attributes:

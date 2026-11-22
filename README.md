@@ -118,7 +118,7 @@ Unknown plan keys are an error (a typo cannot silently become a default). `--dry
 | `./p4 ranges --module 1601` | Suggested `--ranges` specs from answered DIDs, per module or an `--all` union; reports how much `DEFAULT_RANGES` already covers |
 | `./p4 tree` | DID coverage per module as a 0x1000-block bar |
 | `./p4 runs` | Run days with scan/DTC/watch counts and size |
-| `./p4 export --format json` | Export recorded DID facts (masked values stay zeros); `--format csv --out file` |
+| `./p4 export --format json` | Export recorded DID facts (masked values stay zeros); JSON carries `export_schema`, the car `release` and `release_read_on` (month of the latest stored `1001:D0D0` read; rows can be older) and the tool commit. `--format csv --out file`; `--no-data` leaves out every value (for sharing) |
 | `./p4 report 2026-11-13` | Markdown summary of a run day: scans, DTCs, watches, marks |
 | `./p4 didmap` | Regenerate `docs/did-map.csv` and `docs/coverage.csv` (per module: DIDs tried, answering, refused; counts only) from `runs/`; `--check` exits 1 when either is stale |
 | `./p4 import-legacy` | Convert the 2026-11-10 text sweeps in `local/reads/` into `runs/` |

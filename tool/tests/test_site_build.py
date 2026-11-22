@@ -17,7 +17,7 @@ from p4doip.site.inputs import Inputs  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # What the builder reads; a tree holding only these (plus poisoned private dirs) must build.
-INPUTS = ["catalogue/signals.yaml", "catalogue/hazards.yaml", "catalogue/modules.yaml", "docs/coverage.csv", "docs/findings.md",
+INPUTS = ["catalogue/signals.yaml", "catalogue/hazards.yaml", "catalogue/modules.yaml", "catalogue/software.yaml", "docs/coverage.csv", "docs/findings.md",
           "scripts/patterns.txt"]
 
 
@@ -290,3 +290,21 @@ def test_pages_with_coverage_bars_carry_the_bar_style():
     from p4doip.render import BAR_CSS
     from p4doip.site import build
     assert BAR_CSS in build.SITE_CSS  # the bars are empty boxes without it
+
+
+def test_banner_release_comes_from_the_timeline():
+    assert site_build.car_release([{"release": "4.2.11", "to": "2026-11-22"}, {"release": "4.3.0", "to": None}]) == "4.3.0"
+    assert site_build.car_release([{"release": "4.2.11", "from": "2026-11-10"}]) == "4.2.11"  # no "to" key = open
+    for bad in ([], [{"release": "4.2.11", "to": "2026-11-22"}],  # none open
+                [{"release": "4.2.11", "to": None}, {"release": "4.3.0", "to": None}],  # two open
+                [{"release": 4.3, "to": None}]):  # unquoted version loaded as a float
+        with pytest.raises(ValueError):
+            site_build.car_release(bad)
+
+
+def test_banner_on_every_page_follows_the_timeline(site):
+    with open(os.path.join(REPO, "catalogue", "software.yaml")) as f:
+        car = site_build.CAR_TEMPLATE % site_build.car_release(yaml.safe_load(f))
+    for name in site[1]:
+        assert car in page(site, name), name
+

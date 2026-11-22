@@ -1758,8 +1758,34 @@ def cmd_doctor(args):
         raise SystemExit("%d check(s) failed" % len(failed))
 
 
+EXPORT_SCHEMA = 1
+
+
+def stored_release() -> tuple[str | None, str | None]:
+    """(release, month read YYYY-MM) from the latest stored OK 1001:D0D0 read (ASCII-hex text); (None, None) if none is stored.
+
+    Offline: never reads the car. A stored read that does not decode to a version is reported on stderr and gives None,
+    so a contributor can tell "never read" (no warning) from "read but not understood" (warning)."""
+    rec = store.load_scans(0x1001).get(0xD0D0)
+    if not rec or rec.get("status") != "ok":
+        return None, None
+    raw = rec.get("data") or ""
+    day = str(rec.get("t", ""))[:7] or None  # month only: exports may be shared
+    try:
+        text = bytes.fromhex(bytes.fromhex(raw).decode("ascii").strip()).decode("ascii").strip()
+    except (ValueError, UnicodeDecodeError):
+        text = ""
+    if re.fullmatch(r"\d+(\.\d+){1,3}", text):
+        return text, day
+    print("warning: stored 1001:D0D0 read (%s) is not a release string: %r" % (day, raw[:80]), file=sys.stderr)
+    return None, day
+
+
 def cmd_export(args):
-    """Export recorded DID facts as JSON or CSV (offline). Values for masked DIDs are always zeros."""
+    """Export recorded DID facts as JSON or CSV (offline). Values for masked DIDs are always zeros.
+
+    JSON is {"export_schema", "release", "release_read_on", "tool", "commit", "rows"}: release is the latest stored
+    1001:D0D0 read (null when none is stored) and applies to the car at that day, not to every row (rows can span days). --no-data leaves out every DID value (module, DID, status and length only)."""
     names = decode.load_dids()
     sigs = decode.load()
     sig_by: dict[tuple[int, int], list[dict]] = {}
@@ -1778,8 +1804,9 @@ def cmd_export(args):
                    "name": names.get(did, {}).get("name", ""),
                    "signals": [s["id"] for s in sig_by.get((tgt, did), [])]}
             if rec["status"] == "ok":
-                data = rec.get("data", "")
-                row["data"] = "00" * (len(data) // 2) if did in MASKED_DIDS else data
+                data = rec.get("data") or ""
+                if not args.no_data:
+                    row["data"] = "00" * (len(data) // 2) if did in MASKED_DIDS else data
                 row["length_bytes"] = len(data) // 2
             elif rec["status"] == "nrc":
                 row["code"] = rec.get("code", "")
@@ -1787,7 +1814,10 @@ def cmd_export(args):
                 row["why"] = rec.get("why", "")
             rows.append(row)
     if args.format == "json":
-        text = json.dumps(rows, indent=1, sort_keys=True) + "\n"
+        release, read_on = stored_release()
+        doc = {"export_schema": EXPORT_SCHEMA, "release": release, "release_read_on": read_on, "tool": __version__,
+               "commit": os.environ.get("P4_COMMIT", ""), "rows": rows}
+        text = json.dumps(doc, indent=1, sort_keys=True) + "\n"
     else:
         import csv as _csv
         import io
@@ -1990,6 +2020,7 @@ def main(argv=None):
     s.add_argument("--module", type=hexint, help="one module (default: every catalogue module)")
     s.add_argument("--out", metavar="FILE", help="write here instead of stdout")
     s.add_argument("--all", action="store_true", help="include timeout rows too")
+    s.add_argument("--no-data", action="store_true", help="leave out DID values: module, DID, status and length only (for sharing)")
     s.set_defaults(fn=cmd_export)
 
     s = sub.add_parser("report", help="markdown summary of one run day (offline)")

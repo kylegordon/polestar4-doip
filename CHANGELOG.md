@@ -3,6 +3,12 @@
 Owned by the project; newest first. This file records tool, catalogue and documentation changes —
 observations about the car belong in docs/findings.md and DISCOVERIES.md, not here.
 
+## 2026-11-22 (5) — export header, site banner from the timeline
+
+- `p4 export`: JSON is now an object (`export_schema` 1, `release` from a stored `1001:D0D0` read or null, `tool`, `commit`, `rows`); new `--no-data` leaves out every DID value. CSV columns unchanged.
+- Site: the banner takes the car's current release from `catalogue/software.yaml` (was hard-coded 4.2.11); the contribute page and the scan-results issue template use `--no-data`, and the template asks for the exact software version.
+- `AGENTS.md`: rules for other owners' cars (same test to confirm; same-release differences are variant notes) and the timeline file.
+
 ## 2026-11-22 (4) — software timeline
 
 - `catalogue/software.yaml`: new; the car's release over time (4.2.11 from 2026-11-10), for versioning data before the 4.3.0 update. Tag `car-4.2.11` marks the last catalogue state on 4.2.11.

@@ -1184,11 +1184,47 @@ def test_export_json_and_csv_mask_identifiers(p4, root):
     store.append_jsonl(store.scan_path(0x1601, "2026-11-12"),
                        {"tgt": "1601", "did": "F190", "status": "ok", "data": "41" * 17})
     store.append_jsonl(store.scan_path(0x1601, "2026-11-12"), {"tgt": "1601", "did": "E37B", "status": "ok", "data": "03"})
-    recs = json.loads(p4("export", "--module", "1601"))
-    f190 = next(r for r in recs if r["did"] == "F190")
+    doc = json.loads(p4("export", "--module", "1601"))
+    assert doc["export_schema"] == 1 and doc["release"] is None and "commit" in doc
+    f190 = next(r for r in doc["rows"] if r["did"] == "F190")
     assert f190["data"] == "00" * 17
     csv_text = p4("export", "--module", "1601", "--format", "csv")
-    assert csv_text.splitlines()[0].startswith("module,did,status") and "F190" in csv_text
+    assert csv_text.splitlines()[0] == "module,did,status,length_bytes,data,nrc,name,signals,why" and "F190" in csv_text
+
+
+def test_export_release_from_stored_d0d0_and_no_data(p4, root):
+    release = "4.2.11".ljust(30).encode().hex().encode().hex()  # ASCII-hex text, as 1001 sends it
+    store.append_jsonl(store.scan_path(0x1001, "2026-11-12"), {"tgt": "1001", "did": "D0D0", "status": "ok", "data": release,
+                                                              "t": "2026-11-12T09:00:00+00:00"})
+    store.append_jsonl(store.scan_path(0x1601, "2026-11-12"), {"tgt": "1601", "did": "E37B", "status": "ok", "data": "03"})
+    store.append_jsonl(store.scan_path(0x1601, "2026-11-12"), {"tgt": "1601", "did": "F190", "status": "ok", "data": "41" * 17})
+    store.append_jsonl(store.scan_path(0x1601, "2026-11-12"), {"tgt": "1601", "did": "E37C", "status": "nrc", "code": "31"})
+    doc = json.loads(p4("export", "--module", "1601"))
+    assert doc["release"] == "4.2.11" and doc["release_read_on"] == "2026-11"
+    bare = json.loads(p4("export", "--module", "1601", "--no-data"))
+    assert not [r for r in bare["rows"] if "data" in r]
+    row = next(r for r in bare["rows"] if r["did"] == "E37B")
+    assert row["length_bytes"] == 1
+    csv_rows = p4("export", "--module", "1601", "--format", "csv", "--no-data").splitlines()
+    assert any(line.startswith("1601,E37B,ok,1,,") for line in csv_rows)
+    assert any(line.startswith("1601,F190,ok,17,,") for line in csv_rows)  # masked DID: no value at all
+    # a later update: the latest stored read wins
+    newer = "4.3.0".ljust(30).encode().hex().encode().hex()
+    store.append_jsonl(store.scan_path(0x1001, "2026-11-23"), {"tgt": "1001", "did": "D0D0", "status": "ok", "data": newer,
+                                                              "t": "2026-11-23T10:00:00+00:00"})
+    assert json.loads(p4("export", "--module", "1601"))["release"] == "4.3.0"
+
+
+@pytest.mark.parametrize("rec", [
+    {"status": "nrc", "code": "31"},
+    {"status": "ok", "data": "ZZ"},
+    {"status": "ok", "data": "4.2.11".encode().hex()},  # single-encoded: not how 1001 sends it
+    {"status": "ok", "data": "abc".encode().hex().encode().hex()},
+    {"status": "ok", "data": None},
+])
+def test_export_release_is_null_for_unusable_d0d0(p4, root, rec):
+    store.append_jsonl(store.scan_path(0x1001, "2026-11-12"), dict({"tgt": "1001", "did": "D0D0"}, **rec))
+    assert json.loads(p4("export", "--module", "1001"))["release"] is None
 
 
 def test_report_summarises_a_day(p4, root):

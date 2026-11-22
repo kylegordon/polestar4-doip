@@ -21,7 +21,22 @@ from .inputs import Inputs
 REPO_URL = "https://github.com/kylegordon/polestar4-doip"
 SOURCE_URL = REPO_URL + "/blob/main/"
 OWNER = "kylegordon"  # the owner's GitHub handle; the site names no one else
-CAR = "one UK Polestar 4, customer software 4.2.11"
+CAR_TEMPLATE = "one UK Polestar 4, customer software %s"
+
+
+def car_release(timeline: list) -> str:
+    """The current release from catalogue/software.yaml: the one entry with no "to" (missing, null or empty).
+
+    Exactly one open entry is required, and release must be quoted text (an unquoted 4.30 would load as the float 4.3)."""
+    entries = [t for t in timeline or [] if isinstance(t, dict)]
+    current = [t for t in entries if t.get("to") in (None, "")]
+    if len(current) != 1:
+        raise ValueError("catalogue/software.yaml: expected one entry with no 'to', found %d" % len(current))
+    release = current[0].get("release")
+    if not isinstance(release, str) or not release:
+        raise ValueError("catalogue/software.yaml: release must be quoted text, got %r" % (release,))
+    return release
+
 
 NAV = (("index.html", "Start here"), ("modules.html", "Modules"), ("hazards.html", "Hazards"), ("signals.html", "Signals"),
        ("findings.html", "Findings"), ("contribute.html", "Contribute"), ("glossary.html", "Glossary"))
@@ -99,6 +114,7 @@ class Site:
         self.signals = decode.load(inputs.input_path("catalogue/signals.yaml"))
         hazards.clear_cache()
         self.hazards = hazards.load(inputs.input_path("catalogue/hazards.yaml"))
+        self.car = CAR_TEMPLATE % car_release(yaml.safe_load(inputs.read_input("catalogue/software.yaml")))
         known = set(self.modules)
         for sig in self.signals:
             for addr in sig["module"].split(","):
@@ -158,7 +174,7 @@ class Site:
             'Read-only diagnostic reads only; read <a href="hazards.html">Hazards</a> before connecting anything. '
             'No cookies, analytics or third-party scripts. Maintained by %s on GitHub. MIT licence.</p></footer>\n'
             '</body></html>\n'
-        ) % (e(title), SITE_CSS, nav, e(CAR), e(title), body, src, REPO_URL, built, e(OWNER))
+        ) % (e(title), SITE_CSS, nav, e(self.car), e(title), body, src, REPO_URL, built, e(OWNER))
         with open(os.path.join(self.out, name), "w", encoding="utf-8") as f:
             f.write(doc)
         self.pages.append(name)
@@ -435,7 +451,7 @@ Expected: progress for a few minutes, then a list of the data identifiers that a
 <br><span class="stop">Stop if</span> a module stops answering, a warning lamp appears or the car goes to sleep.
 Follow the recovery steps on the Hazards page and do not repeat the read.</li>
 <li><b>Prepare what to send.</b> Share which identifiers answered and their lengths, never their values:
-<pre>./p4 export --format csv | cut -d, -f1-4 &gt; my-scan.csv</pre>
+<pre>./p4 export --format csv --no-data | cut -d, -f1-4 &gt; my-scan.csv</pre>
 That keeps four columns: module, DID, status and length. Open the file and check it before you share it.</li>
 <li><b>Send it.</b> <a href="%(repo)s/issues/new?template=scan-results.yml">Open a scan results issue</a> and attach
 <code>my-scan.csv</code> and the <code>./p4 discover</code> output, with your market and software version.</li>
