@@ -11,7 +11,7 @@ Confidence follows `catalogue/signals.yaml`: **C** = the same change seen at lea
 Unattended in park: climate and seat heat driven from the Polestar app (through Home Assistant) with nobody in the car, a sweep of every readable string the modules return, and a comparison of two whole-car snapshots taken two days apart on the same software (4.2.11).
 
 **New**
-- `1015` is most likely the 360 camera and park assist module (from its own strings; not yet tested with the camera view): it lists four surround-view cameras (OmniVision `OX03C10` sensors), holds the parking sensor distances, and runs park-assist software (`PAS_V2.8.2`).
+- `1015` is most likely the 360 camera and park assist module (from its own strings; not yet tested with the camera view): it lists four surround-view cameras (OmniVision `OX03C10` sensors), holds the parking sensor distances, and runs park-assist software (`PAS_V2.8.2`). Its label WAM is Volvo's abbreviation for Wide Angle vision Module, the 360 side-camera unit in a Volvo technical bulletin ([NHTSA copy](https://static.nhtsa.gov/odi/tsbs/2019/MC-10170176-9999.pdf)).
 - Remote climate: `1A11:9804` byte 3 shows climate running (C); `1A11:D214` is a log that gains an entry at each climate start (P); `980E` byte 0 may be the blower level (P).
 - The app's target temperature is applied only when climate starts (C): started at 28 °C both temperature flaps go straight to full hot, at 16 °C they start near cold. Changing it while climate runs does nothing.
 - Seat heat from the app is also applied at climate start and dropped when it stops. The app's front-left seat is `1A28` (the passenger seat on this right-hand-drive car), front-right `1A27` (driver), rear-left and rear-right the two halves of `1A29` (twice each).

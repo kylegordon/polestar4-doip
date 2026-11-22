@@ -18,6 +18,8 @@ Read `README.md` (tool, hazards, commands), `docs/did.md` (DID backlog) and `CHA
   `local/session-log.md`; one pass is P. Names from third-party tools, catalogues or other modules are
   leads only: test them on this car before any name is published, and catalogue the test result (C or
   P) with its own evidence, named in our own words for only what the test showed, never the borrowed label.
+  Manufacturer documentation (Volvo/Polestar technical bulletins, manuals, certification pages) is not a borrowed
+  name: it may be quoted with a link to say what a module label or part is, worded as "per <source>" (owner 2026-11-22).
   Untested borrowed names stay in `local/`: never in any tracked file (e.g. `catalogue/`, findings leads,
   `docs/did-leads.md`, `DISCOVERIES.md`), commit message, PR or issue, not even as Unconfirmed.
 - DISCOVERIES.md is the project's purpose: any commit that adds or changes what we know about the car

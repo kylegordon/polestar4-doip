@@ -3,6 +3,11 @@
 Owned by the project; newest first. This file records tool, catalogue and documentation changes —
 observations about the car belong in docs/findings.md and DISCOVERIES.md, not here.
 
+## 2026-11-22 (3) — WAM label source
+
+- `docs/findings.md`, `docs/modules.md`, `catalogue/modules.yaml`, `DISCOVERIES.md` (2026.11.22.2 entry): the `1015` label WAM expanded as Wide Angle vision Module, per a Volvo technical bulletin (linked).
+- `AGENTS.md`: cited manufacturer documentation may be quoted for what a label or part is; untested names from tools and catalogues stay leads.
+
 ## 2026-11-22 (2) — 1015 role, remote climate, steering channels
 
 - `catalogue/modules.yaml`: `1015` role 360 camera / park assist (probable); `1670`/`1676` power-steering channels (confirmed); `1656` role 12 V power path?.

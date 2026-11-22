@@ -7,7 +7,7 @@ All 43 modules that answer on this car, with the answering DIDs listed in `did-m
 | `1001` | Gateway (DoIP entity) | addressing |
 | `1011` | Telematics | SIM and modem IDs, assistance phone numbers in DIDs |
 | `1012` | Driver monitoring | guess |
-| `1015` | 360 camera / park assist, most likely | four surround-view camera entries (`E30D`-`E310`, OmniVision `OX03C10`); parking sensor distances `B112`-`B121`; software `PAS_V2.8.2` |
+| `1015` | 360 camera / park assist, most likely (label WAM: Volvo's Wide Angle vision Module) | four surround-view camera entries (`E30D`-`E310`, OmniVision `OX03C10`); parking sensor distances `B112`-`B121`; software `PAS_V2.8.2` |
 | `1023` | Key system control module (BNCM), Marquardt | reports `BNCM` and `MARQUARDT`, matching the manual's key system certification (BNCM model GE1; the FCC label drawing is headed Lotus, see [siblings](siblings.md)); the phone charger is a separate Changzhou Tenglong part |
 | `1201` | Infotainment | park signal `D938` |
 | `1202` | Camera / vision | guess; a second address on the infotainment unit (same core part and serial as `1201`) |
