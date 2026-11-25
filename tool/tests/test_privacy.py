@@ -25,6 +25,19 @@ def test_mask(text, hidden):
     assert hidden in privacy.mask(text)
 
 
+def test_android_build_ids_stay_but_numbers_around_them_do_not():
+    fp = "Brand/product/device:15/AAG5.251031.001/0000000:user/release-keys"
+    assert privacy.mask(fp) == fp
+    assert privacy.mask("was SAG3.230621.002") == "was SAG3.230621.002"
+    # a serial next to a build ID is still hidden, and a build-ID-shaped run inside a longer number is not exempt
+    assert privacy.mask("AAG5.251031.001 sn 1234567890") == "AAG5.251031.001 sn [number hidden]"
+    assert privacy.mask("Android AAG5.251031.001.") == "Android AAG5.251031.001."
+    assert "1234567890" not in privacy.mask("AAG5.251031.001-1234567890")
+    for joined in ("9AAG5.251031.0019", "AAG5.251031.001.123", "AAG5.251031.001-234567890",
+                   "AAG5.251031.001 1234 5678", "12345678 AAG5.251031.001", "aag5.251031.001"):
+        assert "251031" not in privacy.mask(joined), joined
+
+
 def test_readable_text_keeps_the_whole_payload_contract():
     assert privacy.readable_text(b"BOOT v1.2.3".hex()) == "BOOT v1.2.3"
     assert privacy.readable_text(b"\x01\x02\x03\x04\x05".hex()) == ""
@@ -64,3 +77,7 @@ def test_text_of_prefers_whole_payload_then_falls_back():
     assert privacy.text_of(b"BOOT v1".hex()) == "BOOT v1"
     raw = bytes.fromhex("deadbeefcafe") + b"EMBEDDED"
     assert privacy.text_of(raw.hex()) == "EMBEDDED"
+
+
+def test_readable_text_keeps_an_android_build_id():
+    assert "AAG5.251031.001" in privacy.readable_text(b'{"build_fingerprint":"x:15/AAG5.251031.001/y"}'.hex())

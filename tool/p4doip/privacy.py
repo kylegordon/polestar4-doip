@@ -1,7 +1,7 @@
 """Text extraction and identifier masking shared by the CLI and the status site.
 
 One implementation, one set of tests: the VIN, serials, emails, phone numbers and long
-digit runs are hidden the same way wherever a DID value is shown. `stored_value` is also
+digit runs (except Android build IDs) are hidden the same way wherever a DID value is shown. `stored_value` is also
 the single definition of which DIDs may never be written to `runs/` in the clear.
 """
 import re
@@ -12,6 +12,9 @@ MASKED_DIDS = {0xF190, 0xF18C, 0xF192, 0xF198}
 
 VIN_LIKE = re.compile(r"(?:YSM|LPS|LRW|YV1)[A-HJ-NPR-Z0-9]{14}", re.I)  # Polestar/Volvo/Geely WMIs
 LONG_NUMBER = re.compile(r"\d(?:[ .-]?\d){9,}")  # ICCID, IMEI, phone numbers, serials; separators allowed
+# Android build IDs (AAG5.251031.001, SAG3.230621.002): public release names, owner 2026-11-25; kept out of LONG_NUMBER
+# Not exempt when digits join it across a separator (the whole run is then masked as before).
+ANDROID_BUILD = re.compile(r"(?<![\w.])(?<!\d[ -])[A-Z]{2,3}\d[A-Z]?\.\d{6}\.\d{3}(?!\w|\.\w|[ .-]?\d)")
 EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 PHONE = re.compile(r"\+[1-9][0-9]{1,2}[ -]?[0-9]{2,4}[ -]?[0-9]{3,4}[ -]?[0-9]{3,4}")
 
@@ -29,7 +32,11 @@ def mask(s: str) -> str:
     s = VIN_LIKE.sub("[VIN hidden]", s)
     s = EMAIL.sub("[email hidden]", s)
     s = PHONE.sub("[phone hidden]", s)
-    return LONG_NUMBER.sub("[number hidden]", s)
+    out, last = [], 0
+    for m in ANDROID_BUILD.finditer(s):
+        out += [LONG_NUMBER.sub("[number hidden]", s[last:m.start()]), m.group()]
+        last = m.end()
+    return "".join(out) + LONG_NUMBER.sub("[number hidden]", s[last:])
 
 
 def utf16_ascii(raw: bytes) -> bytes:
@@ -57,7 +64,7 @@ def readable_text(hexdata: str) -> str:
 
     Plain ASCII, UTF-16LE ('S\\0W\\0...') and ASCII-hex-wrapped ('424f4f54...' = 'BOOT...') payloads all reach
     the same masking: VIN-like strings, email addresses, phone numbers and any run of 10+ digits (spaces, dots
-    or dashes allowed between them) are hidden, so the output can go into a web search. Wider than
+    or dashes allowed between them; Android build IDs such as AAG5.251031.001 excepted) are hidden, so the output can go into a web search. Wider than
     scripts/prepublish-check.sh on purpose.
     """
     try:

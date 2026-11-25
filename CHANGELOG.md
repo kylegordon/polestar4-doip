@@ -3,6 +3,10 @@
 Owned by the project; newest first. This file records tool, catalogue and documentation changes —
 observations about the car belong in docs/findings.md and DISCOVERIES.md, not here.
 
+## 2026-11-25 (2) — Android build IDs are public
+
+- `privacy.mask`: Android build IDs (e.g. `AAG5.251031.001`) are no longer hidden as long numbers (owner: public information); numbers around them still are. Tests added.
+
 ## 2026-11-25 — car release 4.3.0
 
 - `catalogue/software.yaml`: 4.2.11 closed on 2026-11-22; 4.3.0 open from 2026-11-22.

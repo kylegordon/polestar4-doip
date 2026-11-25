@@ -5,7 +5,8 @@ free text from docs/ and catalogue/ cannot carry a session date or an identifier
 
 Out: `scan_dir()` fails the build if any written file
 - matches a pattern in scripts/patterns.txt (the list prepublish-check.sh uses),
-- holds a line that `privacy.mask` would change (VIN, email, phone, any 10+ digit run),
+- holds a line that `privacy.mask` would change (VIN, email, phone, any 10+ digit run
+  other than an Android build ID),
 - holds an exact date or time of day,
 - holds a VIN or other identifier as UTF-16 text or as hex-wrapped text (decoded with the same helpers
   `p4 strings` uses).
