@@ -30,7 +30,7 @@ Read-only mapping of a Polestar 4's diagnostic data over DoIP (ISO 13400) throug
 | Path | What |
 |---|---|
 | `catalogue/signals.yaml` | Decoded signals with their encoding and real examples the tests check. Confidence C = the same change seen at least twice in both directions; P = anything less |
-| `catalogue/modules.yaml` | The 43 modules that answer, with a label and status confirmed / unverified / unknown |
+| `catalogue/modules.yaml` | The 45 modules that answer, with a label and status confirmed / unverified / unknown |
 | `catalogue/hazards.yaml` | Blocked and cautioned reads; the tool loads it before every car-facing command |
 | `catalogue/hardware.yaml` | Hardware: core and delivery part numbers per module, which addresses share a unit, physical components with sources |
 | `catalogue/dids.yaml` | DID registry: names, families, which values are per-car (masked) |

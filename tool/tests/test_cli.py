@@ -307,7 +307,7 @@ def test_identify_prints_answers_and_does_not_overwrite_with_nothing(p4, root, s
 def test_all_means_every_catalogue_module(p4, sim):
     p4("dtc", "all")
     asked = {t for t, uds in sim.seen if uds[0] == 0x19}
-    assert {0x1601, 0x1316, 0x1A01, 0x1BB4} <= asked and len(asked) == 43
+    assert {0x1601, 0x1316, 0x1A01, 0x1BB4} <= asked and len(asked) == 45
 
 
 def test_mark_goes_to_session_log_and_run_dir(p4, root):

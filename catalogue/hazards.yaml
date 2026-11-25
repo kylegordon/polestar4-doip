@@ -31,6 +31,24 @@
    why: "module stopped answering after this read 3 s after wake; start-up race likely",
    evidence: "DISCOVERIES.md 2026.11.13 correction"}
 
+# 1691: a second address for 1601 (same parts, software and ECU serial, seen after the 4.3.0 update). The same
+# cautions apply until a paced test shows otherwise; on 2026-11-22 all five refused here (NRC 31) with no upset.
+- {module: "1691", did: "D928", action: caution, severity: high,
+   why: "second address of 1601, where this read was followed by the module going silent; mirrored as a precaution",
+   evidence: "DISCOVERIES.md 2026.11.13 correction (on 1601); 2026.11.25 (1691 = 1601)"}
+- {module: "1691", did: "D929", action: caution, severity: high,
+   why: "second address of 1601, where this read was followed by the module going silent; mirrored as a precaution",
+   evidence: "DISCOVERIES.md 2026.11.13 correction (on 1601); 2026.11.25 (1691 = 1601)"}
+- {module: "1691", did: "D92A", action: caution, severity: high,
+   why: "second address of 1601, where this read was followed by the module going silent; mirrored as a precaution",
+   evidence: "DISCOVERIES.md 2026.11.13 correction (on 1601); 2026.11.25 (1691 = 1601)"}
+- {module: "1691", did: "D92B", action: caution, severity: high,
+   why: "second address of 1601, where this read was followed by the module going silent; mirrored as a precaution",
+   evidence: "DISCOVERIES.md 2026.11.13 correction (on 1601); 2026.11.25 (1691 = 1601)"}
+- {module: "1691", did: "D92C", action: caution, severity: high,
+   why: "second address of 1601, where this read was followed by the module going silent; mirrored as a precaution",
+   evidence: "DISCOVERIES.md 2026.11.13 correction (on 1601); 2026.11.25 (1691 = 1601)"}
+
 # 1251 (head-up display): continuous polling while driving makes the car report Pilot Assist unavailable (2026-11-15, owner watching
 # the display, not unsafe; clears when the reads stop). Pass 1 17:48:12-17:48:51 (these nine + 1601:EE27), errors; all traffic stopped,
 # errors stopped; pass 2 17:50:11 same watch, errors; pass 3 17:52:11 these nine only, errors. Two single reads, five quick reads of D110

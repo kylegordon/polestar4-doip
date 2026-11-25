@@ -8,7 +8,7 @@ per candidate: verdict, evidence, procedure pointer, entry pointer), [did-sessio
 
 ## State
 
-- `docs/did-map.csv`: 4,401 answering module:DID pairs (status ok) across 43 modules — 1,805 distinct DIDs.
+- `docs/did-map.csv`: 5,312 answering module:DID pairs (status ok) across 45 modules — 1,947 distinct DIDs (2026-11-25, after the 4.3.0 rescans; `1691` alone adds 701).
 - `catalogue/signals.yaml`: 113 decoded signals (105 + the eight catalogue-ready §1 rows landed 2026-11-14).
 - Transfer candidates ([did-ledger.md](did-ledger.md) T01-T36): 36 — 0 confirmable-now, 7 settle-from-data
   (T04, T24, T27, T28, T30, T31, T32), 17 needs-session, 5 ruled-out (T23, T25, T26, T29, T33), 7 integrated

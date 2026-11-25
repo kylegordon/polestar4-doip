@@ -83,7 +83,7 @@ def test_every_page_links_its_source_and_the_footer_is_there(site):
         text = page(site, name)
         assert site_build.SOURCE_URL in text, name
         assert "Built from commit <code>0123456</code>" in text  # 7 hex digits: never a 10-digit run
-        assert "one UK Polestar 4, customer software 4.2.11" in text
+        assert "one UK Polestar 4, customer software 4.3.0" in text
 
 
 def test_findings_leads_and_links(site):

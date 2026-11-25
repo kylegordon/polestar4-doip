@@ -38,7 +38,7 @@ Amendments (module-list extensions of existing `signals.yaml` entries; no new ex
 
 | Module | DID | Established decode | Feature | Entry shape | Source |
 |---|---|---|---|---|---|
-| `1001` | `D0D0` | customer software release "4.2.11", ASCII digits stored as ASCII (P) | `encoding: ascii-hex` | `{id: software_release, module: "1001", did: "D0D0", encoding: ascii-hex}`; no payload hex quoted — capture an example | findings.md:19; DISCOVERIES.md:81 |
+| `1001` | `D0D0` | customer software release ("4.2.11", now "4.3.0"), ASCII digits stored as ASCII (P) | `encoding: ascii-hex` | `{id: software_release, module: "1001", did: "D0D0", encoding: ascii-hex}`; no payload hex quoted — capture an example | findings.md:19; DISCOVERIES.md:81 |
 | `1011` | `FD4A` | release text `P417_4.2.11_…` | `encoding: ascii-hex` | same shape | findings.md:24; DISCOVERIES.md:81 |
 | `1635` | `DA31` | 130 x u16 cell-group voltages in mV, 110 valid (`EE19` = 110); sum matches `497C` within 0.05 V in nine snapshots | array | count 130, type u, scale 0.001 V, valid count from `EE19`; no raw quoted | findings.md:129; DISCOVERIES.md:84 |
 | `1635` | `EE83` | 30 pack temperatures, 28 valid (`EE20` = 28), x 0.01 °C - 50 (6.5-7 °C on a November night) | array | count 30, type u, scale 0.01, add -50, valid count from `EE20` | findings.md:129 |

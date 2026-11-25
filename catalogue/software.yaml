@@ -1,4 +1,5 @@
 # Car software timeline: which release the car ran when (the site banner shows the open entry; per-record mapping later).
 # One car, so the release only changes at an installed update. Evidence = 1001:D0D0 readings (ASCII-hex release string).
 # from/to are UTC; an open "to" means the current release. Days with no D0D0 reading are noted as inferred in "evidence".
-- {release: "4.2.11", from: "2026-11-10", to: null, evidence: "1001:D0D0 = 4.2.11 on 2026-11-10, 11, 12, 14, 20, 22; days between inferred (no update seen)"}
+- {release: "4.2.11", from: "2026-11-10", to: "2026-11-22", evidence: "1001:D0D0 = 4.2.11 on 2026-11-10, 11, 12, 14, 20, 22 (before the install); days between inferred (no update seen)"}
+- {release: "4.3.0", from: "2026-11-22", to: null, evidence: "over-the-air install finished 2026-11-22 15:34; 1001:D0D0 = 4.3.0 the same day; later days inferred (no update seen)"}

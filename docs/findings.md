@@ -2,23 +2,25 @@
 
 What has been learned about one car, module by module, including leads that are not yet confirmed. Shared so other owners can check them on their own cars.
 
-- **Car**: Polestar 4 Coupe (no rear window; camera rear-view mirror), UK, right-hand drive, customer software release 4.2.11 (EMEA).
+- **Car**: Polestar 4 Coupe (no rear window; camera rear-view mirror), UK, right-hand drive, customer software release 4.3.0 (EMEA) since 2026-11-22, 4.2.11 before (timeline in [`catalogue/software.yaml`](../catalogue/software.yaml)).
 - **Method**: read-only UDS `0x22` ReadDataByIdentifier over DoIP in the default session, through the OBD port, with the `./p4` tool. No session change, no security access, no writes. Meanings come from watching values change while doing something to the car (opening a door, pressing the brake, driving), not from names on other cars.
 - **Confidence**: as in [`catalogue/signals.yaml`](../catalogue/signals.yaml). **C** = the same change seen at least twice in both directions; **P** = anything less. Signals are referred to by their catalogue `id`.
 - **Lead** = an observation that is not in the catalogue: something moved once, or moved at a plausible time, or fits a plausible encoding. Each lead says how strong it is.
 - Every answering DID, per module, is in [`docs/did-map.csv`](did-map.csv); module evidence in [`docs/modules.md`](modules.md); the dated history in [`DISCOVERIES.md`](../DISCOVERIES.md). Counts below are answering DIDs as of 2026-11-13: the default scan ranges on every module, and the full `0000`-`FFFF` range on `1A01`, `1015`, `1011`, `1201`, `1601`, `1701`, `1316`, `1317`, `1344` and `1650`.
 - Most modules have never been watched while something happens to them. "Nothing seen" usually means "not looked at in the right moment", not "absent".
 
+**Update to 4.3.0 (2026-11-22)**: every module was read across its whole `0000`-`FFFF` range again after the over-the-air update (2026-11-22 to 11-25; `1012` does not answer while parked and is still to do). The answering DID sets are unchanged except on `1202` (gains `FD55`), `1656` (37 → 52), `1A01` (gains `7022`, `C0A3`, `C0A5`; `42ED` also answered) and `1C01` (gains `F18A`; `EE11`, `EE21`, `EE31` now refuse; its record DIDs change size). Software part numbers changed on 23 modules. Two addresses answered for the first time, `1691` (a second address for `1601`) and `1B61` (unknown); neither answers the `1FFF` broadcast, so they may have been there before and missed by the earlier address sweeps. Readings of `1001:D0D0` give the release.
+
 **Common to every module**: `DD01` odometer in km (`odometer`, P), `DD0A` power mode (`power_mode`, P: `01` parked, `02` awake, `0d` on, which includes sitting in P, so it does not mean driving), `DD00` a clock in 0.1 s steps, the same on every module to within a few counts. Against the laptop clock its reads from 2026-11-11 to 2026-11-15 (1,165 on `1316`) lie on one straight line (0.4 s scatter) across the overnight sleeps, so it keeps counting while the car sleeps; extrapolated back, zero falls in 2025. Module event logs stamp their entries with it (2026-11-16). `D904` on several modules moves `0x96`/`0x97` with load: probably supply voltage in 0.1 V (lead, weak).
 
-**OBD-on-UDS info blocks** (`F400`-`F4FF`, `F800`-`F8FF`, VIN skipped) were read on 42 modules. Unlike a US car (issue #2), almost nothing answers here: only `1701`, `1675`, `1601` (`F800` only) and `1670`/`1676` (`F804`, all zero). So `F80A` module names are not available for most modules on this car.
+**OBD-on-UDS info blocks** (`F400`-`F4FF`, `F800`-`F8FF`, VIN skipped) were read on 42 modules. Unlike a US car (issue #2), almost nothing answers here: only `1701`, `1675`, `1601` (`F800` only) and `1670`/`1676` (`F804`, all zero). So `F80A` module names are not available for most modules on this car. Since 4.3.0 `1656` answers them too, with an `F80A` name.
 
 ## 1001 Gateway
 
 - **What it is**: the DoIP entity (logical address `1001`); tester `0E80`, functional address `1FFF`. 88 DIDs. Gateway firmware build string dated December 2025.
-- **Leads**: `D0D0` holds the customer software release "4.2.11", stored as ASCII hex digits written in ASCII (P; the decoder supports `encoding: ascii-hex`, but no full-payload raw is quoted here yet, so it is not catalogued). The same release appears as text in a telematics update record (`1011`).
+- **Leads**: `D0D0` holds the customer software release ("4.2.11", "4.3.0" since 2026-11-22), stored as ASCII hex digits written in ASCII (P; the decoder supports `encoding: ascii-hex`, but no full-payload raw is quoted here yet, so it is not catalogued). The same release appears as text in a telematics update record (`1011`).
 - **Not found**: no range or distance-to-empty value; values that happened to match the displayed range were configuration or hash bytes.
-- **Name (2026-11-22)**: Polestar's own bulletins call the Polestar 4 gateway VGM, Vehicle Gateway Module (TJ 37280, replaced for key-fob and NFC unlock faults), and on the Polestar 2/3 use VCM for a Vehicle Connectivity Module (TJ 36628). So the VCM label on this address may be wrong; no bulletin says which address the VGM uses. Links in [modules](modules.md#label-sources-manufacturer-bulletins).
+- **Name (2026-11-22)**: Polestar's own bulletins call the Polestar 4 gateway VGM, Vehicle Gateway Module (TJ 37280, replaced for key-fob and NFC unlock faults), and on the Polestar 2/3 use VCM for a Vehicle Connectivity Module (TJ 36628). So the VCM label on this address may be wrong; no bulletin says which address the VGM uses. Links in [modules](modules.md#label-sources-manufacturer-bulletins). This address's own `FD03` build string starts `GEA2VGMP` (version 25.66 on 4.2.11, 25.67 on 4.3.0), which fits it being the VGM.
 
 ## 1011 Telematics
 
@@ -51,7 +53,8 @@ What has been learned about one car, module by module, including leads that are 
 
 ## 1202 Camera / vision
 
-- **What it is**: label guess; not checked. 25 DIDs. A second diagnostic address on the infotainment unit (`1201`): same core and delivery part numbers and the same ECU serial, with its own seven-entry software list (2026-11-15, from the 2026-11-10/11 scans).
+- **What it is**: label guess; not checked. 26 DIDs (25 before 4.3.0). A second diagnostic address on the infotainment unit (`1201`): same core and delivery part numbers and the same ECU serial, with its own seven-entry software list (2026-11-15, from the 2026-11-10/11 scans).
+- **4.3.0 (2026-11-22)**: gains `FD55`, a JSON record whose `build_fingerprint` names an Android 15 build (`Polestar/chameleon_gas/jalapeno:15/AAG5.251031.001/…`). The infotainment's Android recovery screen showed Android 12 (`SAG3.230621.002`) before the update. The rest of the record holds device identifiers and is not published.
 
 ## 1212 Audio amplifier
 
@@ -170,9 +173,10 @@ What has been learned about one car, module by module, including leads that are 
 - **Leads (2026-11-22)**: `EE12` read 232-237 through an overnight 7 kW AC charge while the app reported 225-233 V (r 0.74, about 6 V higher): the AC supply voltage in volts (`ac_supply_voltage`, P). `ffff` with no cable.
 - **Name (2026-11-22)**: CDD = Charger and DCDC Module (Polestar 4 TJ 37772; EX30 TJ 37436, which also traces charge-inlet faults under it): per TJ 37772 the Polestar 4 CDD includes the DC-DC converter; `1650` carries the CDD label (a guess from related cars, though its charge signals fit).
 
-## 1656 Unknown, 12 V power path
+## 1656 Unknown, charging-related
 
-- **What it is**: unknown. Hardware string `HX1100` (`HX11` is the Smart #1 project code, so this part is probably shared with it). 37 DIDs. `4947` and `D110` read 14.0-14.2 V with the car awake: the 12 V rail in mV (another owner reports the same pair). Also answers `EE13`, `4AF5` and `EE30`, DIDs from the battery module's ranges. Guess: DC-DC converter. Issue #2's `F80A` reads a charger-controller name for this address; not readable here.
+- **What it is**: unknown. Hardware string `HX1100` (`HX11` is the Smart #1 project code, so this part is probably shared with it). 37 DIDs. `4947` and `D110` read 14.0-14.2 V with the car awake: the 12 V rail in mV (another owner reports the same pair). Also answers `EE13`, `4AF5` and `EE30`, DIDs from the battery module's ranges. Guess: DC-DC converter. Issue #2's `F80A` reads a charger-controller name for this address; not readable here on 4.2.11.
+- **4.3.0 (2026-11-22)**: 52 DIDs (37 before). The `F4xx`/`F8xx` DIDs that refused before the update now answer, and `F80A` reads `BCC1-B+ChargerCtrl1`: the module's own name for itself includes charger control. Which part of charging it handles is not tested.
 - **Leads**: `1635` also answers `4947`, so the 12 V reading alone does not single out this module.
 
 ## 1670 Power steering
@@ -211,7 +215,7 @@ What has been learned about one car, module by module, including leads that are 
 
 ## 1A01 Central electronics (CEM)
 
-- **What it is**: body control. 332 DIDs (40 before 2026-11-12).
+- **What it is**: body control. 336 DIDs on 4.3.0 (332 on 4.2.11; 40 before 2026-11-12): `7022`, `C0A3` and `C0A5`, which refused before the update, now answer; `42ED` answered too (it refused with "conditions not correct" before, so it may depend on the car's state rather than the release).
 - **Signals**: `ajar` (`42F2`: `01` tailgate, `04` left rear, `08` right rear, `10` left front, `20` right front; C), `bonnet_ajar` (`42F2` bit `80`; P), `charge_lid` (`EFF5`, C since 2026-11-14), `turn_lamps` (`421B`, C), `hazard_button` (`4300`, momentary, active low; C), `stop_lamps` (`4223`, on with the pedal and also on regen deceleration from about 0.6 m/s², with the pedal released; stays on about 2 s after the pedal is released while slowing; C), `reverse_lamp` (`4224`, C), `brake_pedal_cem` (`42F6`, `01` with the pedal pressed; unlike the stop lamps it stays off on regen; C, 2026-11-19), `beam` (`42E7`, `00` off, `40` dipped, `50` main or flash, also auto main beam; C). `power_mode`, `odometer` (P). Added 2026-11-13 (P): `driver_occupied` (`20A8`, `00` seated, `80` empty; 11 snapshots, standby and car on; the last byte of `42F9` follows it), wipers `420A`/`41E9` (toggle out of phase once per wipe). `4218` reads `00`/`20`/`40` and changed with the wiper button: a wiper switch or mode state, not a momentary button.
 - **Leads**: 2026-11-14: `421C` = rear fog lamps (`0000ffff` on; C); one byte of `4222` follows the rear fog too, so `4222` carries more than the welcome lamp. `EE71` byte 1 = steering wheel heating (`02` on; C); other bytes of `EE71` set for a few seconds when the wheel is bumped. On lock, all four door modules also flip `D921` (`80`/`40`), `FE11` (`48`/`0a`) and the handles (`D90C`/`D90D`).
   - `42F2` bits `40` and `02` are set with everything shut (unknown). A door not fully latched keeps its bit and its frameless window dropped. `4443` and `45A3` gain the same door/tailgate bits.
@@ -308,6 +312,7 @@ What has been learned about one car, module by module, including leads that are 
 - **Signals**: `srs_supply_v` (`D112`, x 0.08 V; tracks `1701:F442` at r 0.98-1.00 when the 12 V rail swings; P). **Correction**: 2026.11.12.2 published `D112` bit `02` as the driver belt. It is not: the low bits move with supply voltage several times a second with nothing touched.
 - **Not found**: belt buckle or seat occupancy, watched on 2026-11-13 with the car in standby and on (only `D910`, a counter, changed).
 - **Full scan (2026-11-21)**: whole `0000`-`FFFF` range read while parked: 114 DIDs (57 before). Not yet tested against belts or seat occupancy.
+- **4.3.0 (2026-11-23)**: gains `F18A` = `512013` (the same value as on the front radar `1344`); `EE11`, `EE21` and `EE31` (all `FF` before) now refuse. The three record sets change size: `EE15`/`EE25`/`EE35` 1188 → 1009 bytes and `EE17`/`EE27`/`EE37` 726 → 991 bytes; `5B27` 4 → 1 byte. The did-map keeps every DID that ever answered, so it still lists the three that now refuse.
 
 ## Open questions
 

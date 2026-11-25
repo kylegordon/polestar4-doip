@@ -2,7 +2,7 @@
 # Part numbers are catalogue numbers shared by every car of the same build, not per-car identifiers.
 # Never add serials (F18C, F13F, F192, F198), the VIN or TPMS sensor IDs here.
 #
-# modules: read from runs/*/scan-*.jsonl (2026-11-10 to 2026-11-12), the latest ok read of each DID.
+# modules: read from runs/*/scan-*.jsonl (2026-11-10 to 2026-11-12; 1691 and 1B61 from 2026-11-22; checked against the 4.3.0 reads: only 1015 delivery changed, was 6608262501 A on 4.2.11), the latest ok read of each DID.
 #   label:    usual short name from catalogue/modules.yaml (a guess unless that file says confirmed).
 #   core:     F1AA, "ECU core assembly part number" (Geely numbering, 10 digits + revision): the hardware.
 #   delivery: F1AB, "ECU delivery assembly part number" (Geely numbering): hardware plus its software as shipped.
@@ -16,7 +16,7 @@ modules:
   - {addr: "1001", label: "VCM", core: "6608286997 A", delivery: "6608288544 A", core_80: "80034546 AA"}
   - {addr: "1011", label: "TEM", core: "6608141149 A", delivery: "6608226966 A", core_80: "80016544 AA", f18a: "111003"}
   - {addr: "1012", label: "DMM", core: "6608078471 A", delivery: "6608030450 A", core_80: "80012032 AA"}
-  - {addr: "1015", label: "WAM", core: "6608172950 A", delivery: "6608262501 A", core_80: "80018877 AA", f18a: "210309"}
+  - {addr: "1015", label: "WAM", core: "6608172950 A", delivery: "6608253939 A", core_80: "80018877 AA", f18a: "210309"}
   - {addr: "1023", label: "BNCM", core: "6608217179 A", delivery: "6608217414 A", core_80: "80025880 AA", f18a: "MARQUARDT", part: "6608017285 (F1BB; sold as control unit for wireless charging, perhaps the charger pad)"}
   - {addr: "1201", label: "IHU", core: "6608154964 D", delivery: "6608404040 A", core_80: "80016689 AD", box: "1201+1202"}
   - {addr: "1202", label: "TVM", core: "6608154964 D", delivery: "6608404040 A", core_80: "80016689 AD", box: "1201+1202"}
@@ -28,7 +28,7 @@ modules:
   - {addr: "1316", label: "?", core: "6608445312 A", delivery: "6608445525 A", core_80: "80048580 AA"}
   - {addr: "1317", label: "?", core: "6608445312 A", delivery: "6608445525 A", core_80: "80048580 AA"}
   - {addr: "1344", label: "FLR4", core: "6608116989 A", delivery: "6608116992 B", core_80: "80013788 AA", f18a: "512013"}
-  - {addr: "1601", label: "VDDM", core: "6608412039 A", delivery: "6608411834 A", core_80: "80046410 AA", f18a: "512188"}
+  - {addr: "1601", label: "VDDM", core: "6608412039 A", delivery: "6608411834 A", core_80: "80046410 AA", f18a: "512188", box: "1601+1691"}
   - {addr: "1614", label: "SUM", core: "6608101552 A", delivery: "6608101584 A", core_80: "80012257 AA"}
   - {addr: "1615", label: "SCL", core: "8888921555 B", delivery: "8893949919 G", core_80: "32246210 AB"}
   - {addr: "1631", label: "BCM", core: "8895348749 A", delivery: "8894757214 D", core_80: "80012345 AA", note: "its core_80 value looks like a placeholder, as does its serial"}
@@ -41,6 +41,7 @@ modules:
   - {addr: "1672", label: "SAS", core: "6608093471 A", delivery: "8893438999 D", core_80: "80011749 AA", box: "1633+1672"}
   - {addr: "1675", label: "?", core: "6608138272 A", delivery: "6608138048 A", core_80: "80016120 AA"}
   - {addr: "1676", label: "?", core: "6608192838 A", delivery: "6608193161 A", core_80: "80020467 AA", f18a: "250043"}
+  - {addr: "1691", label: "?", core: "6608412039 A", delivery: "6608411834 A", core_80: "80046410 AA", f18a: "512188", box: "1601+1691"}
   - {addr: "1701", label: "BSCM", core: "6608200097 A", delivery: "6608201462 A", core_80: "80020858 AA"}
   - {addr: "1A01", label: "CEM", core: "6608142846 A", delivery: "6608142902 A", core_80: "80018783 AA"}
   - {addr: "1A11", label: "CCM", core: "8896880284 A", delivery: "8892888175 B", core_80: "80011880 AA"}
@@ -53,6 +54,7 @@ modules:
   - {addr: "1A28", label: "SMP", core: "8896726401 A", delivery: "6608092283 A", core_80: "80011787 AA", f18a: "100057"}
   - {addr: "1A29", label: "SMB", core: "6608178109 A", delivery: "6608176778 A", core_80: "80019179 AA", f18a: "100057", note: "delivery part is listed by a parts shop as a Polestar 4 control unit (2026-11-13 search)"}
   - {addr: "1A30", label: "ILCM", core: "6608160744 A", delivery: "6608160771 A", core_80: "80018908 AA"}
+  - {addr: "1B61", label: "?", core: "6608099800 A", delivery: "6608100879 A", core_80: "80011945 AA"}
   - {addr: "1BB3", label: "HCML", core: "8897232850 A", delivery: "8897232820 C", core_80: "31345594 AA"}
   - {addr: "1BB4", label: "HCMR", core: "8897232850 A", delivery: "8897232820 C", core_80: "31345594 AA"}
   - {addr: "1C01", label: "SRS", core: "6608106198 A", delivery: "6608089887 A", core_80: "80012364 AA"}

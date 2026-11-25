@@ -6,6 +6,25 @@ Confidence follows `catalogue/signals.yaml`: **C** = the same change seen at lea
 
 <!-- New entries go directly below this line, newest first. The heading must be "## <version> - <title>". -->
 
+## 2026.11.25 - Software update 4.3.0: what changed in the modules
+
+The car installed customer release 4.3.0 over the air on 2026-11-22. Before and after the install every module was snapshotted, and afterwards every module was read again across its whole `0000`-`FFFF` range (parked, 2026-11-22 to 11-25), so the two releases can be compared DID by DID.
+
+**New**
+- `1656` now names itself: `F80A` reads `BCC1-B+ChargerCtrl1`, and the module answers 52 DIDs (37 on 4.2.11; the `F4xx`/`F8xx` DIDs that refused before now answer). Its role is still untested, but its own name includes charger control.
+- The infotainment's second address `1202` gains `FD55`, whose build fingerprint names Android 15 (`AAG5.251031.001`); the recovery screen showed Android 12 before the update.
+- `1001`'s own `FD03` build string starts `GEA2VGMP` (25.66 → 25.67 with the update), which fits Polestar's VGM name for the gateway.
+- Two addresses answered for the first time: `1691`, a second address for `1601` (701 of its 702 DIDs, the same parts and software), and `1B61` (29 DIDs, its own part numbers, role unknown). Neither answers the `1FFF` broadcast, so they may have been there on 4.2.11 and missed.
+- `1A01` gains `7022`, `C0A3` and `C0A5` (`42ED` also answered, but it may depend on the car's state). `1C01` gains `F18A` (`512013`, as on the front radar), stops answering `EE11`, `EE21` and `EE31`, and its record DIDs `EE15`/`EE17` (and the `EE2x`/`EE3x` copies) change size.
+- Software part numbers changed on 23 modules; the only hardware-list part number that changed is `1015`'s delivery assembly (`6608262501 A` → `6608253939 A`). Every other module that answered parked answers the same set of DIDs as before, including the full slow read of the driver-assistance computer `1301` (132 DIDs).
+
+**Hazards**
+- The five caution reads on `1601` (`D928`-`D92C`) now also apply to `1691`, its second address. On 4.3.0 `1691` refused all five with no upset, so this is a precaution.
+
+**Looked for, not found**
+- New tyre-pressure DIDs: none appeared on any module. The app's tyre pressures still have no match on the diagnostic side.
+- `1012` (driver monitoring) did not answer while parked; it will be read on a drive.
+
 ## 2026.11.22.2 - 360 cameras on 1015, remote climate and seat heat, Mobileye versions
 
 Unattended in park: climate and seat heat driven from the Polestar app (through Home Assistant) with nobody in the car, a sweep of every readable string the modules return, and a comparison of two whole-car snapshots taken two days apart on the same software (4.2.11).

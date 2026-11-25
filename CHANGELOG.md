@@ -3,6 +3,16 @@
 Owned by the project; newest first. This file records tool, catalogue and documentation changes —
 observations about the car belong in docs/findings.md and DISCOVERIES.md, not here.
 
+## 2026-11-25 — car release 4.3.0
+
+- `catalogue/software.yaml`: 4.2.11 closed on 2026-11-22; 4.3.0 open from 2026-11-22.
+- `catalogue/modules.yaml`: new `1691` (second address for `1601`) and `1B61` (unknown); `1656` role from its own 4.3.0 `F80A` name; `1001` note on its `FD03` string.
+- `docs/did-map.csv`, `docs/coverage.csv`: regenerated with the post-update full scans (`1691`, `1B61`, `1656`, `1A01`, `1C01`, `1202`).
+- `catalogue/hazards.yaml`: `1601` cautions `D928`-`D92C` mirrored to `1691`.
+- `catalogue/hardware.yaml`: `1691` (one unit with `1601`, box `1601+1691`) and `1B61` part numbers; `1015` delivery part updated to its 4.3.0 value.
+- `docs/findings.md`, `docs/modules.md`, `README.md`, `docs/did.md`: 4.3.0 changes; module count 45; `1656` heading now "charging-related".
+- Tests: `catalogue/software.yaml` timeline checked (ISO dates, order, no gaps, one open entry).
+
 ## 2026-11-22 (6) — manufacturer bulletin sources
 
 - `docs/modules.md`: new "Label sources" table: what the module labels mean per Polestar/Volvo technical journals published by NHTSA (17 bulletins, links checked).

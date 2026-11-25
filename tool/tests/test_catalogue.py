@@ -272,3 +272,20 @@ def test_hardware_free_text_hides_no_identifiers():
 def test_hardware_components_are_sourced():
     for c in HARDWARE["components"]:
         assert c["source"] and c["conf"] in ("C", "P", "doc", "owner"), c["name"]
+
+
+def test_software_timeline_is_ordered_and_gapless():
+    # Records will be mapped to releases by these dates: a bad boundary would file readings under the wrong release.
+    import datetime
+
+    with open(os.path.join(REPO, "catalogue", "software.yaml")) as f:
+        timeline = yaml.safe_load(f)
+    assert timeline and len({e["release"] for e in timeline}) == len(timeline)
+    for e in timeline:
+        assert isinstance(e["release"], str) and isinstance(e["from"], str)
+        datetime.date.fromisoformat(e["from"])
+    for e, nxt in zip(timeline, timeline[1:]):
+        assert isinstance(e["to"], str), "only the last entry may be open: %s" % e["release"]
+        datetime.date.fromisoformat(e["to"])
+        assert e["from"] <= e["to"] == nxt["from"], (e, nxt)
+    assert not timeline[-1].get("to"), "the last entry is the current release"

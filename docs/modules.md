@@ -1,6 +1,6 @@
 # Module map
 
-All 43 modules that answer on this car, with the answering DIDs listed in `did-map.csv` across them (default-session `22` reads only). "Guess" means a label used on related Volvo/Geely cars, not checked on this car.
+All 45 modules that answer on this car, with the answering DIDs listed in `did-map.csv` across them (default-session `22` reads only). "Guess" means a label used on related Volvo/Geely cars, not checked on this car.
 
 | Address | Module | Basis |
 |---|---|---|
@@ -26,11 +26,12 @@ All 43 modules that answer on this car, with the answering DIDs listed in `did-m
 | `1635` | HV battery | SOC, pack V/I, cells |
 | `1637` | Rear inverter / e-machine | drive engaged `E307`, torque direction `E319`; `EEC4` rose 0x3A → 0x3E on a drive (temperature?) |
 | `1650` | Charger / inlet | charge signals |
-| `1656` | Unknown, 12 V power path? (the bulletins put the DC-DC converter in the CDD, see `1650`) | `4947`/`D110` read 14.0–14.2 V (12 V rail, as on `1635`); hardware `HX1100`; DC-DC converter? |
+| `1656` | Unknown, charging-related (the bulletins put the DC-DC converter in the CDD, see `1650`) | since 4.3.0 `F80A` reads `BCC1-B+ChargerCtrl1`; `4947`/`D110` read 14.0–14.2 V (12 V rail, as on `1635`); hardware `HX1100` |
 | `1670` | Power steering, first channel | steering angle `3019` (= `0x3853` - 0.5614 x `1672:3019`: 0.1 °/count, right positive?) |
 | `1672` | Steering angle sensor? | `3019` (also answers on `1670`/`1676`); a US owner reads F80A `CHCM` (chassis controller): unverified here; one unit with the gear stalk `1633` (same core part and serial) |
 | `1675` | Bosch chassis sensor? | its part number is sold used as a Bosch sensor from a Polestar 4 and a Zeekr 001 ([siblings](siblings.md)); config string `GE60_P03_M10_…`; OBD speed `F40D` tracks `D003`; `FE08` follows `1701:FE08` channel 1 (brake pressure), so it looks like a received signal |
 | `1676` | Power steering, second channel | same 50 DIDs as `1670`, sibling (not identical) part numbers; `3019`/`D900` read the same angle as `1670` within 0-2 counts (up to 4 while turning); `D901` assist load peaks at full lock on both |
+| `1691` | Second address for `1601` | answers 701 of `1601`'s 702 DIDs (`F13F` refuses here, response too long), same parts and software; first seen after the 4.3.0 update |
 | `1701` | Brake system (BSCM) | `F80A` reads `BSCM-BrakeSystem` (2026-11-12); config `BRP417EA`; shares 29 DIDs with `1631`; brake pressure/pedal candidates `FE08`, `D905`/`D906` |
 | `1A01` | Body / central electronics | lamps, doors |
 | `1A11` | Climate | flap positions |
@@ -39,6 +40,7 @@ All 43 modules that answer on this car, with the answering DIDs listed in `did-m
 | `1A21` / `1A22` | Rear doors | windows |
 | `1A27` / `1A28` / `1A29` | Seats: driver / passenger / rear | seat position |
 | `1A30` | Interior lighting | guess |
+| `1B61` | Unknown | 29 DIDs, its own part numbers, `F120` = `14TR AA`; first seen after the 4.3.0 update |
 | `1BB3` / `1BB4` | Headlamps L/R | matrix segments |
 | `1C01` | Airbags | guess |
 
