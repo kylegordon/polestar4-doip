@@ -5,7 +5,7 @@
 - {addr: "1001", label: VCM, role: "gateway address (Polestar bulletins call the P4 gateway VGM, Vehicle Gateway Module, TJ 37280, and on the Polestar 2/3 use VCM for the Vehicle Connectivity Module, TJ 36628: the VCM label may be wrong here; no bulletin gives the VGM's address; this address's own FD03 build string contains VGM)", status: unverified}
 - {addr: "1011", label: TEM, role: telematics, status: unverified}
 - {addr: "1012", label: DMM, role: driver monitoring, status: unverified}
-- {addr: "1015", label: WAM, role: "360 camera / park assist, most likely (label WAM = Wide Angle vision Module per a Volvo technical bulletin; four surround-view camera entries, parking sensor distances, PAS software)", status: unverified}
+- {addr: "1015", label: WAM, role: "360 camera / park assist, most likely (label WAM = Wide Angle vision Module per a Volvo technical bulletin; four surround-view camera entries, parking sensor distances, PAS software)", status: confirmed}
 - {addr: "1023", label: BNCM, role: "key system control module by Marquardt (model GE1, FCC ID IYZGE1); reports F197 BNCM and F18A MARQUARDT, which match the manual's key system certification", status: unverified}
 - {addr: "1201", label: IHU, role: infotainment (park D938), status: confirmed}
 - {addr: "1202", label: TVM, role: camera/vision, status: unverified, note: "same physical unit as 1201 (same core part and serial)"}
@@ -28,7 +28,7 @@
 - {addr: "1656", label: "?", role: "charging-related, from its own name string: since 4.3.0 F80A reads BCC1-B+ChargerCtrl1 (4947 reads the 12 V rail in mV; D110 follows HV pack current; HX1100 hardware string)", status: unknown, note: "answers 52 DIDs on 4.3.0, 37 on 4.2.11 (the F4xx and F8xx DIDs refused before the update)"}
 - {addr: "1670", label: PSCM, role: "power steering, first channel (3019 = 0x3853 - 0.5614 x 1672:3019, opposite sign; D901 assist load peaks at full lock)", status: confirmed}
 - {addr: "1672", label: SAS, role: "steering angle (3019 also on 1670/1676; a US owner reads F80A CHCM, chassis controller)", status: confirmed, note: "same physical unit as 1633 (same core part and serial)"}
-- {addr: "1675", label: "?", role: "Bosch chassis sensor? (its D901 part is sold used as a Bosch sensor, see docs/siblings.md; FE08 and D941 look like received brake pressure and speed)", status: unknown}
+- {addr: "1675", label: "?", role: "Bosch chassis sensor? (its D901 part is sold used as a Bosch sensor, see docs/siblings.md; FE08 and D941 look like received brake pressure and speed)", status: confirmed}
 - {addr: "1676", label: "?", role: "power steering, second channel (same DID set as 1670; 3019/D900 read the same angle within 0-2 counts, up to 4 while turning; D901 assist load peaks at full lock on both)", status: confirmed, note: "sibling part numbers to 1670 (F1AE 6608507905-07 vs 6608507908-10), same F1AB delivery part"}
 - {addr: "1691", label: "?", role: "a second address for 1601: answers the same DIDs (701 of its 702; F13F refuses here, response too long) with the same parts and software", status: unknown, note: "first seen 2026-11-22 after the 4.3.0 install; does not answer the 1FFF broadcast, so it may have been there before"}
 - {addr: "1701", label: BSCM, role: "brake system (F80A reads BSCM-BrakeSystem, 2026-11-12)", status: confirmed}

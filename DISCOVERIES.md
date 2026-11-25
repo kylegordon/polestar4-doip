@@ -6,6 +6,26 @@ Confidence follows `catalogue/signals.yaml`: **C** = the same change seen at lea
 
 <!-- New entries go directly below this line, newest first. The heading must be "## <version> - <title>". -->
 
+## 2026.11.25.2 - Evidence audit: 15 signals now Confirmed
+
+Every Provisional signal was checked against the recorded sessions for evidence that already meets the Confirmed rule (the same change at least twice, in both directions, with the action written down). No new car sessions.
+
+**Now Confirmed**
+- Brakes: the four `1701:FE08` channels and both pedal sensors (`D905`/`D906`), `1601:E3C7` and the two `1675:FE08` words all rise and fall with three marked presses on 2026-11-20 (what `FE08` channels 3-4 measure is still open).
+- Steering angle (`1672:3019`) and yaw rate (`1614:D92D`): five marked turns on 2026-11-15, left and right.
+- HV pack current (`1635:4802`): up at each of six remote climate starts, down at each stop (2026-11-22).
+- Front-right parking sensor distance (`1015:B117`): on and off five times at a marked obstacle on 2026-11-14, and again twice passing a canister on 2026-11-20. `1015` is now a confirmed module.
+- Right mirror fold motor current (`1A12:FE0D`): a burst at each of two folds and two unfolds.
+- Seat heating on/off (`FD03` on `1A27`, `1A28`, `1A29`): every seat several times from the app on 2026-11-22, and from the buttons on 2026-11-14.
+- `1675` is now a confirmed module (its role is still unknown).
+
+**Corrections**
+- `1650:EE24` (`ac_plug_status`): `201` is not "charging". It is also read plugged in without charging and through a DC charge; the labels now just give the raw states.
+
+**Nearly there (one more logged round each)**
+- Charging flags and limits on `1635` and `1650`: one owner-logged AC charge with them watched would settle most of them.
+- Parking sensors other than `B117`, the gear-stalk pushes, damper commands, creep, tailgate position, rear door locks, rear recline.
+
 ## 2026.11.25 - Software update 4.3.0: what changed in the modules
 
 The car installed customer release 4.3.0 over the air on 2026-11-22. Before and after the install every module was snapshotted, and afterwards every module was read again across its whole `0000`-`FFFF` range (parked, 2026-11-22 to 11-25), so the two releases can be compared DID by DID.

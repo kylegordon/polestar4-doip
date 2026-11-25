@@ -3,6 +3,12 @@
 Owned by the project; newest first. This file records tool, catalogue and documentation changes —
 observations about the car belong in docs/findings.md and DISCOVERIES.md, not here.
 
+## 2026-11-25 (3) — evidence audit
+
+- `catalogue/signals.yaml`: 15 signals P -> C after checking recorded sessions against the C rule; `ac_plug_status` labels no longer claim `201` = charging.
+- `catalogue/modules.yaml`: `1015` and `1675` status confirmed (they now hold C signals).
+- `docs/findings.md`: matching confidence notes.
+
 ## 2026-11-25 (2) — Android build IDs are public
 
 - `privacy.mask`: Android build IDs (e.g. `AAG5.251031.001`) are no longer hidden as long numbers (owner: public information); numbers around them still are. Tests added.

@@ -40,8 +40,8 @@
    examples: [{raw: "000123", value: 291}]}
 - {id: charge_energy_counter, module: "1650", did: "EE71", name: Lifetime AC charge energy (4.5 MWh here; not per charge), type: u, scale: 0.1, unit: kWh, confidence: P,
    examples: [{raw: "00b083", value: 4518.7}]}
-- {id: ac_plug_status, module: "1650", did: "EE24", name: AC charge state (does not change on cable insertion), values: {"00000202": idle, "00000201": charging}, confidence: P,
-   examples: [{raw: "00000201", value: charging}]}
+- {id: ac_plug_status, module: "1650", did: "EE24", name: AC charge state (does not change on cable insertion; 201 also read plugged in but not charging, and during a DC charge), values: {"00000202": "202 (seen when not charging)", "00000201": "201 (seen while charging, also at other times)"}, confidence: P,
+   examples: [{raw: "00000201", value: "201 (seen while charging, also at other times)"}]}
 - {id: inlet_leds, module: "1650", did: "EE32", name: Charge inlet LEDs, values: {"00000000": "off", "01010100": lid open, "00010000": charging pulse}, confidence: C,
    examples: [{raw: "01010100", value: lid open}]}
 
@@ -77,7 +77,7 @@
    examples: [{raw: "02", value: "on"}, {raw: "01", value: "off"}]}
 - {id: mirror_heat_left, module: "1A13", did: "4051", name: Left mirror heating, values: {"01": "off", "02": "on"}, confidence: C,
    examples: [{raw: "02", value: "on"}, {raw: "01", value: "off"}]}
-- {id: mirror_fold_current_right, module: "1A12", did: "FE0D", name: Right mirror fold motor current (raw; 1-2 at rest, about 0x40-0x4b moving), type: u, confidence: P,
+- {id: mirror_fold_current_right, module: "1A12", did: "FE0D", name: Right mirror fold motor current (raw; 1-2 at rest, about 0x40-0x4b moving), type: u, confidence: C,
    examples: [{raw: "0049", value: 73}]}
 
 # -- chassis (VDDM 1601) ---------------------------------------------------
@@ -95,7 +95,7 @@
    examples: [{raw: "0000056b", value: 1387}]}
 
 # -- steering (SAS 1672) ---------------------------------------------------
-- {id: steering_angle, module: "1672", did: "3019", name: "Steering wheel angle (left positive, scale approximate)", type: s, scale: 0.0554, unit: deg, confidence: P,
+- {id: steering_angle, module: "1672", did: "3019", name: "Steering wheel angle (left positive, scale approximate)", type: s, scale: 0.0554, unit: deg, confidence: C,
    examples: [{raw: "e1b5", value: -429.627}, {raw: "1e6e", value: 431.566}]}
 
 # -- headlamps (HCML 1BB3 left, HCMR 1BB4 right) ---------------------------
@@ -152,7 +152,7 @@
    examples: [{raw: "0d", value: "on (P, R, N, D or moving; not specific to driving)"}]}
 - {id: odometer, module: "1001,1011,1012,1015,1023,1201,1212,1213,1301,1314,1316,1317,1344,1601,1614,1615,1631,1633,1635,1637,1650,1670,1672,1675,1676,1701,1A01,1A11,1A12,1A13,1A15,1A21,1A22,1A27,1A28,1A29,1A30,1BB3,1BB4,1C01", did: "DD01", name: Odometer (same DID on every module), type: u, unit: " km", confidence: P,
    examples: [{raw: "004254", value: 16980}]}
-- {id: pack_current, module: "1635", did: "4802", name: HV pack current (+ = discharge), type: u, scale: 0.1, add: -1638.4, unit: " A", confidence: P,
+- {id: pack_current, module: "1635", did: "4802", name: HV pack current (+ = discharge), type: u, scale: 0.1, add: -1638.4, unit: " A", confidence: C,
    examples: [{raw: "4000", value: 0}]}
 - {id: pack_voltage, module: "1635", did: "497C", name: HV pack voltage, type: u, scale: 0.01, unit: " V", confidence: P,
    examples: [{raw: "a83e", value: 430.7}]}
@@ -184,19 +184,19 @@
 - {id: park_selected, module: "1201", did: "D938", name: Park (P) per infotainment, values: {"00": "P", "01": "not P", "02": "changing"}, confidence: C,
    examples: [{raw: "00", value: "P"}]}
 
-# -- added 2026-11-12 (single-pass tests, parked; unconfirmed on the move) --------------------
+# -- added 2026-11-12 (single-pass tests, parked); FE08 ch1-4, D905/D906 and 1601:E3C7 C since the 2026-11-20 marked press rounds --------------------
 # Brake pedal off / light / hard, held (runs/2026-11-12/snap-brake_*.json, local only).
-- {id: brake_pressure_ch1, module: "1701", did: "FE08", offset: 0, len: 2, name: "Brake pressure? channel 1 (front?)", type: s, confidence: P,
+- {id: brake_pressure_ch1, module: "1701", did: "FE08", offset: 0, len: 2, name: "Brake pressure? channel 1 (front?)", type: s, confidence: C,
    examples: [{raw: "01ce01d500fc0103", value: 462}, {raw: "fffa0002fff5fffd", value: -6}]}
-- {id: brake_pressure_ch2, module: "1701", did: "FE08", offset: 2, len: 2, name: "Brake pressure? channel 2 (front?)", type: s, confidence: P,
+- {id: brake_pressure_ch2, module: "1701", did: "FE08", offset: 2, len: 2, name: "Brake pressure? channel 2 (front?)", type: s, confidence: C,
    examples: [{raw: "01ce01d500fc0103", value: 469}]}
-- {id: brake_pressure_ch3, module: "1701", did: "FE08", offset: 4, len: 2, name: "Brake pressure? channel 3 (only 3-6 % of ch1 when braking on drives; not a plain rear pressure)", type: s, confidence: P,
+- {id: brake_pressure_ch3, module: "1701", did: "FE08", offset: 4, len: 2, name: "Brake pressure? channel 3 (only 3-6 % of ch1 when braking on drives; not a plain rear pressure)", type: s, confidence: C,
    examples: [{raw: "01ce01d500fc0103", value: 252}]}
-- {id: brake_pressure_ch4, module: "1701", did: "FE08", offset: 6, len: 2, name: "Brake pressure? channel 4 (only 3-6 % of ch1 when braking on drives; not a plain rear pressure)", type: s, confidence: P,
+- {id: brake_pressure_ch4, module: "1701", did: "FE08", offset: 6, len: 2, name: "Brake pressure? channel 4 (only 3-6 % of ch1 when braking on drives; not a plain rear pressure)", type: s, confidence: C,
    examples: [{raw: "01ce01d500fc0103", value: 259}]}
-- {id: brake_pedal_sensor_a, module: "1701", did: "D905", name: "Brake pedal travel or force? sensor A", type: s, confidence: P,
+- {id: brake_pedal_sensor_a, module: "1701", did: "D905", name: "Brake pedal travel or force? sensor A", type: s, confidence: C,
    examples: [{raw: "040a", value: 1034}, {raw: "fff8", value: -8}]}
-- {id: brake_pedal_sensor_b, module: "1701", did: "D906", name: "Brake pedal travel or force? sensor B", type: s, confidence: P,
+- {id: brake_pedal_sensor_b, module: "1701", did: "D906", name: "Brake pedal travel or force? sensor B", type: s, confidence: C,
    examples: [{raw: "0406", value: 1030}]}
 # OBD-on-UDS on the brake system (F80A reads "BSCM-BrakeSystem"); same PIDs as a US car (issue #2).
 - {id: obd_speed_bscm, module: "1701", did: "F40D", name: "Vehicle speed (OBD PID 0D)", type: u, unit: " km/h", confidence: P,
@@ -264,7 +264,7 @@
 - {id: long_accel_bscm, module: "1701", did: "2B11", name: "Longitudinal acceleration (+ = speeding up; includes slope and an offset)", type: s, scale: 0.0078125, unit: " m/s2", confidence: P,
    examples: [{raw: "ffe0", value: -0.25}]}
 # Brake: E3C7 - 0x4000 = 7.2 x 1701 FE08 ch1 + 40 (r 0.998, 2026-11-13 morning drive); raw 0x4000 with the brake released, higher when held at a stop.
-- {id: brake_pressure_vddm, module: "1601", did: "E3C7", name: "Brake pressure? (counts, 0 = none)", type: u, add: -16384, confidence: P,
+- {id: brake_pressure_vddm, module: "1601", did: "E3C7", name: "Brake pressure? (counts, 0 = none)", type: u, add: -16384, confidence: C,
    examples: [{raw: "4000", value: 0}, {raw: "48aa", value: 2218}]}
 # 2B00: C since 2026-11-19 (three noted press/release rounds parked, six more presses on a drive, both directions).
 - {id: brake_pedal_switch, module: "1701", did: "2B00", name: Brake pedal switch, values: {"00": released, "42": pressed}, confidence: C,
@@ -349,7 +349,7 @@
    examples: [{raw: "60", value: "3"}, {raw: "40", value: "2"}, {raw: "20", value: "1"}, {raw: "00", value: "off"}]}
 - {id: rear_seat_heat_levels, module: "1A29", did: "983E", name: "Rear seat heating levels: bits 5-6 = left level, bits 2-3 = right level (0-3)", encoding: raw, confidence: P,
    examples: [{raw: "6c", value: "6c"}]}
-- {id: seat_heating_on, module: "1A27,1A28,1A29", did: "FD03", name: Seat heating on, values: {"00": "off", "01": "on"}, confidence: P,
+- {id: seat_heating_on, module: "1A27,1A28,1A29", did: "FD03", name: Seat heating on, values: {"00": "off", "01": "on"}, confidence: C,
    examples: [{raw: "01", value: "on"}, {raw: "00", value: "off"}]}
 - {id: seat_heater_output, module: "1A27,1A28", did: "F1F4", name: Seat heater output (cycles while heating), len: 1, type: u, unit: "%", confidence: P,
    examples: [{raw: "64", value: 100}]}
@@ -391,7 +391,7 @@
    examples: [{raw: "0024", value: 36}]}
 - {id: park_dist_b116, module: "1015", did: "B116", name: "Parking sensor distance, front left corner (cm; 511 = nothing seen)", type: u, unit: " cm", confidence: P,
    examples: [{raw: "0050", value: 80}]}
-- {id: park_dist_b117, module: "1015", did: "B117", name: "Parking sensor distance, front right corner (cm; 511 = nothing seen)", type: u, unit: " cm", confidence: P,
+- {id: park_dist_b117, module: "1015", did: "B117", name: "Parking sensor distance, front right corner (cm; 511 = nothing seen)", type: u, unit: " cm", confidence: C,
    examples: [{raw: "0053", value: 83}]}
 - {id: park_dist_b118, module: "1015", did: "B118", name: "Parking sensor distance, front left inner (cm; 511 = nothing seen)", type: u, unit: " cm", confidence: P,
    examples: [{raw: "0046", value: 70}]}
@@ -408,7 +408,7 @@
 # One drive: P. Byte 1 unknown.
 - {id: speed_ms_sum, module: "1614", did: "D92D", name: "Road speed (whole m/s)", offset: 0, len: 1, type: u, unit: " m/s", confidence: P,
    examples: [{raw: "090400", value: 9}]}
-- {id: yaw_rate_sum, module: "1614", did: "D92D", name: "Yaw rate (+ = turning left)", offset: 2, len: 1, type: s, unit: " deg/s", confidence: P,
+- {id: yaw_rate_sum, module: "1614", did: "D92D", name: "Yaw rate (+ = turning left)", offset: 2, len: 1, type: s, unit: " deg/s", confidence: C,
    examples: [{raw: "08fce8", value: -24}, {raw: "08000d", value: 13}]}
 
 # -- added 2026-11-19 (narrated brake and audio tests parked, then a 10-minute drive; evidence in local/references.md) ----
@@ -421,9 +421,9 @@
 - {id: vehicle_speed_1675, module: "1675", did: "D941", name: Vehicle speed, len: 2, type: u, scale: 0.0140625, unit: " km/h", unavailable: ["ffff"], confidence: P,
    examples: [{raw: "0f7a", value: 55.715625}, {raw: "0000", value: 0}, {raw: "ffff", value: "not available"}]}
 # 1675 FE08: both words track 1701 FE08 channel 1 on a drive (r 0.988 each, ratio 0.97 above 50 counts, 1,101 changes); 7fff in the second state.
-- {id: brake_pressure_1675_a, module: "1675", did: "FE08", offset: 0, len: 2, name: "Brake pressure? word A (tracks 1701 FE08 channel 1)", type: s, unavailable: ["7fff"], confidence: P,
+- {id: brake_pressure_1675_a, module: "1675", did: "FE08", offset: 0, len: 2, name: "Brake pressure? word A (tracks 1701 FE08 channel 1)", type: s, unavailable: ["7fff"], confidence: C,
    examples: [{raw: "fff3fffc", value: -13}, {raw: "015d0165", value: 349}, {raw: "7fff7fff", value: "not available"}]}
-- {id: brake_pressure_1675_b, module: "1675", did: "FE08", offset: 2, len: 2, name: "Brake pressure? word B (tracks 1701 FE08 channel 1)", type: s, unavailable: ["7fff"], confidence: P,
+- {id: brake_pressure_1675_b, module: "1675", did: "FE08", offset: 2, len: 2, name: "Brake pressure? word B (tracks 1701 FE08 channel 1)", type: s, unavailable: ["7fff"], confidence: C,
    examples: [{raw: "fff3fffc", value: -4}, {raw: "015d0165", value: 357}, {raw: "7fff7fff", value: "not available"}]}
 # 1212 DD02: 1,180 readings paired with 1635 4947: 0x38 at 13.91-14.12 V, 0x39 at 14.12-14.34 V; three at 0x3c (15.0 V) came with 14.81-14.87 V on 4947, so 1212 reads about 0.15 V high there.
 - {id: supply_v_1212, module: "1212", did: "DD02", name: 12 V supply (0.25 V steps), type: u, scale: 0.25, unit: " V", confidence: P,
